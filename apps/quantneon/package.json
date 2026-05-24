@@ -1,0 +1,20 @@
+{
+  "name": "@quant/quantneon",
+  "version": "1.0.0",
+  "private": true,
+  "description": "QuantNeon - Instagram-like social platform with mini games, AR/VR, and shopping",
+  "main": "api/server.ts",
+  "scripts": {
+    "dev": "node --loader ts-node/esm api/server.ts",
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@quant/auth": "*",
+    "@quant/ai": "*",
+    "@quant/common": "*",
+    "@quant/database": "*",
+    "@quant/realtime": "*",
+    "@quant/shared-ui": "*"
+  }
+}
