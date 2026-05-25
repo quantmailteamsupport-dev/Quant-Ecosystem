@@ -3,6 +3,7 @@ import { HttpClient } from '../core/http-client';
 import { createQueryHook } from '../hooks/useQuery';
 import { createMutationHook } from '../hooks/useMutation';
 import { createInfiniteQueryHook } from '../hooks/useInfiniteQuery';
+import { useQuery, useMutation, useInfiniteQuery } from '@tanstack/react-query';
 
 // Mock react-query
 vi.mock('@tanstack/react-query', () => ({
@@ -37,6 +38,10 @@ vi.mock('react', () => ({
   useCallback: vi.fn((fn) => fn),
   useState: vi.fn((initial) => [initial, vi.fn()]),
 }));
+
+const useQueryMock = vi.mocked(useQuery);
+const useMutationMock = vi.mocked(useMutation);
+const useInfiniteQueryMock = vi.mocked(useInfiniteQuery);
 
 describe('HttpClient', () => {
   let client: HttpClient;
@@ -113,6 +118,7 @@ describe('createQueryHook', () => {
 
   beforeEach(() => {
     client = new HttpClient({ baseUrl: 'https://api.quant.ai' });
+    useQueryMock.mockClear();
   });
 
   it('creates a hook function', () => {
@@ -132,6 +138,53 @@ describe('createQueryHook', () => {
 
     expect(typeof useHook).toBe('function');
   });
+
+  it('generates correct query key for static endpoint', () => {
+    const useHook = createQueryHook<Record<string, string>, { items: string[] }>(
+      client,
+      '/api/items',
+    );
+
+    useHook({ page: '1', limit: '10' });
+
+    expect(useQueryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ['/api/items', { page: '1', limit: '10' }],
+      }),
+    );
+  });
+
+  it('generates correct query key for dynamic endpoint', () => {
+    const useHook = createQueryHook<{ id: string }, { name: string }>(
+      client,
+      (params) => `/api/users/${params.id}`,
+    );
+
+    useHook({ id: '42' });
+
+    expect(useQueryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ['/api/users/42', { id: '42' }],
+      }),
+    );
+  });
+
+  it('passes staleTime and enabled options', () => {
+    const useHook = createQueryHook<Record<string, string>, { items: string[] }>(
+      client,
+      '/api/items',
+      { staleTime: 60000 },
+    );
+
+    useHook({}, { enabled: false, staleTime: 5000 });
+
+    expect(useQueryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        enabled: false,
+        staleTime: 5000,
+      }),
+    );
+  });
 });
 
 describe('createMutationHook', () => {
@@ -139,12 +192,39 @@ describe('createMutationHook', () => {
 
   beforeEach(() => {
     client = new HttpClient({ baseUrl: 'https://api.quant.ai' });
+    useMutationMock.mockClear();
   });
 
   it('creates a mutation hook function', () => {
     const useMutation = createMutationHook<{ name: string }, { id: string }>(client, '/api/items');
 
     expect(typeof useMutation).toBe('function');
+  });
+
+  it('calls the hook with a mutation function', () => {
+    const useMutation = createMutationHook<{ name: string }, { id: string }>(client, '/api/items');
+
+    useMutation();
+
+    expect(useMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mutationFn: expect.any(Function),
+      }),
+    );
+  });
+
+  it('uses correct HTTP method from options', () => {
+    const useMutation = createMutationHook<{ name: string }, { id: string }>(client, '/api/items', {
+      method: 'PUT',
+    });
+
+    useMutation();
+
+    expect(useMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mutationFn: expect.any(Function),
+      }),
+    );
   });
 });
 
@@ -153,6 +233,7 @@ describe('createInfiniteQueryHook', () => {
 
   beforeEach(() => {
     client = new HttpClient({ baseUrl: 'https://api.quant.ai' });
+    useInfiniteQueryMock.mockClear();
   });
 
   it('creates an infinite query hook function', () => {
@@ -162,5 +243,36 @@ describe('createInfiniteQueryHook', () => {
     >(client, '/api/posts');
 
     expect(typeof useInfinite).toBe('function');
+  });
+
+  it('generates correct query key with infinite marker', () => {
+    const useInfinite = createInfiniteQueryHook<
+      { category: string },
+      { id: string; title: string }
+    >(client, '/api/posts');
+
+    useInfinite({ category: 'tech' });
+
+    expect(useInfiniteQueryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ['/api/posts', 'infinite', { category: 'tech' }],
+        initialPageParam: 1,
+      }),
+    );
+  });
+
+  it('generates correct query key for dynamic endpoint', () => {
+    const useInfinite = createInfiniteQueryHook<{ userId: string }, { id: string; title: string }>(
+      client,
+      (params) => `/api/users/${params.userId}/posts`,
+    );
+
+    useInfinite({ userId: '99' });
+
+    expect(useInfiniteQueryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ['/api/users/99/posts', 'infinite', { userId: '99' }],
+      }),
+    );
   });
 });

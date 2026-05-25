@@ -2,6 +2,7 @@
   "name": "@quant/quantmail",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "QuantMail - Central authentication, email, and code management hub for the Quant Ecosystem",
   "main": "api/server.ts",
   "scripts": {
@@ -10,7 +11,7 @@
     "build": "next build",
     "build:backend": "tsc --noEmit",
     "start": "next start",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.backend.json",
     "test": "vitest run"
   },
   "dependencies": {

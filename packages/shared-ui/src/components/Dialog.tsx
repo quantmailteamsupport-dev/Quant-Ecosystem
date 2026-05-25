@@ -2,7 +2,7 @@
 // Shared UI - Dialog Component
 // ============================================================================
 
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useId, useRef } from 'react';
 
 export interface DialogProps {
   open: boolean;
@@ -25,6 +25,7 @@ export const Dialog: React.FC<DialogProps> = ({
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const titleId = useId();
 
   const sizeStyles: Record<string, string> = {
     sm: 'max-w-sm',
@@ -97,15 +98,12 @@ export const Dialog: React.FC<DialogProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label={ariaLabel || title || 'Dialog'}
-        aria-labelledby={title ? 'dialog-title' : undefined}
+        aria-labelledby={title ? titleId : undefined}
         className={`relative z-10 w-full ${sizeStyles[size]} bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 mx-4 ${className}`}
       >
         {title && (
           <div className="flex items-center justify-between mb-4">
-            <h2
-              id="dialog-title"
-              className="text-lg font-semibold text-gray-900 dark:text-gray-100"
-            >
+            <h2 id={titleId} className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {title}
             </h2>
             <button
