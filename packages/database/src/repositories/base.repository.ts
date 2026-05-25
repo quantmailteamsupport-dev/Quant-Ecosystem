@@ -3,7 +3,6 @@ import { PrismaClient } from '@prisma/client';
 export interface PaginationOptions {
   page?: number;
   pageSize?: number;
-  cursor?: string;
 }
 
 export interface PaginatedResult<T> {

@@ -17,7 +17,9 @@ If you discover a security vulnerability, please report it responsibly:
 
 ## Security Measures
 
-- All dependencies are scanned with Trivy in CI
+- ESLint with TypeScript-aware rules enforces code quality and catches common issues
+- Type checking via `tsc --noEmit` catches type-safety violations in CI
+- Test coverage enforcement via Vitest ensures behavioral correctness
 - Secrets are never committed to the repository
 - Authentication uses industry-standard cryptography (argon2, jose)
 - All API endpoints validate input with Zod schemas

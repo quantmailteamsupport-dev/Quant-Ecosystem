@@ -1,8 +1,55 @@
 import { Prisma, User } from '@prisma/client';
 import { BaseRepository, PaginatedResult, PaginationOptions } from './base.repository';
 
+/**
+ * Fields safe to return in public/API contexts.
+ * Excludes passwordHash, twoFactorSecret, lastLoginIp, failedLoginAttempts.
+ */
+export const userPublicSelect = {
+  id: true,
+  email: true,
+  username: true,
+  displayName: true,
+  avatarUrl: true,
+  bannerUrl: true,
+  phoneNumber: true,
+  role: true,
+  status: true,
+  emailVerified: true,
+  phoneVerified: true,
+  twoFactorEnabled: true,
+  bio: true,
+  website: true,
+  location: true,
+  dateOfBirth: true,
+  lastLoginAt: true,
+  loginCount: true,
+  preferences: true,
+  metadata: true,
+  createdAt: true,
+  updatedAt: true,
+  deletedAt: true,
+} satisfies Prisma.UserSelect;
+
+export type UserPublic = Omit<
+  User,
+  'passwordHash' | 'twoFactorSecret' | 'lastLoginIp' | 'failedLoginAttempts' | 'lockoutUntil'
+>;
+
 export class UserRepository extends BaseRepository {
-  async findById(id: string): Promise<User | null> {
+  /**
+   * Find user by ID - returns public fields only.
+   * Use findByIdWithPassword for auth flows.
+   */
+  async findById(id: string): Promise<UserPublic | null> {
+    return this.prisma.user.findUnique({ where: { id }, select: userPublicSelect });
+  }
+
+  /**
+   * Find user by ID with all fields including sensitive data.
+   * Only use for authentication/authorization flows.
+   */
+  async findByIdWithPassword(id: string): Promise<User | null> {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
@@ -18,7 +65,7 @@ export class UserRepository extends BaseRepository {
     return this.prisma.user.findFirst({ where: { phoneNumber: phone } });
   }
 
-  async findMany(options: PaginationOptions = {}): Promise<PaginatedResult<User>> {
+  async findMany(options: PaginationOptions = {}): Promise<PaginatedResult<UserPublic>> {
     const page = options.page ?? 1;
     const pageSize = options.pageSize ?? 20;
     const skip = (page - 1) * pageSize;
@@ -26,6 +73,7 @@ export class UserRepository extends BaseRepository {
     const [data, total] = await Promise.all([
       this.prisma.user.findMany({
         where: { deletedAt: null },
+        select: userPublicSelect,
         skip,
         take: pageSize,
         orderBy: { createdAt: 'desc' },

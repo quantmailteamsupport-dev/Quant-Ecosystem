@@ -63,6 +63,15 @@ model User {
   following           UserRelationship[] @relation("UserFollowing")
   followers           UserRelationship[] @relation("UserFollower")
 
+  // Dating/matching relations
+  matchesAsUser1      Match[]            @relation("MatchUser1")
+  matchesAsUser2      Match[]            @relation("MatchUser2")
+  swipesGiven         Swipe[]            @relation("SwipeSwiper")
+  swipesReceived      Swipe[]            @relation("SwipeTarget")
+
+  // Community membership
+  communityMemberships CommunityMember[]
+
   @@index([email])
   @@index([username])
   @@index([phoneNumber])
@@ -500,6 +509,7 @@ model CommunityMember {
   joinedAt    DateTime      @default(now())
 
   community   Community     @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([communityId, userId])
   @@index([communityId])
@@ -883,6 +893,9 @@ model Match {
   conversationId String?
   isActive       Boolean  @default(true)
 
+  user1          User     @relation("MatchUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2          User     @relation("MatchUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+
   @@unique([user1Id, user2Id])
   @@index([user1Id])
   @@index([user2Id])
@@ -895,6 +908,9 @@ model Swipe {
   targetId  String
   direction SwipeDirection
   createdAt DateTime       @default(now())
+
+  swiper    User           @relation("SwipeSwiper", fields: [swiperId], references: [id], onDelete: Cascade)
+  target    User           @relation("SwipeTarget", fields: [targetId], references: [id], onDelete: Cascade)
 
   @@unique([swiperId, targetId])
   @@index([swiperId])

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { UserRepository } from '../repositories/user.repository';
+import { UserRepository, userPublicSelect } from '../repositories/user.repository';
 import { MessageRepository } from '../repositories/message.repository';
 import { EmailRepository } from '../repositories/email.repository';
 import { PostRepository } from '../repositories/post.repository';
@@ -112,37 +112,97 @@ describe('UserRepository', () => {
     expect(typeof repo.findByPhone).toBe('function');
   });
 
-  it('should call prisma.user.findUnique for findById', async () => {
+  it('should have findByIdWithPassword method', () => {
+    expect(repo.findByIdWithPassword).toBeDefined();
+    expect(typeof repo.findByIdWithPassword).toBe('function');
+  });
+
+  it('should call prisma.user.findUnique with select for findById (public fields only)', async () => {
     (mockPrisma as any).user.findUnique.mockResolvedValue({ id: '1', email: 'test@test.com' });
     const result = await repo.findById('1');
     expect(result).toEqual({ id: '1', email: 'test@test.com' });
-    expect((mockPrisma as any).user.findUnique).toHaveBeenCalledWith({ where: { id: '1' } });
+    expect((mockPrisma as any).user.findUnique).toHaveBeenCalledWith({
+      where: { id: '1' },
+      select: userPublicSelect,
+    });
   });
 
-  it('should return paginated results from findMany', async () => {
+  it('should call prisma.user.findUnique without select for findByIdWithPassword', async () => {
+    const fullUser = { id: '1', email: 'test@test.com', passwordHash: 'hash123' };
+    (mockPrisma as any).user.findUnique.mockResolvedValue(fullUser);
+    const result = await repo.findByIdWithPassword('1');
+    expect(result).toEqual(fullUser);
+    expect((mockPrisma as any).user.findUnique).toHaveBeenCalledWith({
+      where: { id: '1' },
+    });
+  });
+
+  it('should return paginated results from findMany with correct pagination math', async () => {
     const mockUsers = [{ id: '1' }, { id: '2' }];
     (mockPrisma as any).user.findMany.mockResolvedValue(mockUsers);
-    (mockPrisma as any).user.count.mockResolvedValue(2);
+    (mockPrisma as any).user.count.mockResolvedValue(25);
+
+    const result = await repo.findMany({ page: 2, pageSize: 10 });
+
+    expect(result.data).toEqual(mockUsers);
+    expect(result.total).toBe(25);
+    expect(result.page).toBe(2);
+    expect(result.pageSize).toBe(10);
+    expect(result.totalPages).toBe(3);
+    expect(result.hasNext).toBe(true);
+    expect(result.hasPrev).toBe(true);
+
+    // Verify correct skip/take and select args
+    expect((mockPrisma as any).user.findMany).toHaveBeenCalledWith({
+      where: { deletedAt: null },
+      select: userPublicSelect,
+      skip: 10,
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+    });
+  });
+
+  it('should calculate hasNext=false and hasPrev=false on single page', async () => {
+    (mockPrisma as any).user.findMany.mockResolvedValue([{ id: '1' }]);
+    (mockPrisma as any).user.count.mockResolvedValue(1);
 
     const result = await repo.findMany({ page: 1, pageSize: 10 });
 
-    expect(result.data).toEqual(mockUsers);
-    expect(result.total).toBe(2);
-    expect(result.page).toBe(1);
-    expect(result.pageSize).toBe(10);
     expect(result.totalPages).toBe(1);
     expect(result.hasNext).toBe(false);
     expect(result.hasPrev).toBe(false);
   });
 
-  it('should have softDelete method', () => {
-    expect(repo.softDelete).toBeDefined();
-    expect(typeof repo.softDelete).toBe('function');
+  it('should pass deletedAt and status change for softDelete', async () => {
+    const updatedUser = { id: '1', status: 'DEACTIVATED', deletedAt: new Date() };
+    (mockPrisma as any).user.update.mockResolvedValue(updatedUser);
+
+    await repo.softDelete('1');
+
+    expect((mockPrisma as any).user.update).toHaveBeenCalledWith({
+      where: { id: '1' },
+      data: {
+        deletedAt: expect.any(Date),
+        status: 'DEACTIVATED',
+      },
+    });
   });
 
-  it('should have updateLastLogin method', () => {
-    expect(repo.updateLastLogin).toBeDefined();
-    expect(typeof repo.updateLastLogin).toBe('function');
+  it('should increment loginCount and reset failedAttempts for updateLastLogin', async () => {
+    const updatedUser = { id: '1', loginCount: 5, failedLoginAttempts: 0 };
+    (mockPrisma as any).user.update.mockResolvedValue(updatedUser);
+
+    await repo.updateLastLogin('1', '192.168.1.1');
+
+    expect((mockPrisma as any).user.update).toHaveBeenCalledWith({
+      where: { id: '1' },
+      data: {
+        lastLoginAt: expect.any(Date),
+        lastLoginIp: '192.168.1.1',
+        loginCount: { increment: 1 },
+        failedLoginAttempts: 0,
+      },
+    });
   });
 
   it('should have incrementFailedAttempts method', () => {
@@ -174,6 +234,25 @@ describe('MessageRepository', () => {
 
   it('should have getConversationsForUser method', () => {
     expect(repo.getConversationsForUser).toBeDefined();
+  });
+
+  it('should pass conversationId filter to findByConversation', async () => {
+    const mockMessages = [{ id: 'm1', content: 'hello' }];
+    (mockPrisma as any).message.findMany.mockResolvedValue(mockMessages);
+    (mockPrisma as any).message.count.mockResolvedValue(1);
+
+    const result = await repo.findByConversation('conv-123', { page: 1, pageSize: 50 });
+
+    expect(result.data).toEqual(mockMessages);
+    expect((mockPrisma as any).message.findMany).toHaveBeenCalledWith({
+      where: { conversationId: 'conv-123', isDeleted: false },
+      skip: 0,
+      take: 50,
+      orderBy: { createdAt: 'desc' },
+    });
+    expect((mockPrisma as any).message.count).toHaveBeenCalledWith({
+      where: { conversationId: 'conv-123', isDeleted: false },
+    });
   });
 });
 
@@ -272,9 +351,11 @@ describe('AISessionRepository', () => {
 
 describe('NotificationRepository', () => {
   let repo: NotificationRepository;
+  let mockPrisma: ReturnType<typeof createMockPrisma>;
 
   beforeEach(() => {
-    repo = new NotificationRepository(createMockPrisma() as any);
+    mockPrisma = createMockPrisma();
+    repo = new NotificationRepository(mockPrisma as any);
   });
 
   it('should have findByUser method', () => {
@@ -291,6 +372,17 @@ describe('NotificationRepository', () => {
 
   it('should have markAllAsRead method', () => {
     expect(repo.markAllAsRead).toBeDefined();
+  });
+
+  it('should use updateMany with userId filter for markAllAsRead', async () => {
+    (mockPrisma as any).notification.updateMany.mockResolvedValue({ count: 5 });
+
+    await repo.markAllAsRead('user-42');
+
+    expect((mockPrisma as any).notification.updateMany).toHaveBeenCalledWith({
+      where: { userId: 'user-42', isRead: false },
+      data: { isRead: true, readAt: expect.any(Date) },
+    });
   });
 });
 
@@ -337,5 +429,17 @@ describe('Transaction helper', () => {
     await withTx(mockClient as any, async (tx) => 'result', { timeout: 5000 });
 
     expect(mockClient.$transaction).toHaveBeenCalledWith(expect.any(Function), { timeout: 5000 });
+  });
+
+  it('should propagate the return value from the transaction callback', async () => {
+    const mockClient = {
+      $transaction: vi.fn().mockImplementation((fn, opts) => fn({})),
+    };
+
+    const result = await withTx(mockClient as any, async (tx) => {
+      return { id: 'created-id', name: 'test' };
+    });
+
+    expect(result).toEqual({ id: 'created-id', name: 'test' });
   });
 });

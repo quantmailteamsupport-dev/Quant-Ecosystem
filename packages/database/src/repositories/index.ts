@@ -1,6 +1,7 @@
 export { BaseRepository } from './base.repository';
 export type { PaginationOptions, PaginatedResult } from './base.repository';
-export { UserRepository } from './user.repository';
+export { UserRepository, userPublicSelect } from './user.repository';
+export type { UserPublic } from './user.repository';
 export { MessageRepository } from './message.repository';
 export { EmailRepository } from './email.repository';
 export { PostRepository } from './post.repository';
