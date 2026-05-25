@@ -131,3 +131,10 @@ export type { DesignTokens } from './themes/tokens';
 
 // Advanced Frontend Systems
 export * from './advanced';
+
+// Core Design System
+export { DesignTokenSystem } from './core/design-tokens';
+export { AccessibilityEngine } from './core/accessibility-engine';
+export { GestureSystem } from './core/gesture-system';
+export { MicroInteractionEngine } from './core/micro-interactions';
+export { ResponsiveSystem } from './core/responsive-system';
