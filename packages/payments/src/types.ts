@@ -1,0 +1,370 @@
+// ============================================================================
+// Payments Package - Type Definitions
+// Comprehensive types for payment processing, subscriptions, wallets, invoicing
+// ============================================================================
+
+/** Supported payment method types */
+export type PaymentMethodType = 'card' | 'bank' | 'crypto' | 'wallet' | 'paypal' | 'wire';
+
+/** Card brand identifiers */
+export type CardBrand = 'visa' | 'mastercard' | 'amex' | 'discover' | 'diners' | 'unionpay' | 'jcb';
+
+/** Transaction status lifecycle */
+export type TransactionStatus =
+  | 'pending'
+  | 'processing'
+  | 'completed'
+  | 'failed'
+  | 'refunded'
+  | 'partially_refunded'
+  | 'disputed'
+  | 'cancelled';
+
+/** Subscription status lifecycle */
+export type SubscriptionStatus =
+  | 'trialing'
+  | 'active'
+  | 'past_due'
+  | 'paused'
+  | 'cancelled'
+  | 'expired'
+  | 'incomplete';
+
+/** Invoice status */
+export type InvoiceStatus = 'draft' | 'open' | 'paid' | 'void' | 'uncollectible' | 'overdue';
+
+/** Refund status */
+export type RefundStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+
+/** Wallet transaction type */
+export type WalletTransactionType = 'credit' | 'debit' | 'transfer_in' | 'transfer_out' | 'refund' | 'fee' | 'reward';
+
+/** Currency codes (ISO 4217) */
+export type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'INR' | 'JPY' | 'CNY' | 'AUD' | 'CAD' | 'CHF' | 'BRL';
+
+/** Payment gateway provider */
+export type GatewayProvider = 'stripe' | 'paypal' | 'razorpay' | 'square' | 'braintree' | 'adyen';
+
+/** Billing interval for subscriptions */
+export type BillingInterval = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+
+/** Tax type */
+export type TaxType = 'vat' | 'gst' | 'sales_tax' | 'service_tax' | 'withholding';
+
+/** Payout status */
+export type PayoutStatus = 'pending' | 'held' | 'processing' | 'completed' | 'failed';
+
+/** Payment method interface */
+export interface PaymentMethod {
+  id: string;
+  customerId: string;
+  type: PaymentMethodType;
+  isDefault: boolean;
+  card?: CardDetails;
+  bank?: BankDetails;
+  crypto?: CryptoDetails;
+  createdAt: number;
+  updatedAt: number;
+  metadata: Record<string, string>;
+}
+
+/** Card details */
+export interface CardDetails {
+  brand: CardBrand;
+  last4: string;
+  expMonth: number;
+  expYear: number;
+  fingerprint: string;
+  country: string;
+  funding: 'credit' | 'debit' | 'prepaid';
+  cvcCheck: 'pass' | 'fail' | 'unchecked';
+}
+
+/** Bank account details */
+export interface BankDetails {
+  bankName: string;
+  accountType: 'checking' | 'savings';
+  last4: string;
+  routingNumber: string;
+  country: string;
+  currency: CurrencyCode;
+  verified: boolean;
+}
+
+/** Crypto wallet details */
+export interface CryptoDetails {
+  network: string;
+  address: string;
+  currency: string;
+}
+
+/** Transaction record */
+export interface Transaction {
+  id: string;
+  customerId: string;
+  paymentMethodId: string;
+  amount: number;
+  currency: CurrencyCode;
+  status: TransactionStatus;
+  description: string;
+  gateway: GatewayProvider;
+  gatewayTransactionId: string;
+  idempotencyKey: string;
+  failureReason?: string;
+  failureCode?: string;
+  refundedAmount: number;
+  metadata: Record<string, string>;
+  createdAt: number;
+  updatedAt: number;
+  completedAt?: number;
+}
+
+/** Subscription plan definition */
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description: string;
+  amount: number;
+  currency: CurrencyCode;
+  interval: BillingInterval;
+  intervalCount: number;
+  trialDays: number;
+  features: string[];
+  limits: Record<string, number>;
+  active: boolean;
+  metadata: Record<string, string>;
+  createdAt: number;
+}
+
+/** Active subscription */
+export interface Subscription {
+  id: string;
+  customerId: string;
+  planId: string;
+  status: SubscriptionStatus;
+  currentPeriodStart: number;
+  currentPeriodEnd: number;
+  trialStart?: number;
+  trialEnd?: number;
+  cancelledAt?: number;
+  cancelAtPeriodEnd: boolean;
+  pausedAt?: number;
+  resumeAt?: number;
+  quantity: number;
+  discount?: DiscountInfo;
+  metadata: Record<string, string>;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** Invoice record */
+export interface Invoice {
+  id: string;
+  customerId: string;
+  subscriptionId?: string;
+  status: InvoiceStatus;
+  number: string;
+  lineItems: InvoiceItem[];
+  subtotal: number;
+  taxAmount: number;
+  discountAmount: number;
+  total: number;
+  currency: CurrencyCode;
+  dueDate: number;
+  paidAt?: number;
+  voidedAt?: number;
+  notes: string;
+  metadata: Record<string, string>;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** Invoice line item */
+export interface InvoiceItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+  taxRate: number;
+  taxAmount: number;
+  discount: number;
+  periodStart?: number;
+  periodEnd?: number;
+}
+
+/** Wallet record */
+export interface Wallet {
+  id: string;
+  userId: string;
+  balance: number;
+  currency: CurrencyCode;
+  frozen: boolean;
+  frozenAt?: number;
+  frozenReason?: string;
+  dailyLimit: number;
+  monthlyLimit: number;
+  transactionLimit: number;
+  totalCredits: number;
+  totalDebits: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** Wallet transaction */
+export interface WalletTransaction {
+  id: string;
+  walletId: string;
+  type: WalletTransactionType;
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  description: string;
+  referenceId?: string;
+  counterpartyWalletId?: string;
+  metadata: Record<string, string>;
+  createdAt: number;
+}
+
+/** Refund request */
+export interface RefundRequest {
+  id: string;
+  transactionId: string;
+  amount: number;
+  currency: CurrencyCode;
+  reason: string;
+  status: RefundStatus;
+  requestedBy: string;
+  processedBy?: string;
+  processedAt?: number;
+  createdAt: number;
+}
+
+/** Revenue share configuration */
+export interface RevenueShare {
+  id: string;
+  creatorId: string;
+  platformSharePercent: number;
+  creatorSharePercent: number;
+  minimumPayout: number;
+  payoutSchedule: 'weekly' | 'biweekly' | 'monthly';
+  currency: CurrencyCode;
+  totalEarned: number;
+  totalPaid: number;
+  pendingPayout: number;
+  heldAmount: number;
+  active: boolean;
+  createdAt: number;
+}
+
+/** Payout record */
+export interface Payout {
+  id: string;
+  creatorId: string;
+  amount: number;
+  currency: CurrencyCode;
+  status: PayoutStatus;
+  paymentMethodId: string;
+  period: { start: number; end: number };
+  itemCount: number;
+  processedAt?: number;
+  createdAt: number;
+}
+
+/** Tax rate definition */
+export interface TaxRate {
+  id: string;
+  name: string;
+  type: TaxType;
+  rate: number;
+  jurisdiction: string;
+  country: string;
+  state?: string;
+  city?: string;
+  active: boolean;
+  inclusive: boolean;
+  description: string;
+}
+
+/** Tax jurisdiction */
+export interface TaxJurisdiction {
+  country: string;
+  state?: string;
+  city?: string;
+  taxTypes: TaxType[];
+  rates: TaxRate[];
+  registrationRequired: boolean;
+  thresholdAmount?: number;
+  thresholdCurrency?: CurrencyCode;
+}
+
+/** Discount information */
+export interface DiscountInfo {
+  id: string;
+  code: string;
+  type: 'percentage' | 'fixed_amount';
+  value: number;
+  maxUses: number;
+  usedCount: number;
+  validFrom: number;
+  validUntil: number;
+  applicablePlans: string[];
+}
+
+/** Payment gateway configuration */
+export interface PaymentGatewayConfig {
+  provider: GatewayProvider;
+  apiKey: string;
+  secretKey: string;
+  webhookSecret: string;
+  environment: 'sandbox' | 'production';
+  currency: CurrencyCode;
+  retryAttempts: number;
+  retryDelayMs: number;
+  idempotencyTTL: number;
+  metadata: Record<string, string>;
+}
+
+/** Charge request */
+export interface ChargeRequest {
+  customerId: string;
+  paymentMethodId: string;
+  amount: number;
+  currency: CurrencyCode;
+  description: string;
+  idempotencyKey: string;
+  metadata?: Record<string, string>;
+}
+
+/** Charge result */
+export interface ChargeResult {
+  success: boolean;
+  transactionId?: string;
+  gatewayTransactionId?: string;
+  status: TransactionStatus;
+  failureReason?: string;
+  failureCode?: string;
+}
+
+/** Customer record */
+export interface Customer {
+  id: string;
+  email: string;
+  name: string;
+  phone?: string;
+  address?: Address;
+  taxId?: string;
+  defaultPaymentMethodId?: string;
+  metadata: Record<string, string>;
+  createdAt: number;
+}
+
+/** Address */
+export interface Address {
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+}
