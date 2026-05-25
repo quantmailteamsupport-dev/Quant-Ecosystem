@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Create 3 more infrastructure packages: packages/payments (gateway abstraction, subscriptions, wallet, invoicing, revenue sharing, tax), packages/moderation (AI content classification, text/image/video moderation, reports, appeals, auto-actions, trust scoring), packages/i18n (translation management, RTL, locale detection, formatting, pluralization, 20+ languages)",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create packages/payments/src/types.ts - PaymentMethod, Transaction, Subscription, Plan, Invoice, Wallet, RefundRequest, RevenueShare, TaxCalculation, etc.",
     "Create packages/payments/src/services/gateway-service.ts - PaymentGateway class: charge(), refund(), createCustomer(), attachPaymentMethod(), listMethods() with Stripe/PayPal abstraction",
