@@ -1,9 +1,11 @@
 // ============================================================================
-// Realtime - Presence Tracking
+// Realtime - Presence Tracking with Redis ZSET
 // ============================================================================
 
+import type Redis from 'ioredis';
 import type { QuantApp } from '@quant/common';
 import type { EventHandler, RealtimeEvent, PresenceUpdateEvent } from './events';
+import type { PresenceEntry } from './types';
 
 /** Presence status */
 export type PresenceStatus = 'online' | 'away' | 'busy' | 'offline' | 'invisible';
@@ -25,6 +27,8 @@ export interface PresenceConfig {
   awayTimeoutMs: number;
   offlineTimeoutMs: number;
   maxSubscriptionsPerUser: number;
+  redis?: Redis;
+  keyPrefix?: string;
 }
 
 const DEFAULT_PRESENCE_CONFIG: PresenceConfig = {
@@ -37,28 +41,34 @@ const DEFAULT_PRESENCE_CONFIG: PresenceConfig = {
 /**
  * Presence Manager
  *
- * Tracks user online status across the Quant Ecosystem.
- * Features:
- * - Real-time status updates (online, away, busy, invisible)
- * - Cross-app activity awareness
- * - Automatic away/offline detection via heartbeat
- * - Subscription-based presence updates
- * - Custom status messages
+ * Tracks user online status using Redis ZSET for distributed presence.
+ * The sorted set uses timestamp as the score for efficient range queries
+ * and TTL-based cleanup.
+ *
+ * Falls back to in-memory Map when Redis is not configured.
+ *
+ * Redis keys:
+ * - `presence:active` (ZSET): userId -> score (timestamp)
+ * - `presence:meta:{userId}` (HASH): status, app, customStatus, devices
  */
 export class PresenceManager {
   private config: PresenceConfig;
   private presenceState: Map<string, UserPresenceState> = new Map();
-  private subscriptions: Map<string, Set<string>> = new Map(); // userId -> Set<subscribedToUserId>
-  private reverseSubscriptions: Map<string, Set<string>> = new Map(); // userId -> Set<subscriberUserId>
+  private subscriptions: Map<string, Set<string>> = new Map();
+  private reverseSubscriptions: Map<string, Set<string>> = new Map();
   private handlers: Map<string, Set<EventHandler<PresenceUpdateEvent>>> = new Map();
-  private heartbeatTimers: Map<string, ReturnType<typeof setInterval>> = new Map();
+  private redis: Redis | null;
+  private keyPrefix: string;
 
   constructor(config: Partial<PresenceConfig> = {}) {
     this.config = { ...DEFAULT_PRESENCE_CONFIG, ...config };
+    this.redis = config.redis || null;
+    this.keyPrefix = config.keyPrefix || 'presence:';
   }
 
   /**
-   * Set user as online (called on connection)
+   * Set user as online (called on connection).
+   * Uses Redis ZADD with current timestamp as score.
    */
   setOnline(userId: string, app: QuantApp): void {
     const existing = this.presenceState.get(userId);
@@ -75,12 +85,26 @@ export class PresenceManager {
     };
 
     this.presenceState.set(userId, state);
-    this.startHeartbeat(userId);
+
+    // Redis ZSET: ZADD presence:active timestamp userId
+    if (this.redis) {
+      this.redis.zadd(`${this.keyPrefix}active`, now.toString(), userId).catch(() => {});
+      this.redis
+        .hmset(`${this.keyPrefix}meta:${userId}`, {
+          status: state.status,
+          app,
+          lastSeen: now.toString(),
+          devices: state.connectedDevices.toString(),
+        })
+        .catch(() => {});
+    }
+
     this.notifySubscribers(userId);
   }
 
   /**
-   * Set user as offline (called on disconnect)
+   * Set user as offline (called on disconnect).
+   * Uses Redis ZREM to remove from active set.
    */
   setOffline(userId: string): void {
     const existing = this.presenceState.get(userId);
@@ -89,6 +113,11 @@ export class PresenceManager {
     const devices = Math.max(0, existing.connectedDevices - 1);
     if (devices > 0) {
       existing.connectedDevices = devices;
+      if (this.redis) {
+        this.redis
+          .hset(`${this.keyPrefix}meta:${userId}`, 'devices', devices.toString())
+          .catch(() => {});
+      }
       return;
     }
 
@@ -96,7 +125,18 @@ export class PresenceManager {
     existing.lastSeen = Date.now();
     existing.connectedDevices = 0;
 
-    this.stopHeartbeat(userId);
+    // Redis: remove from active ZSET
+    if (this.redis) {
+      this.redis.zrem(`${this.keyPrefix}active`, userId).catch(() => {});
+      this.redis
+        .hmset(`${this.keyPrefix}meta:${userId}`, {
+          status: 'offline',
+          lastSeen: existing.lastSeen.toString(),
+          devices: '0',
+        })
+        .catch(() => {});
+    }
+
     this.notifySubscribers(userId);
   }
 
@@ -111,19 +151,30 @@ export class PresenceManager {
     if (customStatus !== undefined) state.customStatus = customStatus;
     state.lastActivity = Date.now();
 
+    if (this.redis) {
+      this.redis.hset(`${this.keyPrefix}meta:${userId}`, 'status', status).catch(() => {});
+    }
+
     this.notifySubscribers(userId);
   }
 
   /**
-   * Record activity (heartbeat)
+   * Record activity (heartbeat).
+   * Updates Redis ZADD score to current timestamp.
    */
   heartbeat(userId: string, app?: QuantApp): void {
     const state = this.presenceState.get(userId);
     if (!state) return;
 
-    state.lastActivity = Date.now();
-    state.lastSeen = Date.now();
+    const now = Date.now();
+    state.lastActivity = now;
+    state.lastSeen = now;
     if (app) state.activeApp = app;
+
+    // Update ZSET score with current timestamp
+    if (this.redis) {
+      this.redis.zadd(`${this.keyPrefix}active`, now.toString(), userId).catch(() => {});
+    }
 
     // Reset away status on activity
     if (state.status === 'away') {
@@ -152,23 +203,66 @@ export class PresenceManager {
   }
 
   /**
+   * Get online users since a timestamp.
+   * Uses Redis ZRANGEBYSCORE for efficient range queries.
+   */
+  async getOnline(since?: number): Promise<PresenceEntry[]> {
+    const threshold = since || Date.now() - this.config.offlineTimeoutMs;
+
+    if (this.redis) {
+      try {
+        const userIds = await this.redis.zrangebyscore(
+          `${this.keyPrefix}active`,
+          threshold.toString(),
+          '+inf',
+        );
+        const entries: PresenceEntry[] = [];
+        for (const userId of userIds) {
+          const meta = await this.redis.hgetall(`${this.keyPrefix}meta:${userId}`);
+          entries.push({
+            userId,
+            status: meta.status || 'online',
+            app: (meta.app as QuantApp) || 'quantchat',
+            lastSeen: parseInt(meta.lastSeen || '0', 10),
+            metadata: {},
+          });
+        }
+        return entries;
+      } catch {
+        // Fall through to in-memory
+      }
+    }
+
+    // In-memory fallback
+    const entries: PresenceEntry[] = [];
+    for (const state of this.presenceState.values()) {
+      if (state.lastSeen >= threshold && state.status !== 'offline') {
+        entries.push({
+          userId: state.userId,
+          status: state.status,
+          app: state.activeApp || 'quantchat',
+          lastSeen: state.lastSeen,
+        });
+      }
+    }
+    return entries;
+  }
+
+  /**
    * Subscribe to another user's presence changes
    */
   subscribe(subscriberId: string, targetUserId: string): () => void {
-    // Track subscription
     if (!this.subscriptions.has(subscriberId)) {
       this.subscriptions.set(subscriberId, new Set());
     }
     const subs = this.subscriptions.get(subscriberId)!;
 
-    // Check limit
     if (subs.size >= this.config.maxSubscriptionsPerUser) {
       throw new Error('Maximum presence subscriptions reached');
     }
 
     subs.add(targetUserId);
 
-    // Track reverse subscription
     if (!this.reverseSubscriptions.has(targetUserId)) {
       this.reverseSubscriptions.set(targetUserId, new Set());
     }
@@ -223,10 +317,21 @@ export class PresenceManager {
   }
 
   /**
-   * Cleanup disconnected users (run periodically)
+   * Cleanup stale entries.
+   * Uses ZREMRANGEBYSCORE to remove entries older than timeout.
    */
   cleanup(): void {
     const now = Date.now();
+
+    // Remove stale from Redis ZSET
+    if (this.redis) {
+      const threshold = now - this.config.offlineTimeoutMs;
+      this.redis
+        .zremrangebyscore(`${this.keyPrefix}active`, '-inf', threshold.toString())
+        .catch(() => {});
+    }
+
+    // In-memory cleanup
     for (const [userId, state] of this.presenceState) {
       const inactiveTime = now - state.lastActivity;
       if (state.status === 'online' && inactiveTime > this.config.awayTimeoutMs) {
@@ -236,7 +341,6 @@ export class PresenceManager {
       if (state.status === 'away' && inactiveTime > this.config.offlineTimeoutMs) {
         state.status = 'offline';
         state.connectedDevices = 0;
-        this.stopHeartbeat(userId);
         this.notifySubscribers(userId);
       }
     }
@@ -255,7 +359,7 @@ export class PresenceManager {
       channel: `presence:${userId}`,
       payload: {
         userId: state.userId,
-        status: state.status,
+        status: state.status === 'invisible' ? 'offline' : state.status,
         activeApp: state.activeApp,
         lastSeen: state.lastSeen,
       },
@@ -263,34 +367,17 @@ export class PresenceManager {
       timestamp: Date.now(),
     };
 
+    // Publish via Redis pub/sub for cross-instance
+    if (this.redis) {
+      this.redis.publish(`${this.keyPrefix}changes`, JSON.stringify(event)).catch(() => {});
+    }
+
     // Notify direct handlers
     const handlers = this.handlers.get(userId);
     if (handlers) {
       for (const handler of handlers) {
         handler(event);
       }
-    }
-  }
-
-  /**
-   * Start heartbeat monitoring for a user
-   */
-  private startHeartbeat(userId: string): void {
-    this.stopHeartbeat(userId);
-    const timer = setInterval(() => {
-      this.cleanup();
-    }, this.config.heartbeatIntervalMs);
-    this.heartbeatTimers.set(userId, timer);
-  }
-
-  /**
-   * Stop heartbeat monitoring for a user
-   */
-  private stopHeartbeat(userId: string): void {
-    const timer = this.heartbeatTimers.get(userId);
-    if (timer) {
-      clearInterval(timer);
-      this.heartbeatTimers.delete(userId);
     }
   }
 }

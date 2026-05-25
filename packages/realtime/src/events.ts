@@ -12,6 +12,7 @@ export interface RealtimeEvent<T = unknown> {
   payload: T;
   senderId: string;
   timestamp: number;
+  sequence?: number;
   metadata?: Record<string, unknown>;
 }
 
@@ -147,6 +148,108 @@ export interface EventMap {
   'ai:chunk': AIResponseChunkEvent;
   'ai:device': AIDeviceCommandEvent;
 }
+
+// ===== Client -> Server Messages =====
+
+export interface SubscribeMessage {
+  type: 'subscribe';
+  channel: string;
+}
+
+export interface UnsubscribeMessage {
+  type: 'unsubscribe';
+  channel: string;
+}
+
+export interface PublishMessage {
+  type: 'publish';
+  channel: string;
+  payload: unknown;
+}
+
+export interface HeartbeatMessage {
+  type: 'heartbeat';
+  timestamp: number;
+}
+
+export interface AckMessage {
+  type: 'ack';
+  messageId: string;
+  sequence: number;
+}
+
+export interface PresenceUpdateMessage {
+  type: 'presence_update';
+  status: string;
+  customStatus?: string;
+}
+
+/** Discriminated union for all client-to-server messages */
+export type ClientMessage =
+  | SubscribeMessage
+  | UnsubscribeMessage
+  | PublishMessage
+  | HeartbeatMessage
+  | AckMessage
+  | PresenceUpdateMessage;
+
+// ===== Server -> Client Messages =====
+
+export interface SubscribedMessage {
+  type: 'subscribed';
+  channel: string;
+}
+
+export interface UnsubscribedMessage {
+  type: 'unsubscribed';
+  channel: string;
+}
+
+export interface ServerEventMessage {
+  type: 'message';
+  id: string;
+  sequence: number;
+  channel: string;
+  payload: unknown;
+  senderId: string;
+  timestamp: number;
+  requiresAck: boolean;
+}
+
+export interface HeartbeatAckMessage {
+  type: 'heartbeat_ack';
+  timestamp: number;
+}
+
+export interface ErrorMessage {
+  type: 'error';
+  code: number;
+  message: string;
+}
+
+export interface ServerPresenceMessage {
+  type: 'presence_update';
+  userId: string;
+  status: string;
+  app?: QuantApp;
+  lastSeen?: number;
+}
+
+export interface AckRequiredMessage {
+  type: 'ack_required';
+  messageId: string;
+  sequence: number;
+}
+
+/** Discriminated union for all server-to-client messages */
+export type ServerMessage =
+  | SubscribedMessage
+  | UnsubscribedMessage
+  | ServerEventMessage
+  | HeartbeatAckMessage
+  | ErrorMessage
+  | ServerPresenceMessage
+  | AckRequiredMessage;
 
 /**
  * Event emitter for typed events

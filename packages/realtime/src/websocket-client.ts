@@ -2,7 +2,7 @@
 // Realtime - WebSocket Client for Apps
 // ============================================================================
 
-import type { RealtimeEvent, EventHandler } from './events';
+import type { RealtimeEvent, EventHandler, ServerMessage } from './events';
 import type { QuantApp } from '@quant/common';
 
 /** Client configuration */
@@ -29,6 +29,15 @@ export interface ClientCallbacks {
   onMessage?: (event: RealtimeEvent) => void;
 }
 
+/** Custom close codes */
+export const CloseCodes = {
+  AUTH_FAILED: 4001,
+  RATE_LIMITED: 4002,
+  MESSAGE_TOO_LARGE: 4003,
+  INVALID_MESSAGE: 4004,
+  SERVER_SHUTDOWN: 1001,
+} as const;
+
 const DEFAULT_CLIENT_CONFIG: Partial<WebSocketClientConfig> = {
   autoReconnect: true,
   reconnectAttempts: 10,
@@ -46,6 +55,7 @@ const DEFAULT_CLIENT_CONFIG: Partial<WebSocketClientConfig> = {
  * - Heartbeat keepalive
  * - Channel subscription management
  * - Message queuing during disconnects
+ * - Ack/sequence tracking for reliable delivery
  * - Typed event handlers
  */
 export class WebSocketClient {
@@ -60,8 +70,12 @@ export class WebSocketClient {
   private channelHandlers: Map<string, Set<EventHandler>> = new Map();
   private eventHandlers: Map<string, Set<EventHandler>> = new Map();
   private subscribedChannels: Set<string> = new Set();
+  private lastAckedSequence: Map<string, number> = new Map();
 
-  constructor(config: Partial<WebSocketClientConfig> & { url: string; token: string; app: QuantApp }, callbacks: ClientCallbacks = {}) {
+  constructor(
+    config: Partial<WebSocketClientConfig> & { url: string; token: string; app: QuantApp },
+    callbacks: ClientCallbacks = {},
+  ) {
     this.config = { ...DEFAULT_CLIENT_CONFIG, ...config } as WebSocketClientConfig;
     this.callbacks = callbacks;
   }
@@ -112,8 +126,9 @@ export class WebSocketClient {
     this.channelHandlers.get(channel)!.add(handler);
     this.subscribedChannels.add(channel);
 
-    // Send subscribe message
-    this.send({ type: 'subscribe', channel });
+    // Send subscribe message with last acked sequence for replay
+    const lastSeq = this.lastAckedSequence.get(channel) || 0;
+    this.send({ type: 'subscribe', channel, lastSequence: lastSeq });
 
     return () => {
       this.channelHandlers.get(channel)?.delete(handler);
@@ -169,6 +184,13 @@ export class WebSocketClient {
     return this.state === 'connected';
   }
 
+  /**
+   * Get last acknowledged sequence for a channel
+   */
+  getLastAckedSequence(channel: string): number {
+    return this.lastAckedSequence.get(channel) || 0;
+  }
+
   private setupEventListeners(): void {
     if (!this.ws) return;
 
@@ -184,7 +206,7 @@ export class WebSocketClient {
 
     this.ws.onmessage = (event) => {
       try {
-        const message = JSON.parse(event.data as string) as RealtimeEvent;
+        const message = JSON.parse(event.data as string);
         this.handleIncomingMessage(message);
       } catch {
         this.log('Failed to parse message');
@@ -196,6 +218,12 @@ export class WebSocketClient {
       this.stopHeartbeat();
       this.callbacks.onDisconnect?.(event.reason || 'Connection closed');
 
+      // Do not reconnect on auth failure
+      if (event.code === CloseCodes.AUTH_FAILED) {
+        this.callbacks.onError?.(new Error('Authentication failed'));
+        return;
+      }
+
       if (this.config.autoReconnect && this.reconnectCount < this.config.reconnectAttempts) {
         this.attemptReconnect();
       }
@@ -206,25 +234,44 @@ export class WebSocketClient {
     };
   }
 
-  private handleIncomingMessage(message: RealtimeEvent): void {
-    this.callbacks.onMessage?.(message);
+  private handleIncomingMessage(message: ServerMessage | RealtimeEvent): void {
+    // Handle ack_required: send ack back
+    if (
+      'requiresAck' in message &&
+      message.requiresAck &&
+      'id' in message &&
+      'sequence' in message
+    ) {
+      const msg = message as { id: string; sequence: number; channel?: string };
+      this.send({ type: 'ack', messageId: msg.id, sequence: msg.sequence });
+
+      // Track sequence
+      if (msg.channel) {
+        this.lastAckedSequence.set(msg.channel, msg.sequence);
+      }
+    }
+
+    // Treat as RealtimeEvent for callbacks
+    const event = message as RealtimeEvent;
+    this.callbacks.onMessage?.(event);
 
     // Route to channel handlers
-    if (message.channel) {
-      const handlers = this.channelHandlers.get(message.channel);
+    if ('channel' in message && (message as { channel?: string }).channel) {
+      const channel = (message as { channel: string }).channel;
+      const handlers = this.channelHandlers.get(channel);
       if (handlers) {
         for (const handler of handlers) {
-          handler(message);
+          handler(event);
         }
       }
     }
 
     // Route to event type handlers
-    if (message.type) {
+    if ('type' in message && message.type) {
       const handlers = this.eventHandlers.get(message.type);
       if (handlers) {
         for (const handler of handlers) {
-          handler(message);
+          handler(event);
         }
       }
     }
@@ -235,7 +282,7 @@ export class WebSocketClient {
     this.reconnectCount++;
     const delay = Math.min(
       this.config.reconnectIntervalMs * Math.pow(1.5, this.reconnectCount - 1),
-      30000
+      30000,
     );
     this.callbacks.onReconnecting?.(this.reconnectCount);
     this.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectCount})`);
@@ -253,7 +300,8 @@ export class WebSocketClient {
 
   private resubscribeChannels(): void {
     for (const channel of this.subscribedChannels) {
-      this.send({ type: 'subscribe', channel });
+      const lastSeq = this.lastAckedSequence.get(channel) || 0;
+      this.send({ type: 'subscribe', channel, lastSequence: lastSeq });
     }
   }
 
