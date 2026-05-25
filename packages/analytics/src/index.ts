@@ -8,6 +8,11 @@ export { ABTestingEngine } from './core/ab-testing';
 export { CohortAnalyzer } from './core/cohort-analyzer';
 export { AttributionEngine } from './core/attribution';
 export { RealtimeDashboard } from './core/realtime-dashboard';
+export { PredictiveAnalytics } from './core/predictive-analytics';
+export { AttributionModel } from './core/attribution-model';
+export { FunnelOptimizer } from './core/funnel-optimizer';
+export { UserSegmentation } from './core/user-segmentation';
+export { EventPipeline } from './core/event-pipeline';
 
 export type {
   AnalyticsEvent,
@@ -37,7 +42,6 @@ export type {
   CohortMetrics,
   PeriodMetric,
   AttributionModelType,
-  AttributionModel,
   AttributionTouch,
   AttributionReport,
   ChannelAttribution,
@@ -49,4 +53,49 @@ export type {
   TimeSeriesPoint,
   MetricsSubscriber,
   AnalyticsConfig,
+  ForecastConfig,
+  SeasonalModel,
+  ForecastResult,
+  ConfidenceInterval,
+  DecompositionResult,
+  WhatIfScenario,
+  ScenarioResult,
+  Touchpoint,
+  TouchpointJourney,
+  AttributionResultEntry,
+  AttributionAnalysisResult,
+  AdvancedAttributionModelType,
+  ShapleyConfig,
+  ChannelInteraction,
+  DeviceMatch,
+  OptimizedFunnelDefinition,
+  OptimizedFunnelStep,
+  FunnelComputationResult,
+  StepResult,
+  DropOffAnalysis,
+  SegmentComparisonResult,
+  MarkovTransition,
+  FunnelEvent,
+  SegmentDefinition,
+  SegmentCriteria,
+  SegmentRule,
+  RFMScore,
+  ClusterConfig,
+  Centroid,
+  ClusterAssignment,
+  LifecycleStage,
+  UserLifecycleData,
+  SegmentOverlap,
+  SegmentGrowth,
+  EventSchema,
+  SchemaField,
+  ValidationRule,
+  SessionConfig,
+  PipelineEventBatch,
+  PipelineEvent,
+  WatermarkConfig,
+  SamplingConfig,
+  Session,
+  PipelineMetrics,
+  EnrichmentFunction,
 } from './types';

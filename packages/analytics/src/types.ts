@@ -396,3 +396,421 @@ export interface AnalyticsConfig {
   excludePaths: string[];
   customDimensions: string[];
 }
+
+// ============================================================================
+// Predictive Analytics Types
+// ============================================================================
+
+/** Seasonal model type */
+export type SeasonalModel = 'additive' | 'multiplicative';
+
+/** Forecast configuration */
+export interface ForecastConfig {
+  alpha: number;
+  beta: number;
+  gamma: number;
+  seasonalPeriod: number;
+  seasonalModel: SeasonalModel;
+  forecastHorizon: number;
+  confidenceLevel: number;
+  anomalyThreshold: number;
+}
+
+/** Forecast result */
+export interface ForecastResult {
+  timestamp: number;
+  predicted: number;
+  actual?: number;
+  confidence: ConfidenceInterval;
+  isAnomaly: boolean;
+  anomalyScore: number;
+  components: {
+    level: number;
+    trend: number;
+    seasonal: number;
+    residual: number;
+  };
+}
+
+/** Confidence interval */
+export interface ConfidenceInterval {
+  lower: number;
+  upper: number;
+  level: number;
+  standardError: number;
+}
+
+/** Decomposition result */
+export interface DecompositionResult {
+  trend: number[];
+  seasonal: number[];
+  residual: number[];
+  observed: number[];
+}
+
+/** What-if scenario */
+export interface WhatIfScenario {
+  name: string;
+  parameterOverrides: Partial<ForecastConfig>;
+  dataAdjustments?: { index: number; factor: number }[];
+}
+
+/** Scenario forecast result */
+export interface ScenarioResult {
+  scenarioName: string;
+  forecasts: ForecastResult[];
+  rmse: number;
+  mape: number;
+}
+
+// ============================================================================
+// Attribution Model Types
+// ============================================================================
+
+/** Touchpoint in a user journey */
+export interface Touchpoint {
+  id: string;
+  userId: string;
+  channel: string;
+  campaign?: string;
+  timestamp: number;
+  revenue?: number;
+  deviceId?: string;
+  deviceType?: string;
+}
+
+/** Complete touchpoint journey */
+export interface TouchpointJourney {
+  userId: string;
+  touchpoints: Touchpoint[];
+  conversionTimestamp?: number;
+  conversionValue?: number;
+  converted: boolean;
+}
+
+/** Attribution result for a channel */
+export interface AttributionResultEntry {
+  channel: string;
+  credit: number;
+  creditPercentage: number;
+  touchpointCount: number;
+  conversions: number;
+  revenue: number;
+}
+
+/** Full attribution analysis result */
+export interface AttributionAnalysisResult {
+  modelType: string;
+  results: AttributionResultEntry[];
+  totalConversions: number;
+  totalRevenue: number;
+  journeysAnalyzed: number;
+  attributionWindow: number;
+}
+
+/** Attribution model type enum */
+export type AdvancedAttributionModelType =
+  | 'last_touch'
+  | 'first_touch'
+  | 'linear'
+  | 'time_decay'
+  | 'position_based'
+  | 'shapley';
+
+/** Shapley attribution config */
+export interface ShapleyConfig {
+  maxSamples: number;
+  convergenceThreshold: number;
+}
+
+/** Channel interaction */
+export interface ChannelInteraction {
+  channelA: string;
+  channelB: string;
+  coOccurrenceCount: number;
+  liftFactor: number;
+  conversionRateWithBoth: number;
+  conversionRateWithout: number;
+}
+
+/** Device matching result */
+export interface DeviceMatch {
+  userId: string;
+  deviceIds: string[];
+  matchType: 'deterministic' | 'probabilistic';
+  confidence: number;
+}
+
+// ============================================================================
+// Funnel Optimizer Types
+// ============================================================================
+
+/** Enhanced funnel definition for optimizer */
+export interface OptimizedFunnelDefinition {
+  id: string;
+  name: string;
+  steps: OptimizedFunnelStep[];
+  createdAt: number;
+}
+
+/** Funnel step with event criteria */
+export interface OptimizedFunnelStep {
+  id: string;
+  name: string;
+  eventName: string;
+  conditions?: Record<string, unknown>;
+  order: number;
+}
+
+/** Funnel computation result */
+export interface FunnelComputationResult {
+  funnelId: string;
+  totalUsers: number;
+  completedUsers: number;
+  overallConversionRate: number;
+  stepResults: StepResult[];
+  bottleneckStep: string;
+  averageCompletionTimeMs: number;
+}
+
+/** Step-level result */
+export interface StepResult {
+  stepId: string;
+  stepName: string;
+  entered: number;
+  completed: number;
+  dropOff: number;
+  dropOffRate: number;
+  conversionRate: number;
+  averageTimeMs: number;
+  medianTimeMs: number;
+  p75TimeMs: number;
+  p90TimeMs: number;
+}
+
+/** Drop-off analysis with significance */
+export interface DropOffAnalysis {
+  stepId: string;
+  stepName: string;
+  baselineDropOffRate: number;
+  segmentDropOffRate: number;
+  chiSquared: number;
+  pValue: number;
+  isSignificant: boolean;
+  sampleSize: number;
+}
+
+/** Segment comparison result */
+export interface SegmentComparisonResult {
+  segmentName: string;
+  funnelResult: FunnelComputationResult;
+  comparisonToBaseline: DropOffAnalysis[];
+}
+
+/** Markov chain transition */
+export interface MarkovTransition {
+  fromStep: string;
+  toStep: string;
+  probability: number;
+  count: number;
+}
+
+/** Funnel event */
+export interface FunnelEvent {
+  userId: string;
+  eventName: string;
+  timestamp: number;
+  properties?: Record<string, unknown>;
+  segment?: string;
+}
+
+// ============================================================================
+// User Segmentation Types
+// ============================================================================
+
+/** Segment definition */
+export interface SegmentDefinition {
+  id: string;
+  name: string;
+  description: string;
+  criteria: SegmentCriteria;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** Segment criteria */
+export interface SegmentCriteria {
+  type: 'rfm' | 'behavioral' | 'lifecycle' | 'custom';
+  rules: SegmentRule[];
+}
+
+/** Segment rule */
+export interface SegmentRule {
+  dimension: string;
+  operator: 'gt' | 'lt' | 'gte' | 'lte' | 'eq' | 'between';
+  value: number | [number, number];
+}
+
+/** RFM score for a user */
+export interface RFMScore {
+  userId: string;
+  recency: number;
+  frequency: number;
+  monetary: number;
+  recencyScore: number;
+  frequencyScore: number;
+  monetaryScore: number;
+  compositeScore: number;
+  segment: string;
+}
+
+/** Cluster configuration */
+export interface ClusterConfig {
+  k: number;
+  maxIterations: number;
+  convergenceThreshold: number;
+  distanceMetric: 'euclidean' | 'manhattan' | 'cosine';
+  initMethod: 'kmeans++' | 'random';
+}
+
+/** Centroid */
+export interface Centroid {
+  id: number;
+  coordinates: number[];
+  memberCount: number;
+}
+
+/** Cluster assignment */
+export interface ClusterAssignment {
+  userId: string;
+  clusterId: number;
+  distance: number;
+  features: number[];
+}
+
+/** Lifecycle stage */
+export type LifecycleStage = 'new' | 'active' | 'at_risk' | 'dormant' | 'churned';
+
+/** User lifecycle data */
+export interface UserLifecycleData {
+  userId: string;
+  firstActivityAt: number;
+  lastActivityAt: number;
+  totalEvents: number;
+  totalRevenue: number;
+  lifecycleStage: LifecycleStage;
+  daysSinceLastActivity: number;
+}
+
+/** Segment overlap */
+export interface SegmentOverlap {
+  segmentA: string;
+  segmentB: string;
+  overlapCount: number;
+  jaccard: number;
+  sizeA: number;
+  sizeB: number;
+}
+
+/** Segment growth tracking */
+export interface SegmentGrowth {
+  segmentId: string;
+  period: number;
+  memberCount: number;
+  growthRate: number;
+  netChange: number;
+}
+
+// ============================================================================
+// Event Pipeline Types
+// ============================================================================
+
+/** Event schema definition */
+export interface EventSchema {
+  name: string;
+  version: string;
+  requiredFields: SchemaField[];
+  optionalFields: SchemaField[];
+  validationRules: ValidationRule[];
+}
+
+/** Schema field */
+export interface SchemaField {
+  name: string;
+  type: 'string' | 'number' | 'boolean' | 'object' | 'array';
+  description?: string;
+}
+
+/** Validation rule */
+export interface ValidationRule {
+  field: string;
+  rule: 'required' | 'type' | 'range' | 'pattern' | 'enum';
+  params?: Record<string, unknown>;
+}
+
+/** Session configuration */
+export interface SessionConfig {
+  timeoutMs: number;
+  maxDurationMs: number;
+  extendOnActivity: boolean;
+}
+
+/** Extended event batch with metadata */
+export interface PipelineEventBatch {
+  id: string;
+  events: PipelineEvent[];
+  createdAt: number;
+  processedAt?: number;
+  size: number;
+}
+
+/** Pipeline event */
+export interface PipelineEvent {
+  id: string;
+  idempotencyKey: string;
+  name: string;
+  userId: string;
+  sessionId?: string;
+  timestamp: number;
+  properties: Record<string, unknown>;
+  enrichments?: Record<string, unknown>;
+}
+
+/** Watermark configuration */
+export interface WatermarkConfig {
+  maxLatenessMs: number;
+  checkIntervalMs: number;
+  advanceOnIdle: boolean;
+}
+
+/** Sampling configuration */
+export interface SamplingConfig {
+  strategy: 'reservoir' | 'systematic' | 'random';
+  sampleSize: number;
+  seed?: number;
+}
+
+/** Session */
+export interface Session {
+  id: string;
+  userId: string;
+  startedAt: number;
+  lastActivityAt: number;
+  events: PipelineEvent[];
+  isActive: boolean;
+}
+
+/** Pipeline metrics */
+export interface PipelineMetrics {
+  eventsReceived: number;
+  eventsProcessed: number;
+  eventsDropped: number;
+  eventsDeduplicated: number;
+  eventsLateArrival: number;
+  batchesProcessed: number;
+  averageLatencyMs: number;
+  currentWatermark: number;
+}
+
+/** Enrichment function */
+export type EnrichmentFunction = (event: PipelineEvent) => PipelineEvent;
