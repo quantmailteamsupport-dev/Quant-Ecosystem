@@ -13,9 +13,9 @@ const DEFAULT_THRESHOLD = 0.92;
 /**
  * Semantic Cache
  *
- * In-memory cache that uses cosine similarity on word-frequency vectors
- * to match semantically similar prompts. Simulates pgvector behavior
- * for local/testing use.
+ * In-memory cache that uses Jaccard similarity over word sets to match
+ * semantically similar prompts. This approach correctly handles prompts
+ * with shared vocabulary regardless of word order.
  */
 export class SemanticCache {
   private entries: SemanticCacheEntry[] = [];
@@ -31,13 +31,14 @@ export class SemanticCache {
   get(prompt: string, threshold: number = DEFAULT_THRESHOLD): string | null {
     this.evictExpired();
 
-    const queryEmbedding = this.computeEmbedding(prompt);
+    const queryWords = this.extractWordSet(prompt);
 
     let bestMatch: SemanticCacheEntry | null = null;
     let bestSimilarity = -1;
 
     for (const entry of this.entries) {
-      const similarity = this.cosineSimilarity(queryEmbedding, entry.embedding);
+      const entryWords = this.extractWordSet(entry.prompt);
+      const similarity = this.jaccardSimilarity(queryWords, entryWords);
       if (similarity >= threshold && similarity > bestSimilarity) {
         bestSimilarity = similarity;
         bestMatch = entry;
@@ -78,7 +79,40 @@ export class SemanticCache {
   }
 
   /**
-   * Compute a simple word-frequency vector embedding
+   * Extract a normalized word set from text (for Jaccard similarity)
+   */
+  extractWordSet(text: string): Set<string> {
+    const words = text
+      .toLowerCase()
+      .replace(/[^\w\s]/g, '')
+      .split(/\s+/)
+      .filter(Boolean);
+    return new Set(words);
+  }
+
+  /**
+   * Compute Jaccard similarity between two word sets.
+   * Returns |A intersect B| / |A union B|.
+   */
+  jaccardSimilarity(a: Set<string>, b: Set<string>): number {
+    if (a.size === 0 && b.size === 0) return 1;
+    if (a.size === 0 || b.size === 0) return 0;
+
+    let intersectionSize = 0;
+    for (const word of a) {
+      if (b.has(word)) {
+        intersectionSize++;
+      }
+    }
+
+    const unionSize = a.size + b.size - intersectionSize;
+    if (unionSize === 0) return 0;
+
+    return intersectionSize / unionSize;
+  }
+
+  /**
+   * Compute a simple word-frequency vector embedding (kept for interface compatibility)
    */
   computeEmbedding(text: string): number[] {
     const words = text
@@ -88,14 +122,12 @@ export class SemanticCache {
       .filter(Boolean);
     const vocab = new Map<string, number>();
 
-    // Build vocabulary index
     for (const word of words) {
       if (!vocab.has(word)) {
         vocab.set(word, vocab.size);
       }
     }
 
-    // Create frequency vector
     const vector = new Array(Math.max(vocab.size, 1)).fill(0);
     for (const word of words) {
       const idx = vocab.get(word);
@@ -104,8 +136,7 @@ export class SemanticCache {
       }
     }
 
-    // Normalize the vector
-    const magnitude = Math.sqrt(vector.reduce((sum, v) => sum + v * v, 0));
+    const magnitude = Math.sqrt(vector.reduce((sum: number, v: number) => sum + v * v, 0));
     if (magnitude > 0) {
       for (let i = 0; i < vector.length; i++) {
         vector[i] /= magnitude;
@@ -116,13 +147,9 @@ export class SemanticCache {
   }
 
   /**
-   * Compute cosine similarity between two vectors
+   * Compute cosine similarity between two vectors (kept for backward compatibility)
    */
   cosineSimilarity(a: number[], b: number[]): number {
-    // For vectors of different lengths, we need to compute a different way.
-    // Since our word-freq vectors have different dimensions (different vocab),
-    // we need to compare based on the original text words.
-    // This simplified approach uses the shorter vector length.
     const minLen = Math.min(a.length, b.length);
     if (minLen === 0) return 0;
 
@@ -136,7 +163,6 @@ export class SemanticCache {
       magB += (b[i] ?? 0) * (b[i] ?? 0);
     }
 
-    // Include remaining dimensions
     for (let i = minLen; i < a.length; i++) {
       magA += (a[i] ?? 0) * (a[i] ?? 0);
     }

@@ -14,7 +14,7 @@ describe('WebSocketServer', () => {
       maxConnections: 100,
       heartbeatIntervalMs: 30000,
       heartbeatTimeoutMs: 60000,
-      jwtSecret: 'test-secret',
+      jwtSecret: 'test-secret-that-is-at-least-32-characters-long',
     });
   });
 
@@ -60,7 +60,10 @@ describe('WebSocketServer', () => {
 
   describe('max connections', () => {
     it('should reject connections when max reached', () => {
-      const smallServer = new WebSocketServer({ maxConnections: 2 });
+      const smallServer = new WebSocketServer({
+        maxConnections: 2,
+        jwtSecret: 'test-secret-that-is-at-least-32-characters-long',
+      });
       smallServer.handleConnection('conn1', 'user1', 'quantchat');
       smallServer.handleConnection('conn2', 'user2', 'quantchat');
       expect(() => {
@@ -116,7 +119,10 @@ describe('WebSocketServer', () => {
     });
 
     it('should reject messages exceeding max size', () => {
-      const smallServer = new WebSocketServer({ maxMessageSize: 50 });
+      const smallServer = new WebSocketServer({
+        maxMessageSize: 50,
+        jwtSecret: 'test-secret-that-is-at-least-32-characters-long',
+      });
       smallServer.handleConnection('conn1', 'user1', 'quantchat');
       const largeMessage = 'x'.repeat(100);
       smallServer.handleMessage('conn1', largeMessage);
@@ -189,6 +195,26 @@ describe('WebSocketServer', () => {
     it('should shut down cleanly without active server', async () => {
       await server.shutdown();
       // No errors thrown
+    });
+  });
+
+  describe('JWT secret validation', () => {
+    it('should throw when jwtSecret is empty', () => {
+      expect(() => {
+        new WebSocketServer({ jwtSecret: '' });
+      }).toThrow(/jwtSecret/);
+    });
+
+    it('should throw when jwtSecret is too short', () => {
+      expect(() => {
+        new WebSocketServer({ jwtSecret: 'short' });
+      }).toThrow(/at least 32 characters/);
+    });
+
+    it('should accept a sufficiently long jwtSecret', () => {
+      expect(() => {
+        new WebSocketServer({ jwtSecret: 'a'.repeat(32) });
+      }).not.toThrow();
     });
   });
 

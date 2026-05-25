@@ -272,30 +272,51 @@ export class AIEngine {
 
     messages.push({ role: 'user', content: enrichedPrompt });
 
-    const result = streamText({
-      model: providerModel,
-      messages,
-      temperature: request.temperature ?? 0.7,
-      maxTokens: request.maxTokens ?? model.maxOutputTokens,
-    });
+    // Wrap the initial streamText call in the circuit breaker
+    const breaker = this.circuitBreakerRegistry.getBreaker(model.provider);
+    let result: ReturnType<typeof streamText>;
 
-    let accumulated = '';
-
-    for await (const chunk of result.textStream) {
-      accumulated += chunk;
-      yield {
-        id: requestId,
-        content: chunk,
-        done: false,
-      };
+    try {
+      result = await breaker.execute(async () => {
+        return streamText({
+          model: providerModel,
+          messages,
+          temperature: request.temperature ?? 0.7,
+          maxTokens: request.maxTokens ?? model.maxOutputTokens,
+        });
+      });
+    } catch (error) {
+      // Circuit breaker recorded the failure
+      throw error;
     }
 
-    yield {
-      id: requestId,
-      content: '',
-      done: true,
-      finishReason: 'stop',
-    };
+    let accumulated = '';
+    let streamFailed = false;
+
+    try {
+      for await (const chunk of result.textStream) {
+        accumulated += chunk;
+        yield {
+          id: requestId,
+          content: chunk,
+          done: false,
+        };
+      }
+    } catch (error) {
+      // Record streaming failure in the circuit breaker
+      streamFailed = true;
+      breaker.onFailure();
+      throw error;
+    }
+
+    if (!streamFailed) {
+      yield {
+        id: requestId,
+        content: '',
+        done: true,
+        finishReason: 'stop',
+      };
+    }
 
     // Update context with the response
     await this.contextManager.addToHistory(request.userId, request.prompt, accumulated);

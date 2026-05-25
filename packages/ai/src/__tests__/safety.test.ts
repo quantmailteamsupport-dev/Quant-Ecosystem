@@ -11,7 +11,7 @@ describe('SafetyPipeline', () => {
       expect(result.redactedText).toBe('Contact me at [EMAIL_REDACTED] for more info');
       expect(result.entities).toHaveLength(1);
       expect(result.entities[0]!.type).toBe('email');
-      expect(result.entities[0]!.value).toBe('john.doe@example.com');
+      expect(result.entities[0]!.value).toBe('j***@example.com');
     });
 
     it('redacts phone numbers', () => {

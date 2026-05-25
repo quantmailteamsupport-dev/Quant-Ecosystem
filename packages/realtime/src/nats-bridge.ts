@@ -10,12 +10,34 @@ import {
   type Subscription,
   StringCodec,
 } from 'nats';
+
+/** Logger interface for dependency injection */
+export interface NatsLogger {
+  error(msg: string, ...args: unknown[]): void;
+  warn(msg: string, ...args: unknown[]): void;
+  info(msg: string, ...args: unknown[]): void;
+}
+
+/** Default console-based logger */
+const defaultLogger: NatsLogger = {
+  error(msg: string, ...args: unknown[]) {
+    console.error(`[NatsBridge] ${msg}`, ...args);
+  },
+  warn(msg: string, ...args: unknown[]) {
+    console.warn(`[NatsBridge] ${msg}`, ...args);
+  },
+  info(msg: string, ...args: unknown[]) {
+    console.info(`[NatsBridge] ${msg}`, ...args);
+  },
+};
+
 /** NATS bridge configuration */
 export interface NatsBridgeConfig {
   url: string;
   token?: string;
   maxReconnectAttempts: number;
   reconnectTimeWaitMs: number;
+  logger?: NatsLogger;
 }
 
 /** Subscription handler */
@@ -35,6 +57,7 @@ const DEFAULT_NATS_CONFIG: NatsBridgeConfig = {
  */
 export class NatsBridge {
   private config: NatsBridgeConfig;
+  private logger: NatsLogger;
   private connection: NatsConnection | null = null;
   private jetstream: JetStreamClient | null = null;
   private jetstreamManager: JetStreamManager | null = null;
@@ -45,6 +68,7 @@ export class NatsBridge {
 
   constructor(config?: Partial<NatsBridgeConfig>) {
     this.config = { ...DEFAULT_NATS_CONFIG, ...config };
+    this.logger = this.config.logger || defaultLogger;
     this.enabled = !!config;
   }
 
@@ -67,9 +91,11 @@ export class NatsBridge {
       this.jetstream = this.connection.jetstream();
       this.jetstreamManager = await this.connection.jetstreamManager();
       this.connected = true;
+      this.logger.info('Connected to NATS server at %s', this.config.url);
       return true;
-    } catch {
+    } catch (error) {
       this.connected = false;
+      this.logger.error('Failed to connect to NATS server: %s', (error as Error).message);
       return false;
     }
   }
@@ -83,8 +109,8 @@ export class NatsBridge {
     const payload = this.codec.encode(JSON.stringify(data));
     try {
       await this.jetstream.publish(subject, payload);
-    } catch {
-      // Silently fail - message delivery is best-effort via NATS
+    } catch (error) {
+      this.logger.error('Failed to publish to subject "%s": %s', subject, (error as Error).message);
     }
   }
 
@@ -103,8 +129,12 @@ export class NatsBridge {
         try {
           const data = JSON.parse(this.codec.decode(msg.data));
           await handler(msg.subject, data);
-        } catch {
-          // Skip malformed messages
+        } catch (error) {
+          this.logger.error(
+            'Failed to process message on subject "%s": %s',
+            msg.subject,
+            (error as Error).message,
+          );
         }
       }
     })();
@@ -112,6 +142,7 @@ export class NatsBridge {
 
   /**
    * Create a JetStream stream for a category of events.
+   * Returns true if stream was created, false if it already exists or on failure.
    */
   async createStream(name: string, subjects: string[]): Promise<boolean> {
     if (!this.connected || !this.jetstreamManager) return false;
@@ -121,9 +152,16 @@ export class NatsBridge {
         name,
         subjects,
       });
+      this.logger.info('Created JetStream stream "%s"', name);
       return true;
-    } catch {
-      // Stream may already exist
+    } catch (error) {
+      const errorMessage = (error as Error).message || '';
+      // Distinguish "already exists" from real failures
+      if (errorMessage.includes('already') || errorMessage.includes('exists')) {
+        this.logger.info('Stream "%s" already exists', name);
+      } else {
+        this.logger.error('Failed to create stream "%s": %s', name, errorMessage);
+      }
       return false;
     }
   }
@@ -149,8 +187,8 @@ export class NatsBridge {
 
     try {
       await this.connection.drain();
-    } catch {
-      // Force close if drain fails
+    } catch (error) {
+      this.logger.warn('Drain failed, forcing close: %s', (error as Error).message);
       await this.connection.close();
     }
 
@@ -158,5 +196,6 @@ export class NatsBridge {
     this.jetstream = null;
     this.jetstreamManager = null;
     this.connected = false;
+    this.logger.info('Disconnected from NATS');
   }
 }

@@ -94,6 +94,15 @@ export class WebSocketServer {
 
   constructor(config: Partial<WebSocketServerConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
+
+    // Security guard: reject empty or too-short JWT secrets
+    if (!this.config.jwtSecret || this.config.jwtSecret.length < 32) {
+      throw new Error(
+        'WebSocket server requires a jwtSecret of at least 32 characters. ' +
+          'Set a strong secret in the server configuration.',
+      );
+    }
+
     this.channelManager = new ChannelManager();
     this.presenceManager = new PresenceManager();
     this.auth = new ConnectionAuth({

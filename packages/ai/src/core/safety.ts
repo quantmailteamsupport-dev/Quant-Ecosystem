@@ -101,7 +101,7 @@ export class SafetyPipeline {
       while ((match = regex.exec(text)) !== null) {
         entities.push({
           type: pattern.type,
-          value: match[0],
+          value: this.maskValue(match[0], pattern.type),
           redacted: pattern.replacement,
           start: match.index,
           end: match.index + match[0].length,
@@ -115,6 +115,50 @@ export class SafetyPipeline {
     }
 
     return { redactedText, entities };
+  }
+
+  /**
+   * Partially mask a PII value to avoid storing raw sensitive data.
+   * Shows just enough to identify the entity without exposing full data.
+   */
+  private maskValue(value: string, type: PiiEntity['type']): string {
+    switch (type) {
+      case 'email': {
+        // Show first char and domain: t***@example.com
+        const atIndex = value.indexOf('@');
+        if (atIndex <= 0) return '***';
+        const localPart = value.slice(0, atIndex);
+        const domain = value.slice(atIndex);
+        if (localPart.length <= 1) return localPart + '***' + domain;
+        return localPart[0] + '***' + domain;
+      }
+      case 'ssn': {
+        // Show last 4 digits: ***-**-6789
+        const digits = value.replace(/\D/g, '');
+        if (digits.length < 4) return '***-**-****';
+        return '***-**-' + digits.slice(-4);
+      }
+      case 'credit_card': {
+        // Show last 4 digits: ****-****-****-9012
+        const ccDigits = value.replace(/\D/g, '');
+        if (ccDigits.length < 4) return '****-****-****-****';
+        return '****-****-****-' + ccDigits.slice(-4);
+      }
+      case 'phone': {
+        // Show last 4 digits: ***-***-4567
+        const phoneDigits = value.replace(/\D/g, '');
+        if (phoneDigits.length < 4) return '***-***-****';
+        return '***-***-' + phoneDigits.slice(-4);
+      }
+      case 'ip_address': {
+        // Show last octet: ***.***.***.100
+        const parts = value.split('.');
+        if (parts.length < 4) return '***.***.***.***';
+        return '***.***.***.' + parts[parts.length - 1];
+      }
+      default:
+        return '***';
+    }
   }
 
   /**

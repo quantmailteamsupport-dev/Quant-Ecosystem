@@ -15,6 +15,9 @@ const DEFAULT_RATE_LIMIT: RateLimitConfig = {
   windowMs: 60000,
 };
 
+/** Maximum number of records to keep before pruning */
+const MAX_RECORDS = 10000;
+
 /**
  * Cost Tracker
  *
@@ -141,12 +144,24 @@ export class CostTracker {
   }
 
   /**
-   * Reset daily tracking if needed
+   * Reset daily tracking if needed and prune old records
    */
   private maybeResetDaily(): void {
     if (Date.now() >= this.dailyResetAt) {
-      // Keep records but update the reset timestamp
       this.dailyResetAt = this.getNextDayReset();
+      // Prune records older than the current budget window
+      const dayStart = this.dailyResetAt - 86400000;
+      this.records = this.records.filter((r) => r.timestamp >= dayStart);
+    }
+
+    // Also prune if records exceed max size
+    if (this.records.length > MAX_RECORDS) {
+      const dayStart = this.dailyResetAt - 86400000;
+      this.records = this.records.filter((r) => r.timestamp >= dayStart);
+      // If still over max, keep only the most recent MAX_RECORDS entries
+      if (this.records.length > MAX_RECORDS) {
+        this.records = this.records.slice(-MAX_RECORDS);
+      }
     }
   }
 
