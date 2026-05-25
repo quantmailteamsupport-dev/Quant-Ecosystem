@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Build the developer-platform package with OAuth, API keys, webhooks, versioning, GraphQL, SDK generation, rate limiting, usage analytics, marketplace, and plugin sandboxing",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create packages/developer-platform/src/types.ts with all interfaces: OAuthApp, OAuthScope, OAuthToken, APIKey, APIKeyScope, RateLimitTier, WebhookEndpoint, WebhookDelivery, DeliveryStatus, APIVersion, GraphQLSchema, GraphQLField, SDKDefinition, RouteDefinition, DeveloperDoc, Tutorial, Changelog, UsageRecord, UsageStats, LatencyPercentiles, MarketplaceApp, AppReview, AppStatus, PluginManifest, PluginCapability, PermissionCheck",
     "Create packages/developer-platform/src/core/oauth-registry.ts - OAuth app registration, client ID/secret generation, redirect URI management, scope validation, authorization code flow, token exchange, token refresh, token revocation",
