@@ -39,7 +39,17 @@ export class TokenService {
     string,
     { userId: string; currentTokenId: string; isRevoked: boolean }
   > = new Map();
-  private activeRefreshTokens: Map<string, RefreshTokenPayload & { userId: string }> = new Map();
+  private activeRefreshTokens: Map<
+    string,
+    RefreshTokenPayload & {
+      userId: string;
+      email: string;
+      username: string;
+      role: string;
+      scopes: PermissionScope[];
+      app: QuantApp;
+    }
+  > = new Map();
   private jwksKeyPair: JWKSKeyPair | null = null;
 
   constructor(config: AuthConfig) {
@@ -104,10 +114,15 @@ export class TokenService {
       isRevoked: false,
     });
 
-    // Store refresh token
+    // Store refresh token with user claims for rotation
     this.activeRefreshTokens.set(refreshTokenId, {
       ...refreshPayload,
       userId,
+      email: userInfo.email,
+      username: userInfo.username,
+      role: userInfo.role,
+      scopes,
+      app,
     });
 
     return {
@@ -201,11 +216,11 @@ export class TokenService {
 
       // Generate new access token
       const accessToken = await new jose.SignJWT({
-        email: '',
-        username: '',
-        role: 'user',
-        scopes: ['profile:read'] as PermissionScope[],
-        app: 'quantmail' as QuantApp,
+        email: storedToken.email,
+        username: storedToken.username,
+        role: storedToken.role,
+        scopes: storedToken.scopes,
+        app: storedToken.app,
       })
         .setProtectedHeader({ alg: 'HS256' })
         .setIssuedAt()
@@ -235,10 +250,15 @@ export class TokenService {
         .setSubject(storedToken.userId)
         .sign(this.secret);
 
-      // Store new refresh token
+      // Store new refresh token with original user claims
       this.activeRefreshTokens.set(newRefreshTokenId, {
         ...newRefreshPayload,
         userId: storedToken.userId,
+        email: storedToken.email,
+        username: storedToken.username,
+        role: storedToken.role,
+        scopes: storedToken.scopes,
+        app: storedToken.app,
       });
 
       return {

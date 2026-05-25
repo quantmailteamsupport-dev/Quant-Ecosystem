@@ -41,11 +41,13 @@ export async function createApp(config: AppConfig) {
     timeWindow: config.rateLimitWindow,
   };
 
+  let redisClient: import('ioredis').Redis | undefined;
+
   if (config.redisUrl) {
     try {
       const { default: Redis } = await import('ioredis');
-      const redis = new Redis(config.redisUrl);
-      rateLimitOpts['redis'] = redis;
+      redisClient = new Redis(config.redisUrl);
+      rateLimitOpts['redis'] = redisClient;
     } catch {
       // Fall back to in-memory if Redis connection fails
     }
@@ -69,7 +71,7 @@ export async function createApp(config: AppConfig) {
 
   // Register health endpoints
   await fastify.register(healthPlugin, {
-    redisUrl: config.redisUrl,
+    redisClient,
   });
 
   // Graceful shutdown

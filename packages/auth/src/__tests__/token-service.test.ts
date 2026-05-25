@@ -179,6 +179,27 @@ describe('TokenService', () => {
       expect(reused).toBeNull();
     });
 
+    it('should preserve user claims in refreshed access token', async () => {
+      const original = await tokenService.generateTokenPair(
+        'user-claims',
+        { email: 'claims@quant.app', username: 'claimsuser', role: 'admin' },
+        ['profile:read', 'messages:read'],
+        'quantchat',
+      );
+
+      const refreshed = await tokenService.refreshTokens(original.refreshToken);
+      expect(refreshed).not.toBeNull();
+
+      const payload = await tokenService.validateAccessToken(refreshed!.accessToken);
+      expect(payload).not.toBeNull();
+      expect(payload!.email).toBe('claims@quant.app');
+      expect(payload!.username).toBe('claimsuser');
+      expect(payload!.role).toBe('admin');
+      expect(payload!.scopes).toEqual(['profile:read', 'messages:read']);
+      expect(payload!.app).toBe('quantchat');
+      expect(payload!.sub).toBe('user-claims');
+    });
+
     it('should detect reuse and revoke entire family', async () => {
       const original = await tokenService.generateTokenPair(
         'user-reuse',
