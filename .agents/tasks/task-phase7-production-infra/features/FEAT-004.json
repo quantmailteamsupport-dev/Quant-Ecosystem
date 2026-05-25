@@ -2,7 +2,7 @@
   "id": "FEAT-004",
   "type": "feat",
   "description": "Create GitHub Actions workflows for CI with Docker builds + security scanning, deploy-staging, deploy-production with approval gate, and security scanning workflow.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Update .github/workflows/ci.yml - Add Docker build matrix for all services (build but don't push), add Trivy container scan step, add npm audit step. Keep existing lint/typecheck/test/build steps.",
     "Create .github/workflows/deploy-staging.yml - Triggered on merge to main. Builds and pushes Docker images to ECR, updates Helm values, deploys to staging EKS cluster via helm upgrade. Includes smoke tests post-deploy.",
@@ -24,5 +24,5 @@
     "Run pnpm turbo build to ensure no existing code was broken"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Added .github/workflows/ to .prettierignore to prevent prettier from mangling YAML. Commit message max length is 100 chars (commitlint). lint-staged runs prettier --write on yaml files in pre-commit hook. Unset NODE_OPTIONS required for all node/git commands in this sandbox."
 }
