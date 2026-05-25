@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Phase 5 - Real Realtime Infrastructure: Replace the no-op sendToClient() and fake WebSocket with a real ws-based WebSocket server with JWT auth on upgrade, Redis pub/sub for cross-instance fan-out, channel/room management with member tracking, presence via Redis ZSET with TTL, typed event system, message delivery guarantees (ack/retry), heartbeat/ping-pong, backpressure handling, graceful disconnect/reconnection, and NATS JetStream integration for durable events. Write comprehensive tests.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "1. Update packages/realtime/package.json: add dependencies: ws, ioredis, nats, jose, zod, pino. Add devDependencies: @types/ws, vitest, @types/node. Add 'test': 'vitest run' script.",
     "2. Update packages/realtime/tsconfig.json to include __tests__ directory.",
