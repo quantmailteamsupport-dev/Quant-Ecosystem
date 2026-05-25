@@ -19,6 +19,9 @@ export { ModelMonitor } from './core/model-monitor';
 export { OnlineLearning } from './core/online-learning';
 export { ModelServing } from './core/model-serving';
 export { ExperimentFramework } from './core/experiment-framework';
+export { FraudDetector } from './core/fraud-detector';
+export { ContentQualityScorer } from './core/content-quality-scorer';
+export { RealtimeAnomaly } from './core/realtime-anomaly';
 
 export type {
   Feature,
@@ -108,4 +111,22 @@ export type {
   MABConfig,
   MABArm,
   MABAllocation,
+  FraudSignal,
+  FraudConfig,
+  VelocityRule,
+  DeviceFingerprint,
+  GeoLocation,
+  FraudEnsembleWeights,
+  FraudSignalType,
+  ContentQualityDimension,
+  QualityScore,
+  QualityThresholds,
+  MinHashConfig,
+  QualityMetadata,
+  AnomalyStreamConfig,
+  AnomalyAlert,
+  AnomalySeverity,
+  EWMAState,
+  SeasonalComponent,
+  AnomalyDetectionMethod,
 } from './types';

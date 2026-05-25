@@ -225,3 +225,113 @@ export interface AnalyzerConfig {
   stopwords?: string[];
   language?: string;
 }
+
+// ============================================================================
+// Semantic Search Types
+// ============================================================================
+
+/** Semantic search configuration */
+export interface SemanticConfig {
+  alpha: number;
+  maxExpansionTerms: number;
+  minTermFrequency: number;
+  maxDocFrequencyRatio: number;
+  diversityLambda: number;
+  intentClassificationEnabled: boolean;
+  cooccurrenceWindowSize: number;
+}
+
+/** TF-IDF vector for a document */
+export interface TFIDFVector {
+  documentId: string;
+  terms: Map<string, number>;
+  magnitude: number;
+}
+
+/** Query intent classification */
+export type QueryIntent = 'navigational' | 'informational' | 'transactional';
+
+/** Co-occurrence matrix for term relationships */
+export interface CooccurrenceMatrix {
+  terms: string[];
+  matrix: number[][];
+  windowSize: number;
+  documentCount: number;
+}
+
+// ============================================================================
+// Knowledge Graph Types
+// ============================================================================
+
+/** Triple in the knowledge graph (subject-predicate-object) */
+export interface KnowledgeTriple {
+  subject: string;
+  predicate: string;
+  object: string;
+  confidence: number;
+  source: string;
+  timestamp: number;
+}
+
+/** Entity type definition */
+export interface KGEntityType {
+  name: string;
+  parent: string | null;
+  properties: string[];
+  description: string;
+}
+
+/** Entity relationship in knowledge graph */
+export interface EntityRelation {
+  fromEntity: string;
+  toEntity: string;
+  relationType: string;
+  weight: number;
+  bidirectional: boolean;
+  metadata: Record<string, unknown>;
+}
+
+// ============================================================================
+// Entity Linker Types
+// ============================================================================
+
+/** Entity candidate for linking */
+export interface EntityCandidate {
+  entityId: string;
+  name: string;
+  type: string;
+  score: number;
+  contextSimilarity: number;
+  popularity: number;
+  aliases: string[];
+}
+
+/** Linked entity result */
+export interface EntityLink {
+  mention: string;
+  entityId: string;
+  entityName: string;
+  entityType: string;
+  confidence: LinkConfidence;
+  startOffset: number;
+  endOffset: number;
+  contextWindow: string;
+}
+
+/** Confidence level for entity linking */
+export interface LinkConfidence {
+  overall: number;
+  nameSimilarity: number;
+  contextMatch: number;
+  popularity: number;
+  coherence: number;
+}
+
+/** Gazetteer entry for entity recognition */
+export interface GazetteerEntry {
+  canonicalName: string;
+  aliases: string[];
+  entityType: string;
+  entityId: string;
+  metadata: Record<string, unknown>;
+}

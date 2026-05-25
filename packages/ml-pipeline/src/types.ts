@@ -688,3 +688,181 @@ export interface DriftReport {
   performanceMetrics: Record<string, number>;
   alerts: ModelDriftAlert[];
 }
+
+// ============================================================================
+// Fraud Detection Types
+// ============================================================================
+
+/** Fraud signal from behavioral analysis */
+export interface FraudSignal {
+  userId: string;
+  signalType: FraudSignalType;
+  riskScore: number;
+  confidence: number;
+  timestamp: number;
+  details: Record<string, unknown>;
+  evidence: string[];
+}
+
+/** Types of fraud signals */
+export type FraudSignalType =
+  | 'velocity_breach'
+  | 'device_anomaly'
+  | 'geo_impossibility'
+  | 'account_takeover'
+  | 'transaction_anomaly'
+  | 'pattern_deviation';
+
+/** Fraud detection configuration */
+export interface FraudConfig {
+  velocityRules: VelocityRule[];
+  geoMaxSpeedKmh: number;
+  deviceAnomalyThreshold: number;
+  accountTakeoverThreshold: number;
+  transactionAnomalyThreshold: number;
+  ensembleWeights: FraudEnsembleWeights;
+  lookbackWindowMs: number;
+  maxRiskScore: number;
+}
+
+/** Velocity rule for rate limiting */
+export interface VelocityRule {
+  action: string;
+  maxCount: number;
+  windowMs: number;
+  severity: AlertSeverity;
+}
+
+/** Device fingerprint data */
+export interface DeviceFingerprint {
+  deviceId: string;
+  userAgent: string;
+  screenResolution: string;
+  timezone: string;
+  language: string;
+  platform: string;
+  features: number[];
+  firstSeen: number;
+  lastSeen: number;
+}
+
+/** Geographic location data */
+export interface GeoLocation {
+  latitude: number;
+  longitude: number;
+  timestamp: number;
+  accuracy: number;
+  source: string;
+}
+
+/** Weights for fraud ensemble scoring */
+export interface FraudEnsembleWeights {
+  velocity: number;
+  device: number;
+  geo: number;
+  accountTakeover: number;
+  transaction: number;
+}
+
+// ============================================================================
+// Content Quality Types
+// ============================================================================
+
+/** Dimensions of content quality */
+export type ContentQualityDimension =
+  | 'readability'
+  | 'originality'
+  | 'engagement_potential'
+  | 'toxicity'
+  | 'information_density';
+
+/** Quality score for content */
+export interface QualityScore {
+  contentId: string;
+  overallScore: number;
+  dimensions: Record<ContentQualityDimension, number>;
+  timestamp: number;
+  metadata: QualityMetadata;
+}
+
+/** Quality thresholds configuration */
+export interface QualityThresholds {
+  minReadability: number;
+  minOriginality: number;
+  maxToxicity: number;
+  minInformationDensity: number;
+  minEngagementPotential: number;
+  overallPassThreshold: number;
+}
+
+/** MinHash configuration for near-duplicate detection */
+export interface MinHashConfig {
+  numHashFunctions: number;
+  shingleSize: number;
+  jaccardThreshold: number;
+  bandSize: number;
+  numBands: number;
+}
+
+/** Quality scoring metadata */
+export interface QualityMetadata {
+  wordCount: number;
+  sentenceCount: number;
+  syllableCount: number;
+  uniqueTerms: number;
+  avgSentenceLength: number;
+}
+
+// ============================================================================
+// Realtime Anomaly Types
+// ============================================================================
+
+/** Anomaly detection configuration for streaming */
+export interface AnomalyStreamConfig {
+  windowSize: number;
+  zScoreThreshold: number;
+  ewmaAlpha: number;
+  controlLimitK: number;
+  seasonalPeriod: number;
+  correlationThreshold: number;
+  deduplicationWindowMs: number;
+  minDataPoints: number;
+}
+
+/** Anomaly alert from streaming detection */
+export interface AnomalyAlert {
+  id: string;
+  metricName: string;
+  severity: AnomalySeverity;
+  value: number;
+  expected: number;
+  deviation: number;
+  timestamp: number;
+  detectionMethod: AnomalyDetectionMethod;
+  rootCauseGroup: string | null;
+  deduplicated: boolean;
+}
+
+/** Anomaly severity levels */
+export type AnomalySeverity = 'info' | 'warning' | 'critical' | 'emergency';
+
+/** EWMA state tracking */
+export interface EWMAState {
+  mean: number;
+  variance: number;
+  ucl: number;
+  lcl: number;
+  sampleCount: number;
+  lastUpdate: number;
+}
+
+/** Seasonal decomposition component */
+export interface SeasonalComponent {
+  trend: number[];
+  seasonal: number[];
+  residual: number[];
+  period: number;
+}
+
+/** Anomaly detection method */
+export type AnomalyDetectionMethod = 'z_score' | 'ewma' | 'seasonal' | 'correlation';

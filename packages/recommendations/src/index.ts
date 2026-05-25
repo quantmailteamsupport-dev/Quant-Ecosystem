@@ -15,6 +15,9 @@ export { FeedbackProcessor } from './core/feedback-processor';
 export { ContextEngine } from './core/context-engine';
 export { ColdStartHandler } from './core/cold-start-handler';
 export { RecommendationABTest } from './core/recommendation-ab';
+export { FeedRanker } from './core/feed-ranker';
+export { ContentGraph } from './core/content-graph';
+export { ExploreDiscovery } from './core/explore-discovery';
 
 export type {
   UserProfile,
@@ -60,4 +63,15 @@ export type {
   ExplanationConfig,
   Explanation,
   FeatureContribution,
+  FeedRankConfig,
+  FeedItem,
+  RankSignals,
+  ContentNode,
+  ContentEdge,
+  ContentRelationType,
+  GraphWalkConfig,
+  ExplorationConfig,
+  SerendipityConfig,
+  NoveltyScore,
+  DiscoveryFeedConfig,
 } from './types';

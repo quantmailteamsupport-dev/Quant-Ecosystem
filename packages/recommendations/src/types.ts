@@ -216,7 +216,12 @@ export interface ColdStartConfig {
 }
 
 /** Cold start strategies */
-export type ColdStartStrategy = 'popularity' | 'demographic' | 'onboarding' | 'exploration' | 'hybrid';
+export type ColdStartStrategy =
+  | 'popularity'
+  | 'demographic'
+  | 'onboarding'
+  | 'exploration'
+  | 'hybrid';
 
 /** Diversity configuration */
 export interface DiversityConfig {
@@ -287,7 +292,17 @@ export interface FeedbackEvent {
 }
 
 /** Feedback types */
-export type FeedbackType = 'view' | 'click' | 'like' | 'dislike' | 'rating' | 'purchase' | 'share' | 'save' | 'scroll' | 'dwell';
+export type FeedbackType =
+  | 'view'
+  | 'click'
+  | 'like'
+  | 'dislike'
+  | 'rating'
+  | 'purchase'
+  | 'share'
+  | 'save'
+  | 'scroll'
+  | 'dwell';
 
 /** Cross-app mapping */
 export interface CrossAppMapping {
@@ -356,4 +371,130 @@ export interface FeatureContribution {
   feature: string;
   weight: number;
   direction: 'positive' | 'negative';
+}
+
+// ============================================================================
+// Feed Ranker Types
+// ============================================================================
+
+/** Configuration for feed ranking */
+export interface FeedRankConfig {
+  engagementWeight: number;
+  recencyWeight: number;
+  affinityWeight: number;
+  qualityWeight: number;
+  diversityWeight: number;
+  halfLifeHours: number;
+  mmrLambda: number;
+  fatigueDecayRate: number;
+  maxFatiguePerType: number;
+  positionBiasEnabled: boolean;
+}
+
+/** Item in the feed to be ranked */
+export interface FeedItem {
+  id: string;
+  contentType: string;
+  authorId: string;
+  createdAt: number;
+  engagementScore: number;
+  qualityScore: number;
+  features: number[];
+  tags: string[];
+  category: string;
+}
+
+/** Ranking signals for a feed item */
+export interface RankSignals {
+  engagementScore: number;
+  recencyDecay: number;
+  affinity: number;
+  quality: number;
+  diversity: number;
+  velocityScore: number;
+  fatigueAdjustment: number;
+  positionBias: number;
+  finalScore: number;
+}
+
+// ============================================================================
+// Content Graph Types
+// ============================================================================
+
+/** Content relationship types */
+export type ContentRelationType = 'similar_to' | 'sequel_of' | 'response_to' | 'inspired_by';
+
+/** Node in the content graph */
+export interface ContentNode {
+  id: string;
+  contentType: string;
+  authorId: string;
+  features: number[];
+  metadata: Record<string, unknown>;
+  createdAt: number;
+  authority: number;
+  cluster: number;
+}
+
+/** Edge in the content graph */
+export interface ContentEdge {
+  source: string;
+  target: string;
+  relation: ContentRelationType;
+  weight: number;
+  createdAt: number;
+}
+
+/** Configuration for graph-based random walks */
+export interface GraphWalkConfig {
+  restartProbability: number;
+  maxSteps: number;
+  numWalks: number;
+  dampingFactor: number;
+  maxIterations: number;
+  convergenceThreshold: number;
+  labelPropagationMaxIter: number;
+}
+
+// ============================================================================
+// Explore Discovery Types
+// ============================================================================
+
+/** Configuration for exploration vs exploitation */
+export interface ExplorationConfig {
+  initialEpsilon: number;
+  epsilonDecay: number;
+  minEpsilon: number;
+  serendipityProbability: number;
+  noveltyWeight: number;
+  trendingWeight: number;
+  personalizedWeight: number;
+  serendipitousWeight: number;
+}
+
+/** Configuration for serendipity injection */
+export interface SerendipityConfig {
+  comfortZoneThreshold: number;
+  maxNoveltyDistance: number;
+  minQualityThreshold: number;
+  categoryDiversityTarget: number;
+  temperatureParameter: number;
+}
+
+/** Novelty score for an item */
+export interface NoveltyScore {
+  itemId: string;
+  freshnessScore: number;
+  exposureScore: number;
+  categoryNovelty: number;
+  overallNovelty: number;
+}
+
+/** Configuration for discovery feed */
+export interface DiscoveryFeedConfig {
+  trendingRatio: number;
+  personalizedRatio: number;
+  serendipitousRatio: number;
+  maxItems: number;
+  refreshIntervalMs: number;
 }
