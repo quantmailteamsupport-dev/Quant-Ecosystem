@@ -17,7 +17,7 @@ export interface ContentListFilters {
 export class ContentLibraryService {
   private readonly store = new Map<string, ContentLibraryItem>();
 
-  store_content(userId: string, content: StoreContentInput): ContentLibraryItem {
+  storeContent(userId: string, content: StoreContentInput): ContentLibraryItem {
     const item: ContentLibraryItem = {
       id: randomUUID(),
       userId,

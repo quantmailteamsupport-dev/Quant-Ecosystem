@@ -8,9 +8,9 @@ describe('ContentLibraryService', () => {
     service = new ContentLibraryService();
   });
 
-  describe('store_content', () => {
+  describe('storeContent', () => {
     it('should store content and return a library item', () => {
-      const item = service.store_content('user-1', {
+      const item = service.storeContent('user-1', {
         contentType: 'video',
         title: 'My Video',
         description: 'A great video',
@@ -28,7 +28,7 @@ describe('ContentLibraryService', () => {
     });
 
     it('should default metadata to empty object', () => {
-      const item = service.store_content('user-1', {
+      const item = service.storeContent('user-1', {
         contentType: 'image',
         title: 'My Image',
         description: 'A photo',
@@ -42,7 +42,7 @@ describe('ContentLibraryService', () => {
 
   describe('getById', () => {
     it('should retrieve stored content', () => {
-      const item = service.store_content('user-1', {
+      const item = service.storeContent('user-1', {
         contentType: 'video',
         title: 'Test',
         description: 'Test',
@@ -62,21 +62,21 @@ describe('ContentLibraryService', () => {
 
   describe('list', () => {
     it('should list content for a user', () => {
-      service.store_content('user-1', {
+      service.storeContent('user-1', {
         contentType: 'video',
         title: 'Video 1',
         description: 'V1',
         mediaUrl: 'https://example.com/v1.mp4',
         thumbnailUrl: 'https://example.com/t1.jpg',
       });
-      service.store_content('user-1', {
+      service.storeContent('user-1', {
         contentType: 'image',
         title: 'Image 1',
         description: 'I1',
         mediaUrl: 'https://example.com/i1.jpg',
         thumbnailUrl: 'https://example.com/t2.jpg',
       });
-      service.store_content('user-2', {
+      service.storeContent('user-2', {
         contentType: 'video',
         title: 'Other',
         description: 'Other',
@@ -89,14 +89,14 @@ describe('ContentLibraryService', () => {
     });
 
     it('should filter by content type', () => {
-      service.store_content('user-1', {
+      service.storeContent('user-1', {
         contentType: 'video',
         title: 'Video',
         description: 'V',
         mediaUrl: 'https://example.com/v.mp4',
         thumbnailUrl: 'https://example.com/t.jpg',
       });
-      service.store_content('user-1', {
+      service.storeContent('user-1', {
         contentType: 'image',
         title: 'Image',
         description: 'I',
@@ -112,7 +112,7 @@ describe('ContentLibraryService', () => {
 
   describe('delete', () => {
     it('should delete existing content', () => {
-      const item = service.store_content('user-1', {
+      const item = service.storeContent('user-1', {
         contentType: 'video',
         title: 'Delete Me',
         description: 'D',
