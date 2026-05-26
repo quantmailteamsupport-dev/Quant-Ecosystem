@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Create recommendation models (Two-Tower retrieval, collaborative, trending, MMoE ranking, score fusion, anti-rage scorer, DPP diversity, full pipeline, on-device ranker) and A/B testing framework in packages/recommendations/src/",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create packages/recommendations/src/retrieval/two-tower.ts - TwoTowerRetrieval class: User tower (embedding from user features) + Item tower (embedding from item features) producing embeddings, then ANN retrieval via Qdrant-like interface. Methods: encodeUser(features), encodeItem(features), retrieve(userEmbedding, k) returning top-k candidates with scores.",
     "Create packages/recommendations/src/retrieval/collaborative.ts - ItemItemCollaborative class: computes item-item similarity using cosine on co-occurrence vectors. Methods: buildCooccurrenceMatrix(interactions), computeSimilarity(itemA, itemB), getSimilarItems(itemId, k).",
@@ -47,5 +47,5 @@
   ],
   "verification": ["NODE_OPTIONS='' npx vitest run --reporter=verbose 2>&1 | tail -60"],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 66 tests pass across 10 test files (two-tower, collaborative, trending, mmoe, score-fusion, anti-rage, dpp, pipeline, on-device-ranker, experiment-service). Fixed collaborative filtering similarity to use user-based set cosine similarity instead of co-occurrence vector cosine (keys never overlap in co-occurrence maps). Pre-existing shared-ui failures (26 tests) remain unchanged. Prettier reformatted on commit via lint-staged. Created package.json, tsconfig.json, vitest.config.ts for the recommendations package."
 }
