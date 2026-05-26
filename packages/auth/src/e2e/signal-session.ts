@@ -78,6 +78,54 @@ function kdfRootKey(rootKey: Buffer, dhOutput: Buffer): { newRootKey: Buffer; ch
   };
 }
 
+/**
+ * Derive an X25519 key pair from an Ed25519 key pair for use in DH operations.
+ * Uses the public key's DER as seed so that both sides (with or without the private key)
+ * derive the same X25519 public key.
+ */
+function deriveX25519FromEd25519(edKeyPair: {
+  publicKey: crypto.KeyObject;
+  privateKey: crypto.KeyObject;
+}): {
+  publicKey: crypto.KeyObject;
+  privateKey: crypto.KeyObject;
+} {
+  const pubDer = edKeyPair.publicKey.export({ type: 'spki', format: 'der' });
+  const seed = crypto.createHash('sha256').update(Buffer.from(pubDer)).digest();
+  // Construct a PKCS8 DER for X25519 private key (RFC 8410)
+  const x25519PrivDer = Buffer.concat([
+    Buffer.from('302e020100300506032b656e04220420', 'hex'),
+    seed,
+  ]);
+  const privateKey = crypto.createPrivateKey({
+    key: x25519PrivDer,
+    format: 'der',
+    type: 'pkcs8',
+  });
+  const publicKey = crypto.createPublicKey(privateKey);
+  return { publicKey, privateKey };
+}
+
+/**
+ * Derive the X25519 public key from an Ed25519 public key.
+ * Uses the same derivation as deriveX25519FromEd25519 so both sides get the same result.
+ */
+function deriveX25519PublicFromEd25519Public(edPublicKey: crypto.KeyObject): crypto.KeyObject {
+  const pubDer = edPublicKey.export({ type: 'spki', format: 'der' });
+  const seed = crypto.createHash('sha256').update(Buffer.from(pubDer)).digest();
+  // Construct a PKCS8 DER for X25519 private key to derive the public key
+  const x25519PrivDer = Buffer.concat([
+    Buffer.from('302e020100300506032b656e04220420', 'hex'),
+    seed,
+  ]);
+  const privateKey = crypto.createPrivateKey({
+    key: x25519PrivDer,
+    format: 'der',
+    type: 'pkcs8',
+  });
+  return crypto.createPublicKey(privateKey);
+}
+
 function serializePublicKey(key: crypto.KeyObject): string {
   const der = key.export({ type: 'spki', format: 'der' });
   return Buffer.from(der).toString('base64');
@@ -101,14 +149,29 @@ export class SignalSession {
     // Generate ephemeral X25519 keypair
     const ephemeral = crypto.generateKeyPairSync('x25519');
 
-    // X3DH DH computations
-    const dh1 = performDH(ephemeral.privateKey, recipientBundle.signedPreKey.keyPair.publicKey);
+    // Derive X25519 identity keys for DH
+    const ownIdentityX25519 = deriveX25519FromEd25519(ownIdentity);
+    const recipientIdentityX25519Public = deriveX25519PublicFromEd25519Public(
+      recipientBundle.identityPublicKey,
+    );
 
-    let dhConcat = dh1;
+    // X3DH DH computations per Signal spec:
+    // DH1 = DH(IK_A, SPK_B) - binds initiator's identity to handshake
+    // DH2 = DH(EK_A, IK_B) - binds recipient's identity to handshake
+    // DH3 = DH(EK_A, SPK_B) - ephemeral-to-signed-prekey
+    // DH4 = DH(EK_A, OTPK_B) - optional one-time prekey
+    const dh1 = performDH(
+      ownIdentityX25519.privateKey,
+      recipientBundle.signedPreKey.keyPair.publicKey,
+    );
+    const dh2 = performDH(ephemeral.privateKey, recipientIdentityX25519Public);
+    const dh3 = performDH(ephemeral.privateKey, recipientBundle.signedPreKey.keyPair.publicKey);
+
+    let dhConcat = Buffer.concat([dh1, dh2, dh3]);
     if (recipientBundle.oneTimePreKeys.length > 0) {
       const otpk = recipientBundle.oneTimePreKeys[0]!;
-      const dh2 = performDH(ephemeral.privateKey, otpk.keyPair.publicKey);
-      dhConcat = Buffer.concat([dh1, dh2]);
+      const dh4 = performDH(ephemeral.privateKey, otpk.keyPair.publicKey);
+      dhConcat = Buffer.concat([dhConcat, dh4]);
     }
 
     // Derive shared secret via HKDF
@@ -154,7 +217,7 @@ export class SignalSession {
    * Initialize as the responder (Bob).
    */
   initializeAsResponder(
-    _ownIdentity: IdentityKeyPair,
+    ownIdentity: IdentityKeyPair,
     ownSignedPreKey: {
       publicKey: crypto.KeyObject;
       privateKey: crypto.KeyObject;
@@ -165,13 +228,25 @@ export class SignalSession {
     } | null,
     initiatorMessage: InitiatorMessage,
   ): void {
-    // X3DH from responder side
-    const dh1 = performDH(ownSignedPreKey.privateKey, initiatorMessage.ephemeralPublicKey);
+    // Derive X25519 identity keys for DH
+    const ownIdentityX25519 = deriveX25519FromEd25519(ownIdentity);
+    const initiatorIdentityX25519Public = deriveX25519PublicFromEd25519Public(
+      initiatorMessage.identityPublicKey,
+    );
 
-    let dhConcat = dh1;
+    // X3DH from responder side (mirroring initiator):
+    // DH1 = DH(SPK_B, IK_A) - mirrors DH(IK_A, SPK_B)
+    // DH2 = DH(IK_B, EK_A) - mirrors DH(EK_A, IK_B)
+    // DH3 = DH(SPK_B, EK_A) - mirrors DH(EK_A, SPK_B)
+    // DH4 = DH(OTPK_B, EK_A) - optional, mirrors DH(EK_A, OTPK_B)
+    const dh1 = performDH(ownSignedPreKey.privateKey, initiatorIdentityX25519Public);
+    const dh2 = performDH(ownIdentityX25519.privateKey, initiatorMessage.ephemeralPublicKey);
+    const dh3 = performDH(ownSignedPreKey.privateKey, initiatorMessage.ephemeralPublicKey);
+
+    let dhConcat = Buffer.concat([dh1, dh2, dh3]);
     if (ownOneTimePreKey) {
-      const dh2 = performDH(ownOneTimePreKey.privateKey, initiatorMessage.ephemeralPublicKey);
-      dhConcat = Buffer.concat([dh1, dh2]);
+      const dh4 = performDH(ownOneTimePreKey.privateKey, initiatorMessage.ephemeralPublicKey);
+      dhConcat = Buffer.concat([dhConcat, dh4]);
     }
 
     // Derive the same shared secret

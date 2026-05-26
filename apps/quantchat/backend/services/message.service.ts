@@ -89,6 +89,9 @@ export class MessageService {
       };
     });
 
+    // Zero the session key after use to prevent memory leakage
+    sessionKey.fill(0);
+
     return {
       ciphertext: ciphertext.toString('base64'),
       nonce: nonce.toString('base64'),

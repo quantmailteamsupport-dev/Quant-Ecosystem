@@ -12,6 +12,13 @@ describe('computeSafetyNumber', () => {
     const fingerprint = computeSafetyNumber(alice.publicKey, bob.publicKey);
     expect(fingerprint).toMatch(/^\d{60}$/);
     expect(fingerprint.length).toBe(60);
+
+    // Verify all 2-digit groups are valid (00-99)
+    for (let i = 0; i < 60; i += 2) {
+      const group = parseInt(fingerprint.slice(i, i + 2), 10);
+      expect(group).toBeGreaterThanOrEqual(0);
+      expect(group).toBeLessThanOrEqual(99);
+    }
   });
 
   it('should produce the same fingerprint regardless of order', () => {

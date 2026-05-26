@@ -71,20 +71,17 @@ export class DeviceLinkingService {
   transferKeys(
     linkingSession: LinkingSession,
     keysToTransfer: Buffer,
-  ): { ciphertext: Buffer; nonce: Buffer; authTag: Buffer } {
+  ): { ciphertext: Buffer; nonce: Buffer; authTag: Buffer; salt: Buffer } {
     if (!linkingSession.verified) {
       throw new Error('Linking session not verified');
     }
 
+    // Generate a random salt for HKDF derivation
+    const salt = crypto.randomBytes(32);
+
     // Derive encryption key from shared secret
     const encKey = Buffer.from(
-      crypto.hkdfSync(
-        'sha256',
-        linkingSession.sharedSecret,
-        Buffer.alloc(32, 0),
-        'DeviceLinkingTransfer',
-        32,
-      ),
+      crypto.hkdfSync('sha256', linkingSession.sharedSecret, salt, 'DeviceLinkingTransfer', 32),
     );
 
     // Encrypt the keys
@@ -93,15 +90,21 @@ export class DeviceLinkingService {
     const ciphertext = Buffer.concat([cipher.update(keysToTransfer), cipher.final()]);
     const authTag = cipher.getAuthTag();
 
-    return { ciphertext, nonce, authTag };
+    return { ciphertext, nonce, authTag, salt };
   }
 
   /**
    * Receive transferred keys on the new device
    */
-  receiveKeys(sharedSecret: Buffer, ciphertext: Buffer, nonce: Buffer, authTag: Buffer): Buffer {
+  receiveKeys(
+    sharedSecret: Buffer,
+    ciphertext: Buffer,
+    nonce: Buffer,
+    authTag: Buffer,
+    salt: Buffer,
+  ): Buffer {
     const decKey = Buffer.from(
-      crypto.hkdfSync('sha256', sharedSecret, Buffer.alloc(32, 0), 'DeviceLinkingTransfer', 32),
+      crypto.hkdfSync('sha256', sharedSecret, salt, 'DeviceLinkingTransfer', 32),
     );
 
     const decipher = crypto.createDecipheriv('aes-256-gcm', decKey, nonce);

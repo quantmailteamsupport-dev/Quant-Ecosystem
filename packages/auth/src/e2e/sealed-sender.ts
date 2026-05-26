@@ -7,6 +7,7 @@ import * as crypto from 'node:crypto';
 
 export interface SealedMessage {
   ephemeralPublicKey: string;
+  salt: string;
   ciphertext: Buffer;
   nonce: Buffer;
   authTag: Buffer;
@@ -36,10 +37,9 @@ export class SealedSenderService {
       publicKey: recipientPublicKey,
     });
 
-    // Derive encryption key via HKDF
-    const encKey = Buffer.from(
-      crypto.hkdfSync('sha256', sharedSecret, Buffer.alloc(32, 0), 'SealedSender', 32),
-    );
+    // Derive encryption key via HKDF with a random salt
+    const salt = crypto.randomBytes(32);
+    const encKey = Buffer.from(crypto.hkdfSync('sha256', sharedSecret, salt, 'SealedSender', 32));
 
     // Serialize sender identity for inclusion in the envelope
     const senderDer = senderIdentityPublicKey.export({ type: 'spki', format: 'der' });
@@ -61,6 +61,7 @@ export class SealedSenderService {
 
     return {
       ephemeralPublicKey: Buffer.from(ephemeralPublicDer).toString('base64'),
+      salt: salt.toString('base64'),
       ciphertext,
       nonce,
       authTag,
@@ -85,10 +86,9 @@ export class SealedSenderService {
       publicKey: ephemeralPublicKey,
     });
 
-    // Derive decryption key
-    const decKey = Buffer.from(
-      crypto.hkdfSync('sha256', sharedSecret, Buffer.alloc(32, 0), 'SealedSender', 32),
-    );
+    // Derive decryption key using the salt from the sealed message
+    const salt = Buffer.from(sealedMessage.salt, 'base64');
+    const decKey = Buffer.from(crypto.hkdfSync('sha256', sharedSecret, salt, 'SealedSender', 32));
 
     // Decrypt
     const decipher = crypto.createDecipheriv('aes-256-gcm', decKey, sealedMessage.nonce);

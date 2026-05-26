@@ -34,13 +34,12 @@ export function computeSafetyNumber(
   const finalHash = crypto.createHash('sha256').update(interleaved).digest();
   const truncated = finalHash.subarray(0, 30);
 
-  // Encode each byte as 2 digits (mod 100), producing 60 digits
+  // Encode each byte as 2 digits using modulo 100 for uniform 00-99 distribution
   let fingerprint = '';
   for (let i = 0; i < 30; i++) {
     const byte = truncated[i] as number;
-    fingerprint += byte.toString().padStart(2, '0').slice(-2);
+    fingerprint += (byte % 100).toString().padStart(2, '0');
   }
 
-  // Ensure exactly 60 digits by encoding bytes as values 00-99
-  return fingerprint.slice(0, 60).padEnd(60, '0');
+  return fingerprint;
 }

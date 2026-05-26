@@ -61,6 +61,7 @@ describe('DeviceLinkingService', () => {
       expect(encrypted.ciphertext).toBeDefined();
       expect(encrypted.nonce).toBeDefined();
       expect(encrypted.authTag).toBeDefined();
+      expect(encrypted.salt).toBeDefined();
 
       // New device computes same shared secret and decrypts
       const deviceSharedSecret = crypto.diffieHellman({
@@ -73,6 +74,7 @@ describe('DeviceLinkingService', () => {
         encrypted.ciphertext,
         encrypted.nonce,
         encrypted.authTag,
+        encrypted.salt,
       );
 
       expect(received.toString()).toBe('serialized-identity-keys-data');
