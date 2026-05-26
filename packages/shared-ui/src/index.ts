@@ -129,5 +129,27 @@ export { neonTheme } from './themes/neon';
 export { lightTokens, darkTokens, neonTokens, tokensToCssVariables } from './themes/tokens';
 export type { DesignTokens } from './themes/tokens';
 
+// Agent Dock components
+export {
+  AgentDock,
+  AgentCard,
+  ApprovalDialog,
+  AgentTimeline,
+  AgentCreator,
+  AgentMiniWidget,
+} from './agent';
+export type {
+  AgentDockProps,
+  AgentCardProps,
+  AgentStatus,
+  ApprovalDialogProps,
+  ApprovalRequest,
+  AgentTimelineProps,
+  TimelineEntry,
+  AgentCreatorProps,
+  AgentCreatorConfig,
+  AgentMiniWidgetProps,
+} from './agent';
+
 // Advanced Frontend Systems
 export * from './advanced';
