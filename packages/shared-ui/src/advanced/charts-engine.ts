@@ -2,10 +2,7 @@
 // @quant/shared-ui - Advanced Charts Engine (SVG-based)
 // ============================================================================
 
-import {
-  ChartConfig, DataSeries, DataPoint, AxisConfig, ChartType,
-  ChartPadding, LegendConfig, TooltipConfig
-} from './types';
+import { ChartConfig, DataSeries, DataPoint, AxisConfig, ChartPadding } from './types';
 
 interface AxisData {
   ticks: number[];
@@ -13,13 +10,6 @@ interface AxisData {
   min: number;
   max: number;
   step: number;
-}
-
-interface PathData {
-  path: string;
-  fill?: string;
-  stroke?: string;
-  strokeWidth?: number;
 }
 
 interface ChartElement {
@@ -43,8 +33,16 @@ export class ChartsEngine {
   private chartWidth: number;
   private chartHeight: number;
   private colorPalette: string[] = [
-    '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
-    '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1',
+    '#3b82f6',
+    '#ef4444',
+    '#10b981',
+    '#f59e0b',
+    '#8b5cf6',
+    '#ec4899',
+    '#06b6d4',
+    '#84cc16',
+    '#f97316',
+    '#6366f1',
   ];
 
   constructor(config: ChartConfig) {
@@ -64,7 +62,10 @@ export class ChartsEngine {
     let min = axisConfig?.min ?? Math.min(...values);
     let max = axisConfig?.max ?? Math.max(...values);
 
-    if (min === max) { min -= 1; max += 1; }
+    if (min === max) {
+      min -= 1;
+      max += 1;
+    }
 
     const range = max - min;
     const rawStep = range / (tickCount - 1);
@@ -113,8 +114,8 @@ export class ChartsEngine {
   // Generate line chart path data
   generateLineChart(smooth: boolean = true): ChartElement[] {
     const elements: ChartElement[] = [];
-    const allX = this.series.flatMap(s => s.data.map(p => p.x));
-    const allY = this.series.flatMap(s => s.data.map(p => p.y));
+    const allX = this.series.flatMap((s) => s.data.map((p) => p.x));
+    const allY = this.series.flatMap((s) => s.data.map((p) => p.y));
 
     const xAxis = this.calculateAxis(allX, this.config.xAxis?.tickCount || 5, this.config.xAxis);
     const yAxis = this.calculateAxis(allY, this.config.yAxis?.tickCount || 5, this.config.yAxis);
@@ -125,7 +126,7 @@ export class ChartsEngine {
     // Draw each series
     this.series.forEach((series, idx) => {
       const color = series.color || this.colorPalette[idx % this.colorPalette.length];
-      const points = series.data.map(p => ({
+      const points = series.data.map((p) => ({
         x: this.mapX(p.x, xAxis),
         y: this.mapY(p.y, yAxis),
       }));
@@ -136,9 +137,11 @@ export class ChartsEngine {
       if (smooth) {
         path = this.generateSmoothPath(points);
       } else {
-        path = `M ${points[0].x} ${points[0].y}`;
+        const first = points[0]!;
+        path = `M ${first.x} ${first.y}`;
         for (let i = 1; i < points.length; i++) {
-          path += ` L ${points[i].x} ${points[i].y}`;
+          const pt = points[i]!;
+          path += ` L ${pt.x} ${pt.y}`;
         }
       }
 
@@ -164,13 +167,14 @@ export class ChartsEngine {
   // Generate smooth Bezier curve path
   private generateSmoothPath(points: Array<{ x: number; y: number }>): string {
     if (points.length < 2) return '';
-    let path = `M ${points[0].x} ${points[0].y}`;
+    const firstPoint = points[0]!;
+    let path = `M ${firstPoint.x} ${firstPoint.y}`;
 
     for (let i = 1; i < points.length; i++) {
-      const prev = points[i - 1];
-      const curr = points[i];
-      const next = points[i + 1] || curr;
-      const prevPrev = points[i - 2] || prev;
+      const prev = points[i - 1]!;
+      const curr = points[i]!;
+      const next = points[i + 1] ?? curr;
+      const prevPrev = points[i - 2] ?? prev;
 
       // Calculate control points using Catmull-Rom spline
       const tension = 0.3;
@@ -188,15 +192,15 @@ export class ChartsEngine {
   // Generate area chart
   generateAreaChart(smooth: boolean = true): ChartElement[] {
     const elements = this.generateLineChart(smooth);
-    const allX = this.series.flatMap(s => s.data.map(p => p.x));
-    const allY = this.series.flatMap(s => s.data.map(p => p.y));
+    const allX = this.series.flatMap((s) => s.data.map((p) => p.x));
+    const allY = this.series.flatMap((s) => s.data.map((p) => p.y));
     const xAxis = this.calculateAxis(allX, 5, this.config.xAxis);
     const yAxis = this.calculateAxis(allY, 5, this.config.yAxis);
 
     // Add fill areas below lines
     this.series.forEach((series, idx) => {
       const color = series.color || this.colorPalette[idx % this.colorPalette.length];
-      const points = series.data.map(p => ({
+      const points = series.data.map((p) => ({
         x: this.mapX(p.x, xAxis),
         y: this.mapY(p.y, yAxis),
       }));
@@ -204,12 +208,15 @@ export class ChartsEngine {
       if (points.length < 2) return;
 
       const baseline = this.mapY(yAxis.min, yAxis);
-      let areaPath = `M ${points[0].x} ${baseline}`;
-      areaPath += ` L ${points[0].x} ${points[0].y}`;
+      const firstPt = points[0]!;
+      const lastPt = points[points.length - 1]!;
+      let areaPath = `M ${firstPt.x} ${baseline}`;
+      areaPath += ` L ${firstPt.x} ${firstPt.y}`;
       for (let i = 1; i < points.length; i++) {
-        areaPath += ` L ${points[i].x} ${points[i].y}`;
+        const pt = points[i]!;
+        areaPath += ` L ${pt.x} ${pt.y}`;
       }
-      areaPath += ` L ${points[points.length - 1].x} ${baseline} Z`;
+      areaPath += ` L ${lastPt.x} ${baseline} Z`;
 
       elements.unshift({
         type: 'path',
@@ -224,22 +231,22 @@ export class ChartsEngine {
   // Generate bar chart
   generateBarChart(stacked: boolean = false, grouped: boolean = false): ChartElement[] {
     const elements: ChartElement[] = [];
-    const allX = this.series.flatMap(s => s.data.map(p => p.x));
-    const allY = this.series.flatMap(s => s.data.map(p => p.y));
+    const allX = this.series.flatMap((s) => s.data.map((p) => p.x));
+    const allY = this.series.flatMap((s) => s.data.map((p) => p.y));
     const xAxis = this.calculateAxis(allX, allX.length, this.config.xAxis);
     const yAxis = this.calculateAxis([0, ...allY], 5, this.config.yAxis);
 
     elements.push(...this.generateAxes(xAxis, yAxis));
 
     const uniqueX = [...new Set(allX)].sort((a, b) => a - b);
-    const barGroupWidth = this.chartWidth / uniqueX.length * 0.8;
+    const barGroupWidth = (this.chartWidth / uniqueX.length) * 0.8;
     const barWidth = grouped ? barGroupWidth / this.series.length : barGroupWidth;
     const baseline = this.mapY(0, yAxis);
 
-    uniqueX.forEach((xVal, xIdx) => {
+    uniqueX.forEach((xVal) => {
       let stackOffset = 0;
       this.series.forEach((series, sIdx) => {
-        const point = series.data.find(p => p.x === xVal);
+        const point = series.data.find((p) => p.x === xVal);
         if (!point) return;
 
         const color = series.color || this.colorPalette[sIdx % this.colorPalette.length];
@@ -273,9 +280,10 @@ export class ChartsEngine {
   // Generate pie/donut chart
   generatePieChart(donut: boolean = false): ChartElement[] {
     const elements: ChartElement[] = [];
-    if (this.series.length === 0 || this.series[0].data.length === 0) return elements;
+    const firstSeries = this.series[0];
+    if (!firstSeries || firstSeries.data.length === 0) return elements;
 
-    const data = this.series[0].data;
+    const data = firstSeries.data;
     const total = data.reduce((sum, p) => sum + Math.abs(p.y), 0);
     if (total === 0) return elements;
 
@@ -296,7 +304,7 @@ export class ChartsEngine {
       elements.push({
         type: 'path',
         attrs: { d: path, fill: color, stroke: '#fff', strokeWidth: 2 },
-        data: { point, percentage: (Math.abs(point.y) / total * 100).toFixed(1) },
+        data: { point, percentage: ((Math.abs(point.y) / total) * 100).toFixed(1) },
       });
 
       startAngle = endAngle;
@@ -307,13 +315,23 @@ export class ChartsEngine {
 
   // Generate SVG arc path for pie slices
   private generateArcPath(
-    cx: number, cy: number, innerR: number, outerR: number,
-    startAngle: number, endAngle: number
+    cx: number,
+    cy: number,
+    innerR: number,
+    outerR: number,
+    startAngle: number,
+    endAngle: number,
   ): string {
-    const startOuter = { x: cx + outerR * Math.cos(startAngle), y: cy + outerR * Math.sin(startAngle) };
+    const startOuter = {
+      x: cx + outerR * Math.cos(startAngle),
+      y: cy + outerR * Math.sin(startAngle),
+    };
     const endOuter = { x: cx + outerR * Math.cos(endAngle), y: cy + outerR * Math.sin(endAngle) };
     const startInner = { x: cx + innerR * Math.cos(endAngle), y: cy + innerR * Math.sin(endAngle) };
-    const endInner = { x: cx + innerR * Math.cos(startAngle), y: cy + innerR * Math.sin(startAngle) };
+    const endInner = {
+      x: cx + innerR * Math.cos(startAngle),
+      y: cy + innerR * Math.sin(startAngle),
+    };
 
     const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
 
@@ -327,8 +345,8 @@ export class ChartsEngine {
   // Generate scatter plot
   generateScatterPlot(): ChartElement[] {
     const elements: ChartElement[] = [];
-    const allX = this.series.flatMap(s => s.data.map(p => p.x));
-    const allY = this.series.flatMap(s => s.data.map(p => p.y));
+    const allX = this.series.flatMap((s) => s.data.map((p) => p.x));
+    const allY = this.series.flatMap((s) => s.data.map((p) => p.y));
     const xAxis = this.calculateAxis(allX, 5, this.config.xAxis);
     const yAxis = this.calculateAxis(allY, 5, this.config.yAxis);
 
@@ -336,7 +354,7 @@ export class ChartsEngine {
 
     this.series.forEach((series, idx) => {
       const color = series.color || this.colorPalette[idx % this.colorPalette.length];
-      series.data.forEach(point => {
+      series.data.forEach((point) => {
         elements.push({
           type: 'circle',
           attrs: {
@@ -359,10 +377,11 @@ export class ChartsEngine {
     const elements: ChartElement[] = [];
     if (this.series.length === 0) return elements;
 
+    const firstRadarSeries = this.series[0]!;
     const cx = this.config.width / 2;
     const cy = this.config.height / 2;
     const radius = Math.min(this.chartWidth, this.chartHeight) / 2 - 20;
-    const axes = this.series[0].data.length;
+    const axes = firstRadarSeries.data.length;
     const angleStep = (2 * Math.PI) / axes;
 
     // Draw grid circles
@@ -388,16 +407,18 @@ export class ChartsEngine {
       elements.push({
         type: 'line',
         attrs: {
-          x1: cx, y1: cy,
+          x1: cx,
+          y1: cy,
           x2: cx + radius * Math.cos(angle),
           y2: cy + radius * Math.sin(angle),
-          stroke: '#ddd', strokeWidth: 1,
+          stroke: '#ddd',
+          strokeWidth: 1,
         },
       });
     }
 
     // Draw data polygons
-    const maxVal = Math.max(...this.series.flatMap(s => s.data.map(p => p.y)));
+    const maxVal = Math.max(...this.series.flatMap((s) => s.data.map((p) => p.y)));
     this.series.forEach((series, idx) => {
       const color = series.color || this.colorPalette[idx % this.colorPalette.length];
       let path = '';
@@ -422,17 +443,19 @@ export class ChartsEngine {
   // Generate funnel chart
   generateFunnelChart(): ChartElement[] {
     const elements: ChartElement[] = [];
-    if (this.series.length === 0 || this.series[0].data.length === 0) return elements;
+    const firstFunnelSeries = this.series[0];
+    if (!firstFunnelSeries || firstFunnelSeries.data.length === 0) return elements;
 
-    const data = this.series[0].data;
-    const maxVal = Math.max(...data.map(p => p.y));
+    const data = firstFunnelSeries.data;
+    const maxVal = Math.max(...data.map((p) => p.y));
     const sectionHeight = this.chartHeight / data.length;
     const cx = this.config.width / 2;
 
     data.forEach((point, idx) => {
       const currentWidth = (point.y / maxVal) * this.chartWidth;
       const nextPoint = data[idx + 1];
-      const nextWidth = nextPoint ? (nextPoint.y / maxVal) * this.chartWidth : currentWidth * 0.7;
+      const nextWidth =
+        nextPoint !== undefined ? (nextPoint.y / maxVal) * this.chartWidth : currentWidth * 0.7;
 
       const y1 = this.padding.top + idx * sectionHeight;
       const y2 = y1 + sectionHeight;
@@ -462,7 +485,8 @@ export class ChartsEngine {
         y1: this.padding.top + this.chartHeight,
         x2: this.padding.left + this.chartWidth,
         y2: this.padding.top + this.chartHeight,
-        stroke: '#333', strokeWidth: 1,
+        stroke: '#333',
+        strokeWidth: 1,
       },
     });
 
@@ -474,7 +498,8 @@ export class ChartsEngine {
         y1: this.padding.top,
         x2: this.padding.left,
         y2: this.padding.top + this.chartHeight,
-        stroke: '#333', strokeWidth: 1,
+        stroke: '#333',
+        strokeWidth: 1,
       },
     });
 
@@ -483,12 +508,24 @@ export class ChartsEngine {
       const x = this.mapX(tick, xAxis);
       elements.push({
         type: 'text',
-        attrs: { x, y: this.padding.top + this.chartHeight + 20, text: xAxis.labels[i], anchor: 'middle' },
+        attrs: {
+          x,
+          y: this.padding.top + this.chartHeight + 20,
+          text: xAxis.labels[i] ?? '',
+          anchor: 'middle',
+        },
       });
       if (this.config.xAxis?.gridLines) {
         elements.push({
           type: 'line',
-          attrs: { x1: x, y1: this.padding.top, x2: x, y2: this.padding.top + this.chartHeight, stroke: '#eee', strokeWidth: 1 },
+          attrs: {
+            x1: x,
+            y1: this.padding.top,
+            x2: x,
+            y2: this.padding.top + this.chartHeight,
+            stroke: '#eee',
+            strokeWidth: 1,
+          },
         });
       }
     });
@@ -498,12 +535,19 @@ export class ChartsEngine {
       const y = this.mapY(tick, yAxis);
       elements.push({
         type: 'text',
-        attrs: { x: this.padding.left - 10, y, text: yAxis.labels[i], anchor: 'end' },
+        attrs: { x: this.padding.left - 10, y, text: yAxis.labels[i] ?? '', anchor: 'end' },
       });
       if (this.config.yAxis?.gridLines) {
         elements.push({
           type: 'line',
-          attrs: { x1: this.padding.left, y1: y, x2: this.padding.left + this.chartWidth, y2: y, stroke: '#eee', strokeWidth: 1 },
+          attrs: {
+            x1: this.padding.left,
+            y1: y,
+            x2: this.padding.left + this.chartWidth,
+            y2: y,
+            stroke: '#eee',
+            strokeWidth: 1,
+          },
         });
       }
     });
@@ -515,7 +559,7 @@ export class ChartsEngine {
   generateLegend(): Array<{ label: string; color: string }> {
     return this.series.map((s, i) => ({
       label: s.name,
-      color: s.color || this.colorPalette[i % this.colorPalette.length],
+      color: s.color ?? this.colorPalette[i % this.colorPalette.length] ?? '#3b82f6',
     }));
   }
 
@@ -524,7 +568,7 @@ export class ChartsEngine {
     cursorX: number,
     cursorY: number,
     tooltipWidth: number = 150,
-    tooltipHeight: number = 60
+    tooltipHeight: number = 60,
   ): { x: number; y: number } {
     let x = cursorX + 10;
     let y = cursorY - tooltipHeight - 10;
@@ -543,14 +587,20 @@ export class ChartsEngine {
 
   // Find nearest data point to cursor
   findNearestPoint(cursorX: number, cursorY: number): TooltipData | null {
-    const allX = this.series.flatMap(s => s.data.map(p => p.x));
-    const allY = this.series.flatMap(s => s.data.map(p => p.y));
+    const allX = this.series.flatMap((s) => s.data.map((p) => p.x));
+    const allY = this.series.flatMap((s) => s.data.map((p) => p.y));
     if (allX.length === 0) return null;
 
     const xAxis = this.calculateAxis(allX, 5, this.config.xAxis);
     const yAxis = this.calculateAxis(allY, 5, this.config.yAxis);
 
-    let nearest: { distance: number; point: DataPoint; series: string; x: number; y: number } | null = null;
+    let nearest: {
+      distance: number;
+      point: DataPoint;
+      series: string;
+      x: number;
+      y: number;
+    } | null = null;
 
     for (const series of this.series) {
       for (const point of series.data) {
@@ -585,15 +635,24 @@ export class ChartsEngine {
   // Render chart based on config type
   render(): ChartElement[] {
     switch (this.config.type) {
-      case 'line': return this.generateLineChart();
-      case 'area': return this.generateAreaChart();
-      case 'bar': return this.generateBarChart();
-      case 'pie': return this.generatePieChart(false);
-      case 'donut': return this.generatePieChart(true);
-      case 'scatter': return this.generateScatterPlot();
-      case 'radar': return this.generateRadarChart();
-      case 'funnel': return this.generateFunnelChart();
-      default: return this.generateLineChart();
+      case 'line':
+        return this.generateLineChart();
+      case 'area':
+        return this.generateAreaChart();
+      case 'bar':
+        return this.generateBarChart();
+      case 'pie':
+        return this.generatePieChart(false);
+      case 'donut':
+        return this.generatePieChart(true);
+      case 'scatter':
+        return this.generateScatterPlot();
+      case 'radar':
+        return this.generateRadarChart();
+      case 'funnel':
+        return this.generateFunnelChart();
+      default:
+        return this.generateLineChart();
     }
   }
 }

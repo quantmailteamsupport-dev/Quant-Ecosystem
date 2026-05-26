@@ -3,8 +3,12 @@
 // ============================================================================
 
 import {
-  DragItem, DropTarget, DragState, DropPosition,
-  SortableConfig, DropZoneConfig
+  DragItem,
+  DropTarget,
+  DragState,
+  DropPosition,
+  SortableConfig,
+  DropZoneConfig,
 } from './types';
 
 interface DragSource {
@@ -35,7 +39,6 @@ export class DragDropManager {
   private autoScrollConfig: AutoScrollConfig;
   private autoScrollInterval: any = null;
   private keyboardDragActive: boolean = false;
-  private keyboardFocusIndex: number = 0;
   private previewElement: any = null;
 
   constructor(config?: { autoScroll?: Partial<AutoScrollConfig> }) {
@@ -104,7 +107,7 @@ export class DragDropManager {
     };
 
     // Determine index if in a sortable
-    for (const [containerId, sortable] of this.sortables) {
+    for (const [_containerId, sortable] of this.sortables) {
       const index = sortable.items.indexOf(sourceId);
       if (index !== -1) {
         item.index = index;
@@ -135,7 +138,6 @@ export class DragDropManager {
 
     // Find which target we're over
     const target = this.findTargetAtPosition(position);
-    const previousOverId = this.state.overId;
 
     if (target) {
       this.state.overId = target.id;
@@ -181,7 +183,7 @@ export class DragDropManager {
         this.handleSortableDrop(item, overId, dropPosition);
 
         // Notify drop listeners
-        this.dropListeners.forEach(listener => listener(item, target, dropPosition));
+        this.dropListeners.forEach((listener) => listener(item, target, dropPosition));
         result = dropPosition;
       }
     }
@@ -201,12 +203,12 @@ export class DragDropManager {
   }
 
   // Find the deepest matching target at position
-  private findTargetAtPosition(position: { x: number; y: number }): DropTarget | null {
+  private findTargetAtPosition(_position: { x: number; y: number }): DropTarget | null {
     // Iterate targets - in real implementation would use spatial index
     // Here we check if position is within target bounds (simplified)
     let deepestTarget: DropTarget | null = null;
 
-    for (const [id, target] of this.targets) {
+    for (const [_id, target] of this.targets) {
       if (!this.state.item) continue;
       if (!this.canDrop(this.state.item, target)) continue;
       // In a real DOM environment, we'd check element bounds
@@ -219,7 +221,7 @@ export class DragDropManager {
   // Calculate drop position within target
   private calculateDropPosition(
     cursorPosition: { x: number; y: number },
-    target: DropTarget
+    target: DropTarget,
   ): DropPosition {
     // Check sortable containers
     for (const [containerId, sortable] of this.sortables) {
@@ -243,7 +245,7 @@ export class DragDropManager {
   // Calculate insertion index for sortable containers
   private calculateInsertionIndex(
     position: { x: number; y: number },
-    sortable: SortableConfig
+    sortable: SortableConfig,
   ): number {
     const { items, direction } = sortable;
     if (items.length === 0) return 0;
@@ -258,7 +260,7 @@ export class DragDropManager {
   }
 
   // Handle sortable drop (reorder items)
-  private handleSortableDrop(item: DragItem, targetId: string, position: DropPosition): void {
+  private handleSortableDrop(item: DragItem, _targetId: string, position: DropPosition): void {
     const sortable = this.sortables.get(position.zone);
     if (!sortable || item.index === undefined) return;
 
@@ -366,7 +368,6 @@ export class DragDropManager {
         newIndex = Math.min(sortable.items.length - 1, currentIndex + 1);
       }
 
-      this.keyboardFocusIndex = newIndex;
       this.state.dropPosition = {
         index: newIndex,
         zone: containerId,
@@ -394,7 +395,7 @@ export class DragDropManager {
   // Validate file drop
   validateFileDrop(
     zoneId: string,
-    files: Array<{ name: string; size: number; type: string }>
+    files: Array<{ name: string; size: number; type: string }>,
   ): { valid: boolean; errors: string[] } {
     const zone = this.fileZones.get(zoneId);
     if (!zone) return { valid: false, errors: ['Drop zone not found'] };
@@ -414,7 +415,7 @@ export class DragDropManager {
 
       // Check file type
       if (zone.allowedTypes && zone.allowedTypes.length > 0) {
-        const isAllowed = zone.allowedTypes.some(type => {
+        const isAllowed = zone.allowedTypes.some((type) => {
           if (type.endsWith('/*')) {
             return file.type.startsWith(type.replace('/*', '/'));
           }
@@ -432,11 +433,13 @@ export class DragDropManager {
   // Get drop indicators for visual feedback
   getDropIndicators(): Array<{ zone: string; index: number; side: 'before' | 'after' }> {
     if (!this.state.isDragging || !this.state.dropPosition) return [];
-    return [{
-      zone: this.state.dropPosition.zone,
-      index: this.state.dropPosition.index,
-      side: this.state.dropPosition.side as 'before' | 'after',
-    }];
+    return [
+      {
+        zone: this.state.dropPosition.zone,
+        index: this.state.dropPosition.index,
+        side: this.state.dropPosition.side as 'before' | 'after',
+      },
+    ];
   }
 
   // Get current drag state
@@ -470,7 +473,7 @@ export class DragDropManager {
   // Notify all drag listeners
   private notifyDragListeners(): void {
     const stateCopy = { ...this.state };
-    this.dragListeners.forEach(listener => listener(stateCopy));
+    this.dragListeners.forEach((listener) => listener(stateCopy));
   }
 
   // Reset state after drag end

@@ -3,8 +3,14 @@
 // ============================================================================
 
 import {
-  FormState, FormField, FieldValidation, ValidationRule, ValidationType,
-  FieldArray, FormSchema, FormFieldSchema, ConditionalConfig, CrossFieldRule
+  FormState,
+  FormField,
+  FieldValidation,
+  ValidationRule,
+  FieldArray,
+  FormSchema,
+  ConditionalConfig,
+  CrossFieldRule,
 } from './types';
 
 interface FieldConfig {
@@ -195,7 +201,7 @@ export class FormManager {
   private async runValidation(
     value: any,
     rules: ValidationRule[],
-    formValues: Record<string, any>
+    formValues: Record<string, any>,
   ): Promise<FieldValidation> {
     for (const rule of rules) {
       const valid = await this.checkRule(value, rule, formValues);
@@ -210,7 +216,7 @@ export class FormManager {
   private async checkRule(
     value: any,
     rule: ValidationRule,
-    formValues: Record<string, any>
+    formValues: Record<string, any>,
   ): Promise<boolean> {
     switch (rule.type) {
       case 'required':
@@ -296,7 +302,9 @@ export class FormManager {
     const self = this;
 
     return {
-      get fields() { return self.fieldArrays.get(name) || []; },
+      get fields() {
+        return self.fieldArrays.get(name) || [];
+      },
       append(value: any) {
         const items = self.fieldArrays.get(name) || [];
         items.push(value);
@@ -357,7 +365,7 @@ export class FormManager {
 
   // Reset form to initial values
   reset(values?: Record<string, any>): void {
-    this.fields.forEach((field, name) => {
+    this.fields.forEach((_field, name) => {
       const resetValue = values?.[name] ?? this.initialValues[name];
       this.fields.set(name, {
         name,
@@ -375,7 +383,7 @@ export class FormManager {
 
   // Check if form has unsaved changes
   isDirty(): boolean {
-    for (const [name, field] of this.fields) {
+    for (const [_name, field] of this.fields) {
       if (field.dirty) return true;
     }
     return false;
@@ -438,13 +446,13 @@ export class FormManager {
   private notifyFieldListeners(name: string): void {
     const field = this.fields.get(name);
     if (!field) return;
-    this.fieldListeners.get(name)?.forEach(listener => listener(field));
+    this.fieldListeners.get(name)?.forEach((listener) => listener(field));
   }
 
   // Notify form-level listeners
   private notifyFormListeners(): void {
     const state = this.getFormState();
-    this.formListeners.forEach(listener => listener(state));
+    this.formListeners.forEach((listener) => listener(state));
   }
 
   // Bulk set values

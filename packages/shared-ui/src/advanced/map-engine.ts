@@ -3,8 +3,14 @@
 // ============================================================================
 
 import {
-  MapState, MapTile, Marker, MarkerCluster, GeoCoord,
-  MapBounds, TileCache, MapConfig
+  MapState,
+  MapTile,
+  Marker,
+  MarkerCluster,
+  GeoCoord,
+  MapBounds,
+  TileCache,
+  MapConfig,
 } from './types';
 
 interface PixelCoord {
@@ -77,7 +83,9 @@ export class MapEngine {
     const n = Math.pow(2, zoom);
     const latRad = (coord.lat * Math.PI) / 180;
     const x = Math.floor(((coord.lng + 180) / 360) * n);
-    const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
+    const y = Math.floor(
+      ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n,
+    );
     return { x: Math.max(0, Math.min(n - 1, x)), y: Math.max(0, Math.min(n - 1, y)), z: zoom };
   }
 
@@ -89,12 +97,13 @@ export class MapEngine {
     // Mercator projection
     const worldX = ((coord.lng + 180) / 360) * scale;
     const latRad = (coord.lat * Math.PI) / 180;
-    const worldY = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * scale;
+    const worldY = ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * scale;
 
     // Center world coordinates
     const centerWorldX = ((this.state.center.lng + 180) / 360) * scale;
     const centerLatRad = (this.state.center.lat * Math.PI) / 180;
-    const centerWorldY = (1 - Math.log(Math.tan(centerLatRad) + 1 / Math.cos(centerLatRad)) / Math.PI) / 2 * scale;
+    const centerWorldY =
+      ((1 - Math.log(Math.tan(centerLatRad) + 1 / Math.cos(centerLatRad)) / Math.PI) / 2) * scale;
 
     return {
       x: worldX - centerWorldX + this.viewportWidth / 2,
@@ -109,24 +118,21 @@ export class MapEngine {
 
     const centerWorldX = ((this.state.center.lng + 180) / 360) * scale;
     const centerLatRad = (this.state.center.lat * Math.PI) / 180;
-    const centerWorldY = (1 - Math.log(Math.tan(centerLatRad) + 1 / Math.cos(centerLatRad)) / Math.PI) / 2 * scale;
+    const centerWorldY =
+      ((1 - Math.log(Math.tan(centerLatRad) + 1 / Math.cos(centerLatRad)) / Math.PI) / 2) * scale;
 
     const worldX = pixel.x - this.viewportWidth / 2 + centerWorldX;
     const worldY = pixel.y - this.viewportHeight / 2 + centerWorldY;
 
     const lng = (worldX / scale) * 360 - 180;
-    const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * worldY / scale)));
+    const latRad = Math.atan(Math.sinh(Math.PI * (1 - (2 * worldY) / scale)));
     const lat = (latRad * 180) / Math.PI;
 
     return { lat, lng };
   }
 
   // Calculate visible bounds
-  calculateBounds(center: GeoCoord, zoom: number): MapBounds {
-    const scale = Math.pow(2, zoom) * this.tileSize;
-    const halfWidth = this.viewportWidth / 2;
-    const halfHeight = this.viewportHeight / 2;
-
+  calculateBounds(_center: GeoCoord, _zoom: number): MapBounds {
     const topLeft = this.pixelToLatLng({ x: 0, y: 0 });
     const bottomRight = this.pixelToLatLng({ x: this.viewportWidth, y: this.viewportHeight });
 
@@ -145,10 +151,12 @@ export class MapEngine {
 
     // Get tile range
     const topLeftTile = this.latLngToTile(
-      { lat: this.state.bounds.north, lng: this.state.bounds.west }, zoom
+      { lat: this.state.bounds.north, lng: this.state.bounds.west },
+      zoom,
     );
     const bottomRightTile = this.latLngToTile(
-      { lat: this.state.bounds.south, lng: this.state.bounds.east }, zoom
+      { lat: this.state.bounds.south, lng: this.state.bounds.east },
+      zoom,
     );
 
     const tiles: TileCoord[] = [];
@@ -264,14 +272,13 @@ export class MapEngine {
 
   // Grid-based marker clustering
   updateClusters(): void {
-    const zoom = Math.round(this.state.zoom);
     const clusterRadius = this.config.clusterRadius || 60;
     const gridSize = clusterRadius;
 
     const grid: Map<string, Marker[]> = new Map();
 
     // Place markers into grid cells
-    this.markers.forEach(marker => {
+    this.markers.forEach((marker) => {
       if (marker.clusterable === false) return;
       const pixel = this.latLngToPixel(marker.position);
       const cellX = Math.floor(pixel.x / gridSize);
@@ -286,7 +293,7 @@ export class MapEngine {
     this.clusters = [];
     let clusterId = 0;
 
-    grid.forEach((markers, cellKey) => {
+    grid.forEach((markers, _cellKey) => {
       if (markers.length === 1) return; // No cluster needed
 
       // Calculate cluster center (average position)
@@ -294,8 +301,8 @@ export class MapEngine {
       const avgLng = markers.reduce((sum, m) => sum + m.position.lng, 0) / markers.length;
 
       // Calculate bounds
-      const lats = markers.map(m => m.position.lat);
-      const lngs = markers.map(m => m.position.lng);
+      const lats = markers.map((m) => m.position.lat);
+      const lngs = markers.map((m) => m.position.lng);
 
       this.clusters.push({
         id: `cluster_${clusterId++}`,
@@ -320,11 +327,11 @@ export class MapEngine {
     for (const cluster of this.clusters) {
       if (this.isInBounds(cluster.center)) {
         result.push(cluster);
-        cluster.markers.forEach(m => clusteredIds.add(m.id));
+        cluster.markers.forEach((m) => clusteredIds.add(m.id));
       }
     }
 
-    this.markers.forEach(marker => {
+    this.markers.forEach((marker) => {
       if (!clusteredIds.has(marker.id) && this.isInBounds(marker.position)) {
         result.push(marker);
       }
@@ -336,12 +343,16 @@ export class MapEngine {
   // Check if coordinate is in current bounds
   private isInBounds(coord: GeoCoord): boolean {
     const { north, south, east, west } = this.state.bounds;
-    return coord.lat <= north && coord.lat >= south &&
-           coord.lng <= east && coord.lng >= west;
+    return coord.lat <= north && coord.lat >= south && coord.lng <= east && coord.lng >= west;
   }
 
   // Route rendering - generate polyline points
-  addRoute(id: string, coordinates: GeoCoord[], color: string = '#3b82f6', width: number = 3): void {
+  addRoute(
+    id: string,
+    coordinates: GeoCoord[],
+    color: string = '#3b82f6',
+    width: number = 3,
+  ): void {
     this.routes.set(id, { id, coordinates, color, width });
   }
 
@@ -352,15 +363,17 @@ export class MapEngine {
   getRoutePixels(id: string): Array<PixelCoord> {
     const route = this.routes.get(id);
     if (!route) return [];
-    return route.coordinates.map(coord => this.latLngToPixel(coord));
+    return route.coordinates.map((coord) => this.latLngToPixel(coord));
   }
 
   generateRouteSVGPath(id: string): string {
     const pixels = this.getRoutePixels(id);
     if (pixels.length < 2) return '';
-    let path = `M ${pixels[0].x} ${pixels[0].y}`;
+    const first = pixels[0]!;
+    let path = `M ${first.x} ${first.y}`;
     for (let i = 1; i < pixels.length; i++) {
-      path += ` L ${pixels[i].x} ${pixels[i].y}`;
+      const pt = pixels[i]!;
+      path += ` L ${pt.x} ${pt.y}`;
     }
     return path;
   }
@@ -370,9 +383,11 @@ export class MapEngine {
     this.heatmapData = points;
   }
 
-  generateHeatmap(resolution: number = 10): Array<{ x: number; y: number; intensity: number; color: string }> {
+  generateHeatmap(
+    resolution: number = 10,
+  ): Array<{ x: number; y: number; intensity: number; color: string }> {
     const grid: Map<string, number> = new Map();
-    const maxIntensity = Math.max(...this.heatmapData.map(p => p.intensity), 1);
+    const maxIntensity = Math.max(...this.heatmapData.map((p) => p.intensity), 1);
 
     for (const point of this.heatmapData) {
       if (!this.isInBounds(point.position)) continue;
@@ -385,7 +400,9 @@ export class MapEngine {
 
     const result: Array<{ x: number; y: number; intensity: number; color: string }> = [];
     grid.forEach((intensity, key) => {
-      const [cx, cy] = key.split(':').map(Number);
+      const parts = key.split(':').map(Number);
+      const cx = parts[0] ?? 0;
+      const cy = parts[1] ?? 0;
       const normalized = Math.min(1, intensity / maxIntensity);
       result.push({
         x: cx * resolution,
@@ -424,7 +441,10 @@ export class MapEngine {
   }
 
   setZoom(zoom: number): void {
-    const clampedZoom = Math.max(this.config.minZoom || 1, Math.min(this.config.maxZoom || 18, zoom));
+    const clampedZoom = Math.max(
+      this.config.minZoom || 1,
+      Math.min(this.config.maxZoom || 18, zoom),
+    );
     this.state.zoom = clampedZoom;
     this.state.bounds = this.calculateBounds(this.state.center, clampedZoom);
     this.updateClusters();
@@ -441,8 +461,12 @@ export class MapEngine {
   }
 
   // Zoom in/out
-  zoomIn(): void { this.setZoom(this.state.zoom + 1); }
-  zoomOut(): void { this.setZoom(this.state.zoom - 1); }
+  zoomIn(): void {
+    this.setZoom(this.state.zoom + 1);
+  }
+  zoomOut(): void {
+    this.setZoom(this.state.zoom - 1);
+  }
 
   // Pinch zoom (relative to focal point)
   pinchZoom(focalPoint: PixelCoord, scaleDelta: number): void {
@@ -463,8 +487,12 @@ export class MapEngine {
     const latRange = bounds.north - bounds.south;
     const lngRange = bounds.east - bounds.west;
 
-    const latZoom = Math.log2((180 * (this.viewportHeight - 2 * padding)) / (latRange * this.tileSize));
-    const lngZoom = Math.log2((360 * (this.viewportWidth - 2 * padding)) / (lngRange * this.tileSize));
+    const latZoom = Math.log2(
+      (180 * (this.viewportHeight - 2 * padding)) / (latRange * this.tileSize),
+    );
+    const lngZoom = Math.log2(
+      (360 * (this.viewportWidth - 2 * padding)) / (lngRange * this.tileSize),
+    );
 
     const zoom = Math.min(latZoom, lngZoom, this.config.maxZoom || 18);
     const center: GeoCoord = {
@@ -485,9 +513,15 @@ export class MapEngine {
   }
 
   // Get state
-  getState(): MapState { return { ...this.state }; }
-  getMarkers(): Marker[] { return Array.from(this.markers.values()); }
-  getClusters(): MarkerCluster[] { return [...this.clusters]; }
+  getState(): MapState {
+    return { ...this.state };
+  }
+  getMarkers(): Marker[] {
+    return Array.from(this.markers.values());
+  }
+  getClusters(): MarkerCluster[] {
+    return [...this.clusters];
+  }
   getCacheStats(): { size: number; maxSize: number } {
     return { size: this.tileCache.tiles.size, maxSize: this.tileCache.maxSize };
   }
@@ -499,7 +533,7 @@ export class MapEngine {
   }
 
   private notifyListeners(): void {
-    this.listeners.forEach(listener => listener(this.state));
+    this.listeners.forEach((listener) => listener(this.state));
   }
 
   destroy(): void {

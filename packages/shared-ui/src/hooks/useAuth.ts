@@ -20,7 +20,12 @@ export interface UseAuthReturn {
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (data: { email: string; username: string; password: string; displayName: string }) => Promise<void>;
+  register: (data: {
+    email: string;
+    username: string;
+    password: string;
+    displayName: string;
+  }) => Promise<void>;
   refreshToken: () => Promise<void>;
 }
 
@@ -50,7 +55,7 @@ export function useAuth(): UseAuthReturn {
     checkAuth();
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, _password: string) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -58,8 +63,8 @@ export function useAuth(): UseAuthReturn {
       const mockUser: AuthUser = {
         id: `user_${Date.now().toString(36)}`,
         email,
-        username: email.split('@')[0],
-        displayName: email.split('@')[0],
+        username: email.split('@')[0] ?? email,
+        displayName: email.split('@')[0] ?? email,
         role: 'user',
       };
       setUser(mockUser);
@@ -78,27 +83,30 @@ export function useAuth(): UseAuthReturn {
     clearStoredToken();
   }, []);
 
-  const register = useCallback(async (data: { email: string; username: string; password: string; displayName: string }) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const mockUser: AuthUser = {
-        id: `user_${Date.now().toString(36)}`,
-        email: data.email,
-        username: data.username,
-        displayName: data.displayName,
-        role: 'user',
-      };
-      setUser(mockUser);
-      storeToken(`mock_token_${Date.now()}`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Registration failed';
-      setError(message);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const register = useCallback(
+    async (data: { email: string; username: string; password: string; displayName: string }) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const mockUser: AuthUser = {
+          id: `user_${Date.now().toString(36)}`,
+          email: data.email,
+          username: data.username,
+          displayName: data.displayName,
+          role: 'user',
+        };
+        setUser(mockUser);
+        storeToken(`mock_token_${Date.now()}`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Registration failed';
+        setError(message);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [],
+  );
 
   const refreshToken = useCallback(async () => {
     try {
@@ -125,20 +133,27 @@ export function useAuth(): UseAuthReturn {
 // Storage helpers
 function getStoredToken(): string | null {
   if (typeof globalThis !== 'undefined' && 'localStorage' in globalThis) {
-    return (globalThis as unknown as { localStorage: Storage }).localStorage.getItem('quant_access_token');
+    return (globalThis as unknown as { localStorage: Storage }).localStorage.getItem(
+      'quant_access_token',
+    );
   }
   return null;
 }
 
 function storeToken(token: string): void {
   if (typeof globalThis !== 'undefined' && 'localStorage' in globalThis) {
-    (globalThis as unknown as { localStorage: Storage }).localStorage.setItem('quant_access_token', token);
+    (globalThis as unknown as { localStorage: Storage }).localStorage.setItem(
+      'quant_access_token',
+      token,
+    );
   }
 }
 
 function clearStoredToken(): void {
   if (typeof globalThis !== 'undefined' && 'localStorage' in globalThis) {
-    (globalThis as unknown as { localStorage: Storage }).localStorage.removeItem('quant_access_token');
+    (globalThis as unknown as { localStorage: Storage }).localStorage.removeItem(
+      'quant_access_token',
+    );
   }
 }
 

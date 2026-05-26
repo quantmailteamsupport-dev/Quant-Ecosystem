@@ -3,8 +3,12 @@
 // ============================================================================
 
 import {
-  Breakpoint, BreakpointConfig, MediaQueryResult,
-  ResponsiveValue, ViewportInfo, SafeAreaInsets
+  Breakpoint,
+  BreakpointConfig,
+  MediaQueryResult,
+  ResponsiveValue,
+  ViewportInfo,
+  SafeAreaInsets,
 } from './types';
 
 type BreakpointListener = (info: ViewportInfo) => void;
@@ -47,8 +51,9 @@ export class ResponsiveSystem {
   // Detect current breakpoint from viewport width
   private detectBreakpoint(): string {
     for (let i = this.breakpoints.length - 1; i >= 0; i--) {
-      if (this.viewportWidth >= this.breakpoints[i].minWidth) {
-        return this.breakpoints[i].name;
+      const bp = this.breakpoints[i]!;
+      if (this.viewportWidth >= bp.minWidth) {
+        return bp.name;
       }
     }
     return this.breakpoints[0]?.name || 'xs';
@@ -71,7 +76,7 @@ export class ResponsiveSystem {
     this.notifyBreakpointListeners();
 
     // Update container queries
-    this.containerQueries.forEach(cq => {
+    this.containerQueries.forEach((cq) => {
       this.updateContainerBreakpoint(cq);
     });
   }
@@ -88,15 +93,15 @@ export class ResponsiveSystem {
 
   // Check if current breakpoint is at or above a given breakpoint
   isAtLeast(breakpointName: string): boolean {
-    const targetIndex = this.breakpoints.findIndex(b => b.name === breakpointName);
-    const currentIndex = this.breakpoints.findIndex(b => b.name === this.currentBreakpoint);
+    const targetIndex = this.breakpoints.findIndex((b) => b.name === breakpointName);
+    const currentIndex = this.breakpoints.findIndex((b) => b.name === this.currentBreakpoint);
     return currentIndex >= targetIndex;
   }
 
   // Check if current breakpoint is at or below a given breakpoint
   isAtMost(breakpointName: string): boolean {
-    const targetIndex = this.breakpoints.findIndex(b => b.name === breakpointName);
-    const currentIndex = this.breakpoints.findIndex(b => b.name === this.currentBreakpoint);
+    const targetIndex = this.breakpoints.findIndex((b) => b.name === breakpointName);
+    const currentIndex = this.breakpoints.findIndex((b) => b.name === this.currentBreakpoint);
     return currentIndex <= targetIndex;
   }
 
@@ -142,10 +147,10 @@ export class ResponsiveSystem {
 
     let matches = true;
 
-    if (minWidthMatch) matches = matches && this.viewportWidth >= parseInt(minWidthMatch[1]);
-    if (maxWidthMatch) matches = matches && this.viewportWidth <= parseInt(maxWidthMatch[1]);
-    if (minHeightMatch) matches = matches && this.viewportHeight >= parseInt(minHeightMatch[1]);
-    if (maxHeightMatch) matches = matches && this.viewportHeight <= parseInt(maxHeightMatch[1]);
+    if (minWidthMatch) matches = matches && this.viewportWidth >= parseInt(minWidthMatch[1]!);
+    if (maxWidthMatch) matches = matches && this.viewportWidth <= parseInt(maxWidthMatch[1]!);
+    if (minHeightMatch) matches = matches && this.viewportHeight >= parseInt(minHeightMatch[1]!);
+    if (maxHeightMatch) matches = matches && this.viewportHeight <= parseInt(maxHeightMatch[1]!);
     if (orientationMatch) matches = matches && this.orientation === orientationMatch[1];
     if (prefersColorMatch) matches = matches && this.prefersColorScheme === prefersColorMatch[1];
     if (prefersMotionMatch) {
@@ -157,7 +162,11 @@ export class ResponsiveSystem {
   }
 
   // Container query simulation
-  registerContainer(id: string, width: number, breakpoints?: { name: string; minWidth: number }[]): void {
+  registerContainer(
+    id: string,
+    width: number,
+    breakpoints?: { name: string; minWidth: number }[],
+  ): void {
     const cq: ContainerQuery = {
       id,
       elementWidth: width,
@@ -206,7 +215,14 @@ export class ResponsiveSystem {
   }
 
   // Viewport units calculation
-  getViewportUnits(): { vw: number; vh: number; vmin: number; vmax: number; svh: number; dvh: number } {
+  getViewportUnits(): {
+    vw: number;
+    vh: number;
+    vmin: number;
+    vmax: number;
+    svh: number;
+    dvh: number;
+  } {
     const vw = this.viewportWidth / 100;
     const vh = this.viewportHeight / 100;
     const safeHeight = this.viewportHeight - this.safeAreaInsets.top - this.safeAreaInsets.bottom;
@@ -227,8 +243,12 @@ export class ResponsiveSystem {
     if (prefs.reducedMotion !== undefined) this.prefersReducedMotion = prefs.reducedMotion;
   }
 
-  getPrefersColorScheme(): 'light' | 'dark' { return this.prefersColorScheme; }
-  getPrefersReducedMotion(): boolean { return this.prefersReducedMotion; }
+  getPrefersColorScheme(): 'light' | 'dark' {
+    return this.prefersColorScheme;
+  }
+  getPrefersReducedMotion(): boolean {
+    return this.prefersReducedMotion;
+  }
 
   // Get full viewport info
   getViewportInfo(): ViewportInfo {
@@ -262,17 +282,19 @@ export class ResponsiveSystem {
 
   private notifyBreakpointListeners(): void {
     const info = this.getViewportInfo();
-    this.breakpointListeners.forEach(listener => listener(info));
+    this.breakpointListeners.forEach((listener) => listener(info));
 
     // Also check media queries
     this.mediaQueryListeners.forEach((listeners, query) => {
       const result = this.matchMediaQuery(query);
-      listeners.forEach(listener => listener(result));
+      listeners.forEach((listener) => listener(result));
     });
   }
 
   // Get all defined breakpoints
-  getBreakpoints(): Breakpoint[] { return [...this.breakpoints]; }
+  getBreakpoints(): Breakpoint[] {
+    return [...this.breakpoints];
+  }
 
   destroy(): void {
     this.breakpointListeners.clear();

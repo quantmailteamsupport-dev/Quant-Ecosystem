@@ -3,8 +3,13 @@
 // ============================================================================
 
 import {
-  EditorState, EditorNode, NodeType, InlineFormat,
-  EditorCommand, SelectionState, CursorPosition, EditorHistoryState
+  EditorState,
+  EditorNode,
+  NodeType,
+  InlineFormat,
+  EditorCommand,
+  SelectionState,
+  CursorPosition,
 } from './types';
 
 interface MarkdownShortcut {
@@ -42,7 +47,7 @@ export class RichTextEditor {
 
     // Initialize first node ID in selection
     if (this.state.document.children && this.state.document.children.length > 0) {
-      const firstChild = this.state.document.children[0];
+      const firstChild = this.state.document.children[0]!;
       if (firstChild.id) {
         this.state.selection.anchor.nodeId = firstChild.id;
         this.state.selection.focus.nodeId = firstChild.id;
@@ -133,10 +138,15 @@ export class RichTextEditor {
 
     const command: EditorCommand = {
       type: 'deleteText',
-      data: { direction, count, text: currentText.slice(
-        direction === 'backward' ? offset - count : offset,
-        direction === 'backward' ? offset : offset + count
-      ), position: { nodeId, offset } },
+      data: {
+        direction,
+        count,
+        text: currentText.slice(
+          direction === 'backward' ? offset - count : offset,
+          direction === 'backward' ? offset : offset + count,
+        ),
+        position: { nodeId, offset },
+      },
     };
     this.pushHistory(command);
 
@@ -217,13 +227,12 @@ export class RichTextEditor {
       type,
       id: this.generateId(),
       attrs,
-      children: type === 'divider' ? undefined : [
-        { type: 'text', text: '', id: this.generateId() },
-      ],
+      children:
+        type === 'divider' ? undefined : [{ type: 'text', text: '', id: this.generateId() }],
     };
 
     if (document.children) {
-      const blockIndex = document.children.findIndex(n => n.id === parentBlock?.id);
+      const blockIndex = document.children.findIndex((n) => n.id === parentBlock?.id);
       if (blockIndex >= 0) {
         document.children.splice(blockIndex + 1, 0, newBlock);
       } else {
@@ -255,10 +264,10 @@ export class RichTextEditor {
       attrs: { href: url },
     };
 
-    const { nodeId, offset } = this.state.selection.anchor;
+    const { nodeId } = this.state.selection.anchor;
     const parent = this.findParentBlock(nodeId);
     if (parent && parent.children) {
-      const index = parent.children.findIndex(n => n.id === nodeId);
+      const index = parent.children.findIndex((n) => n.id === nodeId);
       if (index >= 0) {
         parent.children.splice(index + 1, 0, linkNode);
       }
@@ -280,7 +289,7 @@ export class RichTextEditor {
     const { nodeId } = this.state.selection.anchor;
     const parent = this.findParentBlock(nodeId);
     if (parent && parent.children) {
-      const index = parent.children.findIndex(n => n.id === nodeId);
+      const index = parent.children.findIndex((n) => n.id === nodeId);
       if (index >= 0) {
         parent.children.splice(index + 1, 0, mentionNode);
       }
@@ -304,7 +313,7 @@ export class RichTextEditor {
   }
 
   // Check for markdown shortcuts
-  private checkMarkdownShortcuts(insertedText: string): void {
+  private checkMarkdownShortcuts(_insertedText: string): void {
     const { nodeId } = this.state.selection.anchor;
     const node = this.findNode(nodeId);
     if (!node || node.type !== 'text') return;
@@ -367,7 +376,11 @@ export class RichTextEditor {
         this.applyInsertText(command.data.text);
         break;
       case 'toggleFormat':
-        this.state.selection = { anchor: command.data.anchor, focus: command.data.focus, isCollapsed: false };
+        this.state.selection = {
+          anchor: command.data.anchor,
+          focus: command.data.focus,
+          isCollapsed: false,
+        };
         this.toggleFormat(command.data.format);
         break;
     }
@@ -378,7 +391,10 @@ export class RichTextEditor {
     switch (command.type) {
       case 'insertText':
         const pos = command.data.position;
-        this.state.selection.anchor = { nodeId: pos.nodeId, offset: pos.offset + command.data.text.length };
+        this.state.selection.anchor = {
+          nodeId: pos.nodeId,
+          offset: pos.offset + command.data.text.length,
+        };
         this.state.selection.focus = this.state.selection.anchor;
         this.deleteText('backward', command.data.text.length);
         break;
@@ -415,27 +431,37 @@ export class RichTextEditor {
       return text;
     }
 
-    const childrenMd = (node.children || []).map(c => this.nodeToMarkdown(c)).join('');
+    const childrenMd = (node.children || []).map((c) => this.nodeToMarkdown(c)).join('');
 
     switch (node.type) {
-      case 'document': return childrenMd;
-      case 'paragraph': return childrenMd + '\n\n';
+      case 'document':
+        return childrenMd;
+      case 'paragraph':
+        return childrenMd + '\n\n';
       case 'heading': {
         const level = node.attrs?.level || 1;
         return '#'.repeat(level) + ' ' + childrenMd + '\n\n';
       }
-      case 'blockquote': return '> ' + childrenMd + '\n\n';
-      case 'code-block': return '```\n' + childrenMd + '\n```\n\n';
-      case 'list': return childrenMd;
+      case 'blockquote':
+        return '> ' + childrenMd + '\n\n';
+      case 'code-block':
+        return '```\n' + childrenMd + '\n```\n\n';
+      case 'list':
+        return childrenMd;
       case 'list-item': {
         const ordered = node.attrs?.ordered;
         return (ordered ? '1. ' : '- ') + childrenMd + '\n';
       }
-      case 'link': return `[${node.text || ''}](${node.attrs?.href || ''})`;
-      case 'mention': return node.text || '';
-      case 'divider': return '---\n\n';
-      case 'image': return `![${node.attrs?.alt || ''}](${node.attrs?.src || ''})\n\n`;
-      default: return childrenMd;
+      case 'link':
+        return `[${node.text || ''}](${node.attrs?.href || ''})`;
+      case 'mention':
+        return node.text || '';
+      case 'divider':
+        return '---\n\n';
+      case 'image':
+        return `![${node.attrs?.alt || ''}](${node.attrs?.src || ''})\n\n`;
+      default:
+        return childrenMd;
     }
   }
 
@@ -457,25 +483,37 @@ export class RichTextEditor {
       return html;
     }
 
-    const childrenHtml = (node.children || []).map(c => this.nodeToHTML(c)).join('');
+    const childrenHtml = (node.children || []).map((c) => this.nodeToHTML(c)).join('');
 
     switch (node.type) {
-      case 'document': return childrenHtml;
-      case 'paragraph': return `<p>${childrenHtml}</p>`;
-      case 'heading': return `<h${node.attrs?.level || 1}>${childrenHtml}</h${node.attrs?.level || 1}>`;
-      case 'blockquote': return `<blockquote>${childrenHtml}</blockquote>`;
-      case 'code-block': return `<pre><code>${childrenHtml}</code></pre>`;
+      case 'document':
+        return childrenHtml;
+      case 'paragraph':
+        return `<p>${childrenHtml}</p>`;
+      case 'heading':
+        return `<h${node.attrs?.level || 1}>${childrenHtml}</h${node.attrs?.level || 1}>`;
+      case 'blockquote':
+        return `<blockquote>${childrenHtml}</blockquote>`;
+      case 'code-block':
+        return `<pre><code>${childrenHtml}</code></pre>`;
       case 'list': {
         const tag = node.attrs?.ordered ? 'ol' : 'ul';
         return `<${tag}>${childrenHtml}</${tag}>`;
       }
-      case 'list-item': return `<li>${childrenHtml}</li>`;
-      case 'link': return `<a href="${node.attrs?.href || ''}">${node.text || childrenHtml}</a>`;
-      case 'mention': return `<span class="mention" data-id="${node.attrs?.userId}">${node.text}</span>`;
-      case 'embed': return `<div class="embed" data-type="${node.attrs?.embedType}" data-url="${node.attrs?.url}"></div>`;
-      case 'divider': return '<hr>';
-      case 'image': return `<img src="${node.attrs?.src}" alt="${node.attrs?.alt || ''}">`;
-      default: return childrenHtml;
+      case 'list-item':
+        return `<li>${childrenHtml}</li>`;
+      case 'link':
+        return `<a href="${node.attrs?.href || ''}">${node.text || childrenHtml}</a>`;
+      case 'mention':
+        return `<span class="mention" data-id="${node.attrs?.userId}">${node.text}</span>`;
+      case 'embed':
+        return `<div class="embed" data-type="${node.attrs?.embedType}" data-url="${node.attrs?.url}"></div>`;
+      case 'divider':
+        return '<hr>';
+      case 'image':
+        return `<img src="${node.attrs?.src}" alt="${node.attrs?.alt || ''}">`;
+      default:
+        return childrenHtml;
     }
   }
 
@@ -497,20 +535,21 @@ export class RichTextEditor {
     if (!node.children) return;
 
     // Remove empty text nodes
-    node.children = node.children.filter(child => {
+    node.children = node.children.filter((child) => {
       if (child.type === 'text' && (child.text === '' || child.text === undefined)) {
         // Keep at least one text node per block
-        return node.children!.filter(c => c.type === 'text').length <= 1;
+        return node.children!.filter((c) => c.type === 'text').length <= 1;
       }
       return true;
     });
 
     // Merge adjacent text nodes with same format
     for (let i = node.children.length - 1; i > 0; i--) {
-      const current = node.children[i];
-      const previous = node.children[i - 1];
+      const current = node.children[i]!;
+      const previous = node.children[i - 1]!;
       if (
-        current.type === 'text' && previous.type === 'text' &&
+        current.type === 'text' &&
+        previous.type === 'text' &&
         this.formatsEqual(current.format, previous.format)
       ) {
         previous.text = (previous.text || '') + (current.text || '');
@@ -565,8 +604,8 @@ export class RichTextEditor {
     const nodes: EditorNode[] = [];
     this.collectTextNodes(this.state.document, nodes);
     // For simplicity, return all text nodes between anchor and focus
-    const anchorIdx = nodes.findIndex(n => n.id === anchor.nodeId);
-    const focusIdx = nodes.findIndex(n => n.id === focus.nodeId);
+    const anchorIdx = nodes.findIndex((n) => n.id === anchor.nodeId);
+    const focusIdx = nodes.findIndex((n) => n.id === focus.nodeId);
     const start = Math.min(anchorIdx, focusIdx);
     const end = Math.max(anchorIdx, focusIdx);
     return nodes.slice(start, end + 1);
@@ -585,7 +624,7 @@ export class RichTextEditor {
     const parent = this.findParentBlock(nodeId);
     const doc = this.state.document;
     if (doc.children) {
-      const idx = doc.children.findIndex(n => n.id === parent?.id);
+      const idx = doc.children.findIndex((n) => n.id === parent?.id);
       if (idx >= 0) {
         doc.children.splice(idx + 1, 0, newNode);
       } else {
@@ -634,13 +673,13 @@ export class RichTextEditor {
   }
 
   private notifyListeners(): void {
-    this.listeners.forEach(listener => listener(this.state));
+    this.listeners.forEach((listener) => listener(this.state));
   }
 
   // Get word count
   getWordCount(): number {
     const text = this.getPlainText();
-    return text.split(/\s+/).filter(w => w.length > 0).length;
+    return text.split(/\s+/).filter((w) => w.length > 0).length;
   }
 
   // Get plain text content
@@ -651,7 +690,7 @@ export class RichTextEditor {
   private extractText(node: EditorNode): string {
     if (node.type === 'text') return node.text || '';
     if (!node.children) return '';
-    return node.children.map(c => this.extractText(c)).join('');
+    return node.children.map((c) => this.extractText(c)).join('');
   }
 
   destroy(): void {

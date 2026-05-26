@@ -2,9 +2,7 @@
 // @quant/shared-ui - Advanced Virtual List (Windowed Rendering)
 // ============================================================================
 
-import {
-  VirtualItem, ScrollState, VirtualListConfig, MeasuredItem
-} from './types';
+import { VirtualItem, ScrollState, VirtualListConfig } from './types';
 
 interface VirtualRange {
   startIndex: number;
@@ -36,7 +34,6 @@ export class VirtualList {
   private scrollAnchor: ScrollAnchor | null = null;
   private recycledItems: VirtualItem[] = [];
   private savedScrollPosition: number | null = null;
-  private isScrolling: boolean = false;
   private scrollTimeout: any = null;
   private scrollVelocity: number = 0;
   private lastScrollTime: number = 0;
@@ -391,13 +388,13 @@ export class VirtualList {
   // Notify scroll listeners
   private notifyScrollListeners(): void {
     const state = { ...this.scrollState };
-    this.scrollListeners.forEach(listener => listener(state));
+    this.scrollListeners.forEach((listener) => listener(state));
   }
 
   // Notify range listeners
   private notifyRangeListeners(): void {
     const items = this.getVisibleItems();
-    this.rangeListeners.forEach(listener => listener(items));
+    this.rangeListeners.forEach((listener) => listener(items));
   }
 
   // Reset all measurements
@@ -415,7 +412,8 @@ export class VirtualList {
   }
 
   recycleItem(item: VirtualItem): void {
-    if (this.recycledItems.length < 50) { // Cap recycle pool
+    if (this.recycledItems.length < 50) {
+      // Cap recycle pool
       this.recycledItems.push(item);
     }
   }
