@@ -1,4 +1,5 @@
 import type { PrismaClient, Message } from '@prisma/client';
+import * as crypto from 'node:crypto';
 import { createAppError } from '@quant/server-core';
 
 export interface PaginationOptions {
@@ -16,6 +17,21 @@ export interface PaginatedResult<T> {
   hasPrev: boolean;
 }
 
+export interface RecipientPublicKey {
+  userId: string;
+  publicKey: string;
+}
+
+export interface EncryptedPayload {
+  ciphertext: string;
+  nonce: string;
+  authTag: string;
+  encryptedKeys: Array<{
+    recipientId: string;
+    encryptedKey: string;
+  }>;
+}
+
 export interface SendMessageInput {
   conversationId: string;
   senderId: string;
@@ -24,13 +40,78 @@ export interface SendMessageInput {
   mediaUrl?: string;
   replyToId?: string;
   metadata?: Record<string, unknown>;
+  encryption?: 'e2e';
+  recipientPublicKeys?: RecipientPublicKey[];
 }
 
 export class MessageService {
   constructor(private readonly prisma: PrismaClient) {}
 
+  /**
+   * Encrypt plaintext for multiple recipients using AES-256-GCM with a
+   * random session key, encrypted per-recipient with their public key.
+   */
+  encryptForRecipients(
+    plaintext: string,
+    recipientPublicKeys: RecipientPublicKey[],
+  ): EncryptedPayload {
+    // Generate random AES-256 session key
+    const sessionKey = crypto.randomBytes(32);
+    const nonce = crypto.randomBytes(12);
+
+    // Encrypt the plaintext with AES-256-GCM
+    const cipher = crypto.createCipheriv('aes-256-gcm', sessionKey, nonce);
+    const ciphertext = Buffer.concat([
+      cipher.update(Buffer.from(plaintext, 'utf-8')),
+      cipher.final(),
+    ]);
+    const authTag = cipher.getAuthTag();
+
+    // Encrypt the session key for each recipient using their public key
+    const encryptedKeys = recipientPublicKeys.map((recipient) => {
+      const publicKeyDer = Buffer.from(recipient.publicKey, 'base64');
+      const publicKeyObj = crypto.createPublicKey({
+        key: publicKeyDer,
+        format: 'der',
+        type: 'spki',
+      });
+      const encryptedKey = crypto.publicEncrypt(
+        {
+          key: publicKeyObj,
+          padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+          oaepHash: 'sha256',
+        },
+        sessionKey,
+      );
+      return {
+        recipientId: recipient.userId,
+        encryptedKey: encryptedKey.toString('base64'),
+      };
+    });
+
+    // Zero the session key after use to prevent memory leakage
+    sessionKey.fill(0);
+
+    return {
+      ciphertext: ciphertext.toString('base64'),
+      nonce: nonce.toString('base64'),
+      authTag: authTag.toString('base64'),
+      encryptedKeys,
+    };
+  }
+
   async sendMessage(input: SendMessageInput): Promise<Message> {
-    const { conversationId, senderId, content, type, mediaUrl, replyToId, metadata } = input;
+    const {
+      conversationId,
+      senderId,
+      content,
+      type,
+      mediaUrl,
+      replyToId,
+      metadata,
+      encryption,
+      recipientPublicKeys,
+    } = input;
 
     // Verify user is a member of the conversation
     const membership = await this.prisma.conversationMember.findFirst({
@@ -41,11 +122,26 @@ export class MessageService {
       throw createAppError('User is not a member of this conversation', 403, 'NOT_A_MEMBER');
     }
 
+    let storedContent = content;
+
+    // When encryption is 'e2e', encrypt the content for recipients
+    if (encryption === 'e2e') {
+      if (!recipientPublicKeys || recipientPublicKeys.length === 0) {
+        throw createAppError(
+          'Recipient public keys required for E2E encryption',
+          400,
+          'MISSING_RECIPIENT_KEYS',
+        );
+      }
+      const encryptedPayload = this.encryptForRecipients(content, recipientPublicKeys);
+      storedContent = JSON.stringify(encryptedPayload);
+    }
+
     const message = await this.prisma.message.create({
       data: {
         conversationId,
         senderId,
-        content,
+        content: storedContent,
         type: type ?? 'text',
         mediaUrl: mediaUrl ?? null,
         replyToId: replyToId ?? null,
