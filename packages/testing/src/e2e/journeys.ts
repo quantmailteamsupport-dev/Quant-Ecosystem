@@ -5,7 +5,6 @@ import {
   typeText,
   assertVisible,
   assertText,
-  assertUrl,
   waitFor,
   selectOption,
   createJourney,
