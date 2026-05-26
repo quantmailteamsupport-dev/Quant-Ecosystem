@@ -47,6 +47,7 @@ export class AppealWorkflow {
         .filter((c) => c.detected)
         .map((c) => `${c.category}: score=${c.score.toFixed(2)}`),
       status: 'submitted',
+      source: 'automated',
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -73,7 +74,11 @@ export class AppealWorkflow {
     const userList = this.userRecords.get(params.userId) ?? [];
     const recentAppeals = userList.filter((id) => {
       const record = this.records.get(id);
-      return record && Date.now() - record.createdAt < this.config.cooldownDays * 86400000;
+      return (
+        record &&
+        record.source === 'user_initiated' &&
+        Date.now() - record.createdAt < this.config.cooldownDays * 86400000
+      );
     });
 
     if (recentAppeals.length >= this.config.maxAppealsPerUser) {
@@ -91,6 +96,7 @@ export class AppealWorkflow {
       reason: params.reason,
       evidence: params.evidence ?? [],
       status: 'submitted',
+      source: 'user_initiated',
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };

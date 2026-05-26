@@ -12,12 +12,18 @@ import type {
 import type { ModerationJob } from '@quant/queue';
 import type { ActionExecutor } from '../action-executor';
 
+/** Interface for fetching image content from a URL */
+export interface ContentFetcher {
+  fetch(url: string): Promise<Buffer>;
+}
+
 export interface ImageHandlerDeps {
   classifier: ImageClassifier;
   hasher: PerceptualHasher;
   policyEngine: PolicyEngine;
   actionExecutor: ActionExecutor;
   knownBadHashes?: Set<string>;
+  contentFetcher?: ContentFetcher;
 }
 
 export class ImageModerationHandler {
@@ -26,6 +32,7 @@ export class ImageModerationHandler {
   private readonly policyEngine: PolicyEngine;
   private readonly actionExecutor: ActionExecutor;
   private readonly knownBadHashes: Set<string>;
+  private readonly contentFetcher: ContentFetcher | null;
 
   constructor(deps: ImageHandlerDeps) {
     this.classifier = deps.classifier;
@@ -33,12 +40,26 @@ export class ImageModerationHandler {
     this.policyEngine = deps.policyEngine;
     this.actionExecutor = deps.actionExecutor;
     this.knownBadHashes = deps.knownBadHashes ?? new Set();
+    this.contentFetcher = deps.contentFetcher ?? null;
   }
 
   async handle(job: ModerationJob): Promise<ModerationResult> {
-    // In production, the image would be fetched from job.content (URL) first.
-    // Here we compute a perceptual image hash from the content bytes.
-    const imageHash = this.hasher.computeImageHash(Buffer.from(job.content));
+    // Fetch actual image bytes for hashing. If a ContentFetcher is available
+    // and the content looks like a URL, fetch the image. Otherwise fall back
+    // to hashing whatever content bytes are available (e.g. inline base64).
+    let imageBytes: Buffer;
+    if (this.contentFetcher && this.isUrl(job.content)) {
+      try {
+        imageBytes = await this.contentFetcher.fetch(job.content);
+      } catch {
+        // If fetch fails, fall back to hashing the raw content string
+        imageBytes = Buffer.from(job.content);
+      }
+    } else {
+      imageBytes = Buffer.from(job.content);
+    }
+
+    const imageHash = this.hasher.computeImageHash(imageBytes);
 
     // Check against known-bad hashes
     if (this.knownBadHashes.has(imageHash)) {
@@ -91,5 +112,9 @@ export class ImageModerationHandler {
       ...classificationResult,
       action: policyDecision.action,
     };
+  }
+
+  private isUrl(content: string): boolean {
+    return content.startsWith('http://') || content.startsWith('https://');
   }
 }

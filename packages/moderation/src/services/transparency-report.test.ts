@@ -31,6 +31,7 @@ function createAppealRecord(overrides: Partial<AppealRecord> = {}): AppealRecord
     reason: 'test',
     evidence: [],
     status: 'submitted',
+    source: 'user_initiated',
     createdAt: Date.now(),
     updatedAt: Date.now(),
     ...overrides,

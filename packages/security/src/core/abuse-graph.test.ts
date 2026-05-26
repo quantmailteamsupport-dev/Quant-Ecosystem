@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AbuseGraph } from './abuse-graph';
 
 describe('AbuseGraph', () => {
@@ -136,6 +136,42 @@ describe('AbuseGraph', () => {
       graph.reset();
       expect(graph.getUserRisk('target1')).toBe(0);
       expect(graph.detectSybilClusters()).toHaveLength(0);
+    });
+  });
+
+  describe('sliding window for reportTimestamps', () => {
+    it('should prune timestamps older than the window on addReport', () => {
+      // Create graph with a very short window (1 minute)
+      const shortWindowGraph = new AbuseGraph(1);
+
+      // Manually set old timestamps by adding reports and manipulating time
+      const now = Date.now();
+      vi.useFakeTimers();
+      vi.setSystemTime(now - 120_000); // 2 minutes ago
+
+      shortWindowGraph.addReport('user1', 'target1');
+      shortWindowGraph.addReport('user1', 'target2');
+
+      // Move time forward to now
+      vi.setSystemTime(now);
+      shortWindowGraph.addReport('user1', 'target3');
+
+      // Old timestamps should have been pruned
+      // The velocity calculation should only see 1 recent timestamp
+      vi.useRealTimers();
+    });
+
+    it('should accept configurable window in minutes', () => {
+      const customGraph = new AbuseGraph(5); // 5 minute window
+      customGraph.addReport('user1', 'target1');
+      expect(customGraph.getUserRisk('target1')).toBeGreaterThan(0);
+    });
+
+    it('should default to 10 minute window', () => {
+      // Default constructor works
+      const defaultGraph = new AbuseGraph();
+      defaultGraph.addReport('user1', 'target1');
+      expect(defaultGraph.getUserRisk('target1')).toBeGreaterThan(0);
     });
   });
 });

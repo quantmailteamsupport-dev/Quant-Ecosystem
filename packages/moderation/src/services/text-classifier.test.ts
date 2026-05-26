@@ -92,4 +92,24 @@ describe('TextClassifier', () => {
 
     expect(result.action).toBe('flag');
   });
+
+  it('should support custom thresholds via constructor', async () => {
+    const client = createMockClient({
+      hate: { flagged: true, score: 0.85 },
+      harassment: { flagged: false, score: 0.0 },
+      selfHarm: { flagged: false, score: 0.0 },
+      sexual: { flagged: false, score: 0.0 },
+      violence: { flagged: false, score: 0.0 },
+    });
+
+    // With default thresholds, 0.85 -> flag
+    const defaultClassifier = new TextClassifier(client);
+    const defaultResult = await defaultClassifier.classify('content');
+    expect(defaultResult.action).toBe('flag');
+
+    // With custom thresholds, 0.85 -> remove (removeThreshold=0.8)
+    const customClassifier = new TextClassifier(client, { removeThreshold: 0.8 });
+    const customResult = await customClassifier.classify('content');
+    expect(customResult.action).toBe('remove');
+  });
 });

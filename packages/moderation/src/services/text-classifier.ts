@@ -8,8 +8,12 @@ import type {
   TextModerationResponse,
   ModerationResult,
   CategoryScore,
-  ModerationAction,
 } from '../types';
+import {
+  determineAction,
+  DEFAULT_CLASSIFIER_THRESHOLDS,
+  type ClassifierThresholds,
+} from './classifier-thresholds';
 
 /**
  * TextClassifier - ML-based text content classification
@@ -20,9 +24,11 @@ import type {
  */
 export class TextClassifier {
   private readonly client: ModerationAPIClient;
+  private readonly thresholds: ClassifierThresholds;
 
-  constructor(client: ModerationAPIClient) {
+  constructor(client: ModerationAPIClient, thresholds?: Partial<ClassifierThresholds>) {
     this.client = client;
+    this.thresholds = { ...DEFAULT_CLASSIFIER_THRESHOLDS, ...thresholds };
   }
 
   /** Classify text content using ML API */
@@ -30,7 +36,7 @@ export class TextClassifier {
     const response = await this.client.moderateText(text);
     const categories = this.mapResponseToCategories(response);
     const overallScore = Math.max(...categories.map((c) => c.score), 0);
-    const action = this.determineAction(categories);
+    const action = determineAction(categories, this.thresholds);
 
     return {
       id: `txtcls_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
@@ -93,15 +99,5 @@ export class TextClassifier {
     const detected = categories.filter((c) => c.detected);
     if (detected.length === 0) return 0.95;
     return detected.reduce((sum, c) => sum + c.confidence, 0) / detected.length;
-  }
-
-  private determineAction(categories: CategoryScore[]): ModerationAction {
-    const detected = categories.filter((c) => c.detected);
-    if (detected.length === 0) return 'approve';
-    const maxScore = Math.max(...detected.map((c) => c.score));
-    if (maxScore >= 0.9) return 'remove';
-    if (maxScore >= 0.7) return 'flag';
-    if (maxScore >= 0.5) return 'restrict';
-    return 'warn';
   }
 }

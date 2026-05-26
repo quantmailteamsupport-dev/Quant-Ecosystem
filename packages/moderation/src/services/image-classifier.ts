@@ -9,8 +9,12 @@ import type {
   ImageModerationResponse,
   ModerationResult,
   CategoryScore,
-  ModerationAction,
 } from '../types';
+import {
+  determineAction,
+  DEFAULT_CLASSIFIER_THRESHOLDS,
+  type ClassifierThresholds,
+} from './classifier-thresholds';
 
 /**
  * ImageClassifier - ML-based image content classification
@@ -21,9 +25,11 @@ import type {
  */
 export class ImageClassifier {
   private readonly client: ImageModerationAPIClient;
+  private readonly thresholds: ClassifierThresholds;
 
-  constructor(client: ImageModerationAPIClient) {
+  constructor(client: ImageModerationAPIClient, thresholds?: Partial<ClassifierThresholds>) {
     this.client = client;
+    this.thresholds = { ...DEFAULT_CLASSIFIER_THRESHOLDS, ...thresholds };
   }
 
   /** Classify an image using the ML API */
@@ -35,7 +41,7 @@ export class ImageClassifier {
     const response = await this.client.moderateImage(input);
     const categories = this.mapResponseToCategories(response);
     const overallScore = Math.max(...categories.map((c) => c.score), 0);
-    const action = this.determineAction(categories);
+    const action = determineAction(categories, this.thresholds);
 
     return {
       id: `imgcls_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
@@ -94,15 +100,5 @@ export class ImageClassifier {
     const detected = categories.filter((c) => c.detected);
     if (detected.length === 0) return 0.95;
     return detected.reduce((sum, c) => sum + c.confidence, 0) / detected.length;
-  }
-
-  private determineAction(categories: CategoryScore[]): ModerationAction {
-    const detected = categories.filter((c) => c.detected);
-    if (detected.length === 0) return 'approve';
-    const maxScore = Math.max(...detected.map((c) => c.score));
-    if (maxScore >= 0.9) return 'remove';
-    if (maxScore >= 0.7) return 'flag';
-    if (maxScore >= 0.5) return 'restrict';
-    return 'warn';
   }
 }

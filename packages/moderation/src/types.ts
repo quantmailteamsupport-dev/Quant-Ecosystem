@@ -360,6 +360,7 @@ export const AppealRecordSchema = z.object({
     'denied',
     'escalated',
   ]),
+  source: z.enum(['automated', 'user_initiated']),
   assignedTo: z.string().optional(),
   resolution: z.string().optional(),
   createdAt: z.number(),

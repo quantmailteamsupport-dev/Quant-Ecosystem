@@ -86,12 +86,84 @@ function createPlaceholderImageClient(): ImageModerationAPIClient {
 }
 
 /**
+ * Create a real HTTP text moderation client that calls the OpenAI moderation endpoint.
+ * Requires MODERATION_API_KEY (or OPENAI_API_KEY) to be set.
+ */
+function createHttpTextClient(apiKey: string): ModerationAPIClient {
+  return {
+    moderateText: async (input: string) => {
+      const response = await fetch('https://api.openai.com/v1/moderations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({ input }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Moderation API returned ${response.status}: ${response.statusText}`);
+      }
+
+      const data = (await response.json()) as {
+        results: Array<{
+          category_scores: {
+            hate: number;
+            harassment: number;
+            'self-harm': number;
+            sexual: number;
+            violence: number;
+          };
+          categories: {
+            hate: boolean;
+            harassment: boolean;
+            'self-harm': boolean;
+            sexual: boolean;
+            violence: boolean;
+          };
+        }>;
+      };
+
+      const result = data.results[0]!;
+      return {
+        hate: { flagged: result.categories.hate, score: result.category_scores.hate },
+        harassment: {
+          flagged: result.categories.harassment,
+          score: result.category_scores.harassment,
+        },
+        selfHarm: {
+          flagged: result.categories['self-harm'],
+          score: result.category_scores['self-harm'],
+        },
+        sexual: { flagged: result.categories.sexual, score: result.category_scores.sexual },
+        violence: { flagged: result.categories.violence, score: result.category_scores.violence },
+      };
+    },
+  };
+}
+
+/**
  * Factory function that constructs all handler dependencies from config/env.
  * Returns a fully wired ModerationHandlerDeps ready for the worker.
+ *
+ * Environment variables:
+ *   MODERATION_API_KEY or OPENAI_API_KEY - enables real text moderation via OpenAI
+ *   IMAGE_MODERATION_API_KEY - enables real image moderation (placeholder until provider SDK added)
  */
 export function createHandlerDeps(): ModerationHandlerDeps {
-  const textApiClient = createPlaceholderTextClient();
-  const imageApiClient = createPlaceholderImageClient();
+  // Resolve text API client: use real HTTP client if API key is present
+  const textApiKey =
+    process.env['MODERATION_API_KEY'] ?? process.env['OPENAI_API_KEY'] ?? undefined;
+  const textApiClient = textApiKey
+    ? createHttpTextClient(textApiKey)
+    : createPlaceholderTextClient();
+
+  // Resolve image API client: use real client if API key is present
+  const imageApiKey = process.env['IMAGE_MODERATION_API_KEY'] ?? undefined;
+  const imageApiClient = imageApiKey
+    ? // TODO: Replace with real image moderation SDK client when available
+      createPlaceholderImageClient()
+    : createPlaceholderImageClient();
 
   const textClassifier = new TextClassifier(textApiClient);
   const imageClassifier = new ImageClassifier(imageApiClient);

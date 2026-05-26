@@ -128,6 +128,62 @@ describe('AppealWorkflow', () => {
     ).toThrow('Maximum appeals (2) reached within cooldown period');
   });
 
+  it('should not count automated records toward user appeal quota', () => {
+    const workflow = new AppealWorkflow({ maxAppealsPerUser: 2, cooldownDays: 30 });
+    const result = createModerationResult();
+
+    // Create several automated records
+    workflow.createFromAction(result, 'user-y');
+    workflow.createFromAction(result, 'user-y');
+    workflow.createFromAction(result, 'user-y');
+    workflow.createFromAction(result, 'user-y');
+
+    // User should still be able to submit manual appeals
+    const appeal = workflow.submitAppeal({
+      contentId: 'c1',
+      userId: 'user-y',
+      originalAction: 'remove',
+      reason: 'Wrongly flagged',
+    });
+    expect(appeal.source).toBe('user_initiated');
+
+    // Submit one more to reach quota
+    workflow.submitAppeal({
+      contentId: 'c2',
+      userId: 'user-y',
+      originalAction: 'remove',
+      reason: 'Also wrongly flagged',
+    });
+
+    // Now quota should be exhausted
+    expect(() =>
+      workflow.submitAppeal({
+        contentId: 'c3',
+        userId: 'user-y',
+        originalAction: 'remove',
+        reason: 'Third attempt',
+      }),
+    ).toThrow('Maximum appeals (2) reached within cooldown period');
+  });
+
+  it('should set source to automated for createFromAction records', () => {
+    const workflow = new AppealWorkflow();
+    const result = createModerationResult();
+    const record = workflow.createFromAction(result, 'user-1');
+    expect(record.source).toBe('automated');
+  });
+
+  it('should set source to user_initiated for submitAppeal records', () => {
+    const workflow = new AppealWorkflow();
+    const record = workflow.submitAppeal({
+      contentId: 'c1',
+      userId: 'user-1',
+      originalAction: 'remove',
+      reason: 'test',
+    });
+    expect(record.source).toBe('user_initiated');
+  });
+
   it('should get all records for a user', () => {
     const workflow = new AppealWorkflow();
     const result = createModerationResult();

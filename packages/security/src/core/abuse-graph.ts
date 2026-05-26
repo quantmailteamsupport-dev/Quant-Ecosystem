@@ -33,13 +33,15 @@ export class AbuseGraph {
   private reportTimestamps: Map<string, number[]>;
   private cachedClusters: SybilCluster[] | null;
   private clustersDirty: boolean;
+  private readonly windowMs: number;
 
-  constructor() {
+  constructor(windowMinutes: number = 10) {
     this.adjacencyList = new Map();
     this.incomingReports = new Map();
     this.reportTimestamps = new Map();
     this.cachedClusters = null;
     this.clustersDirty = true;
+    this.windowMs = windowMinutes * 60 * 1000;
   }
 
   /** Add a report edge from reporter to target */
@@ -59,7 +61,9 @@ export class AbuseGraph {
     if (!this.reportTimestamps.has(reporterId)) {
       this.reportTimestamps.set(reporterId, []);
     }
-    this.reportTimestamps.get(reporterId)!.push(Date.now());
+    const timestamps = this.reportTimestamps.get(reporterId)!;
+    timestamps.push(Date.now());
+    this.pruneTimestamps(timestamps);
 
     this.clustersDirty = true;
   }
@@ -206,6 +210,7 @@ export class AbuseGraph {
     // Factor 3: Report velocity (how quickly they report others)
     const timestamps = this.reportTimestamps.get(userId);
     if (timestamps && timestamps.length > 2) {
+      this.pruneTimestamps(timestamps);
       const sorted = [...timestamps].sort((a, b) => a - b);
       const timeDiffs: number[] = [];
       for (let i = 1; i < sorted.length; i++) {
@@ -232,6 +237,18 @@ export class AbuseGraph {
       }
     }
     return null;
+  }
+
+  /** Prune timestamps older than the sliding window */
+  private pruneTimestamps(timestamps: number[]): void {
+    const cutoff = Date.now() - this.windowMs;
+    let i = 0;
+    while (i < timestamps.length && timestamps[i]! < cutoff) {
+      i++;
+    }
+    if (i > 0) {
+      timestamps.splice(0, i);
+    }
   }
 
   /** Reset the entire graph */
