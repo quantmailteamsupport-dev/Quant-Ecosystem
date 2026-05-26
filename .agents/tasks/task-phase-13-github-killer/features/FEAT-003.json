@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "feat",
   "description": "Create CI Runner service and AI DevTools services (code review, commit messages, PR descriptions, CI fix, code search, security scan)",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create services/ci-runner/package.json with name @quant/ci-runner, type: module, deps on @quant/queue, @quant/storage, @quant/common, zod, yaml. Scripts: typecheck, test (vitest run), build (tsc). Add vitest.config.ts and tsconfig.json.",
     "Create services/ci-runner/src/main.ts - Worker entry point that pulls jobs from @quant/queue using createTypedWorker pattern.",
