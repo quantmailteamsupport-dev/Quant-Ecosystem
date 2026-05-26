@@ -2,7 +2,7 @@
   "id": "FEAT-004",
   "type": "feat",
   "description": "Create GitHub Actions quality-gates.yml workflow and update security-scan.yml with OWASP ZAP + Snyk integration",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create .github/workflows/quality-gates.yml - A comprehensive GitHub Actions workflow that: (1) triggers on push to main and PRs, (2) runs pnpm install, (3) runs unit tests with coverage (vitest run --coverage), (4) runs coverage gate check (node script that parses coverage JSON and enforces 80% on critical packages), (5) runs typecheck, (6) runs lint, (7) has a separate job for mutation testing (runs Stryker on auth/payments/security), (8) has a separate job for e2e tests (sets up Playwright, runs e2e suite), (9) has a separate job for load tests (runs k6 scripts), (10) uses matrix strategy where appropriate, (11) uploads coverage and test artifacts.",
     "Update .github/workflows/security-scan.yml - Add Snyk scanning job alongside existing Trivy/CodeQL/ZAP: (1) new 'snyk' job that runs snyk test on the monorepo, (2) uploads Snyk results as SARIF, (3) uses Snyk token from secrets. Keep all existing jobs intact.",
@@ -21,5 +21,5 @@
     "Run: npx tsc --noEmit -p packages/testing/tsconfig.json"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 11 tests pass (7 quality-gates.yml + 4 security-scan.yml). Prettier reformatted files via lint-staged. Pre-existing core/ TS errors unchanged. NODE_OPTIONS must be cleared for git hooks (husky commit-msg)."
 }
