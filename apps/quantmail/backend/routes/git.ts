@@ -15,18 +15,21 @@ function getUserId(request: unknown): string {
 const CreateRepoSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().optional(),
-  isPrivate: z.boolean().default(false),
+  visibility: z.enum(['PUBLIC', 'PRIVATE', 'INTERNAL']).default('PUBLIC'),
   defaultBranch: z.string().default('main'),
 });
 
 const UpdateRepoSchema = z.object({
   description: z.string().optional(),
-  isPrivate: z.boolean().optional(),
+  visibility: z.enum(['PUBLIC', 'PRIVATE', 'INTERNAL']).optional(),
   defaultBranch: z.string().optional(),
 });
 
 export default async function gitRoutes(fastify: FastifyInstance) {
-  const prisma = null as unknown as PrismaClient;
+  const prisma = (fastify as unknown as { prisma?: PrismaClient }).prisma ?? null;
+  if (!prisma) {
+    throw new Error('PrismaClient is not available. Register the prisma plugin before git routes.');
+  }
 
   // POST /repos - create repo
   fastify.post('/repos', async (request, reply) => {
@@ -37,7 +40,7 @@ export default async function gitRoutes(fastify: FastifyInstance) {
       data: {
         name: body.name,
         description: body.description ?? null,
-        isPrivate: body.isPrivate,
+        visibility: body.visibility,
         defaultBranch: body.defaultBranch,
         ownerId: userId,
       },

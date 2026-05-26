@@ -24,7 +24,12 @@ const ListPRsQuerySchema = z.object({
 });
 
 export default async function pullRequestRoutes(fastify: FastifyInstance) {
-  const prisma = null as unknown as PrismaClient;
+  const prisma = (fastify as unknown as { prisma?: PrismaClient }).prisma ?? null;
+  if (!prisma) {
+    throw new Error(
+      'PrismaClient is not available. Register the prisma plugin before pull request routes.',
+    );
+  }
   const prService = new PullRequestService(prisma);
 
   // POST / - create PR

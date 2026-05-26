@@ -4,7 +4,7 @@ import { createAppError } from '@quant/server-core';
 
 export const PRDescriptionInputSchema = z.object({
   commits: z.array(z.object({ sha: z.string(), message: z.string() })),
-  diff: z.string(),
+  diff: z.string().max(100000),
   title: z.string().optional(),
 });
 

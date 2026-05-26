@@ -29,7 +29,12 @@ const AddCommentBodySchema = z.object({
 });
 
 export default async function reviewRoutes(fastify: FastifyInstance) {
-  const prisma = null as unknown as PrismaClient;
+  const prisma = (fastify as unknown as { prisma?: PrismaClient }).prisma ?? null;
+  if (!prisma) {
+    throw new Error(
+      'PrismaClient is not available. Register the prisma plugin before review routes.',
+    );
+  }
   const reviewService = new ReviewService(prisma);
 
   // POST / - submit review

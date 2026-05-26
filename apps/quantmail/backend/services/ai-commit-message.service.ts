@@ -3,8 +3,8 @@ import type { AIEngine } from '@quant/ai';
 import { createAppError } from '@quant/server-core';
 
 export const CommitMessageInputSchema = z.object({
-  diff: z.string(),
-  context: z.string().optional(),
+  diff: z.string().max(100000),
+  context: z.string().max(100000).optional(),
 });
 
 export type CommitMessageInput = z.infer<typeof CommitMessageInputSchema>;

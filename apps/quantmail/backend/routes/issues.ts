@@ -41,7 +41,12 @@ const SetAssigneesBodySchema = z.object({
 });
 
 export default async function issueRoutes(fastify: FastifyInstance) {
-  const prisma = null as unknown as PrismaClient;
+  const prisma = (fastify as unknown as { prisma?: PrismaClient }).prisma ?? null;
+  if (!prisma) {
+    throw new Error(
+      'PrismaClient is not available. Register the prisma plugin before issue routes.',
+    );
+  }
   const issueService = new IssueService(prisma);
 
   // POST / - create issue

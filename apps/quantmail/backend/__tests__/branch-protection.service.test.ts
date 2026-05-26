@@ -14,6 +14,9 @@ function createMockPrisma() {
     review: {
       count: vi.fn(),
     },
+    ciRun: {
+      findFirst: vi.fn(),
+    },
   };
 }
 
@@ -219,6 +222,56 @@ describe('BranchProtectionService', () => {
 
       expect(result.allowed).toBe(false);
       expect(result.reason).toContain('Direct push');
+    });
+
+    it('blocks push when status checks have not passed', async () => {
+      prisma.branchProtection.findMany.mockResolvedValue([
+        {
+          id: 'rule-1',
+          branchPattern: 'main',
+          requiredApprovals: 0,
+          requireStatusChecks: true,
+        },
+      ]);
+      prisma.ciRun.findFirst.mockResolvedValue({ id: 'run-1', status: 'FAILED' });
+
+      const result = await service.enforceOnPush('repo-1', 'main', 'pr-1');
+
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toContain('status checks');
+    });
+
+    it('blocks push when no CI runs exist and status checks required', async () => {
+      prisma.branchProtection.findMany.mockResolvedValue([
+        {
+          id: 'rule-1',
+          branchPattern: 'main',
+          requiredApprovals: 0,
+          requireStatusChecks: true,
+        },
+      ]);
+      prisma.ciRun.findFirst.mockResolvedValue(null);
+
+      const result = await service.enforceOnPush('repo-1', 'main', 'pr-1');
+
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toContain('status checks');
+    });
+
+    it('allows push when status checks pass', async () => {
+      prisma.branchProtection.findMany.mockResolvedValue([
+        {
+          id: 'rule-1',
+          branchPattern: 'main',
+          requiredApprovals: 0,
+          requireStatusChecks: true,
+        },
+      ]);
+      prisma.ciRun.findFirst.mockResolvedValue({ id: 'run-1', status: 'SUCCESS' });
+
+      const result = await service.enforceOnPush('repo-1', 'main', 'pr-1');
+
+      expect(result.allowed).toBe(true);
     });
   });
 });

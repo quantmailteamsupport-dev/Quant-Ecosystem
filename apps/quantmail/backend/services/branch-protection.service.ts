@@ -108,6 +108,20 @@ export class BranchProtectionService {
       }
     }
 
+    if (matchingRule.requireStatusChecks) {
+      const latestRun = await this.prisma.ciRun.findFirst({
+        where: { repoId, branch },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!latestRun || latestRun.status !== 'SUCCESS') {
+        return {
+          allowed: false,
+          reason: 'Required status checks have not passed',
+        };
+      }
+    }
+
     return { allowed: true };
   }
 

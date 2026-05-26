@@ -47,6 +47,15 @@ vi.mock('node:fs/promises', () => ({
   mkdir: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('../services/auth.js', () => ({
+  GitAuthService: vi.fn().mockImplementation(() => ({
+    validateToken: vi
+      .fn()
+      .mockResolvedValue({ userId: 'test-user', scopes: ['repo:read', 'repo:write'] }),
+    generateToken: vi.fn().mockReturnValue('test-token'),
+  })),
+}));
+
 import { access } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 
@@ -81,6 +90,9 @@ describe('Git HTTP Routes', () => {
       const response = await app.inject({
         method: 'GET',
         url: '/git/alice/my-project/info/refs?service=git-receive-pack',
+        headers: {
+          authorization: 'Bearer test-token',
+        },
       });
 
       expect(response.statusCode).toBe(200);
@@ -204,6 +216,7 @@ describe('Git HTTP Routes', () => {
         payload: Buffer.from('push-data\n'),
         headers: {
           'content-type': 'application/x-git-receive-pack-request',
+          authorization: 'Bearer test-token',
         },
       });
 
@@ -220,10 +233,26 @@ describe('Git HTTP Routes', () => {
         payload: Buffer.from('push-data\n'),
         headers: {
           'content-type': 'application/x-git-receive-pack-request',
+          authorization: 'Bearer test-token',
         },
       });
 
       expect(response.statusCode).toBe(404);
+    });
+
+    it('returns 401 when no auth token provided', async () => {
+      vi.mocked(access).mockResolvedValue(undefined);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/git/alice/my-project/git-receive-pack',
+        payload: Buffer.from('push-data\n'),
+        headers: {
+          'content-type': 'application/x-git-receive-pack-request',
+        },
+      });
+
+      expect(response.statusCode).toBe(401);
     });
   });
 });

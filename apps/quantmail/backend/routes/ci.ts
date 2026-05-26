@@ -20,7 +20,10 @@ const ListRunsQuerySchema = z.object({
 });
 
 export default async function ciRoutes(fastify: FastifyInstance) {
-  const prisma = null as unknown as PrismaClient;
+  const prisma = (fastify as unknown as { prisma?: PrismaClient }).prisma ?? null;
+  if (!prisma) {
+    throw new Error('PrismaClient is not available. Register the prisma plugin before CI routes.');
+  }
 
   // GET /runs - list CI runs
   fastify.get<{ Params: { owner: string; name: string } }>(
@@ -111,10 +114,12 @@ export default async function ciRoutes(fastify: FastifyInstance) {
       throw createAppError('CI job not found', 404, 'CI_JOB_NOT_FOUND');
     }
 
-    const logs = await prisma.ciJobLog.findMany({
-      where: { jobId },
-      orderBy: { timestamp: 'asc' },
-    });
+    const logs = job.logs
+      ? job.logs.split('\n').map((line, index) => ({
+          line: index + 1,
+          content: line,
+        }))
+      : [];
 
     return reply.send({ success: true, data: logs });
   });
@@ -140,7 +145,7 @@ export default async function ciRoutes(fastify: FastifyInstance) {
 
       const retried = await prisma.ciRun.update({
         where: { id: runId },
-        data: { status: 'PENDING', startedAt: null, finishedAt: null },
+        data: { status: 'PENDING', startedAt: null, completedAt: null },
       });
 
       return reply.send({ success: true, data: retried });

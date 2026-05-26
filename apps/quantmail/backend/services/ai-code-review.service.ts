@@ -3,7 +3,7 @@ import type { AIEngine } from '@quant/ai';
 import { createAppError } from '@quant/server-core';
 
 export const CodeReviewInputSchema = z.object({
-  diff: z.string(),
+  diff: z.string().max(100000),
   prTitle: z.string().optional(),
   prDescription: z.string().optional(),
   language: z.string().optional(),

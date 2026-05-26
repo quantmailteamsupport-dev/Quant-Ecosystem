@@ -3,8 +3,8 @@ import type { AIEngine } from '@quant/ai';
 import { createAppError } from '@quant/server-core';
 
 export const CIFixInputSchema = z.object({
-  logs: z.string(),
-  sourceCode: z.string().optional(),
+  logs: z.string().max(100000),
+  sourceCode: z.string().max(100000).optional(),
   jobName: z.string().optional(),
 });
 

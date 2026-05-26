@@ -3,11 +3,24 @@ import { GitUploadPackService } from '../services/git-upload-pack.js';
 import { GitReceivePackService } from '../services/git-receive-pack.js';
 import { GitHooksService } from '../services/hooks.js';
 import { RepoStorageService } from '../services/repo-storage.js';
+import { GitAuthService } from '../services/auth.js';
 
 const UPLOAD_PACK_ADV_CONTENT_TYPE = 'application/x-git-upload-pack-advertisement';
 const RECEIVE_PACK_ADV_CONTENT_TYPE = 'application/x-git-receive-pack-advertisement';
 const UPLOAD_PACK_CONTENT_TYPE = 'application/x-git-upload-pack-result';
 const RECEIVE_PACK_CONTENT_TYPE = 'application/x-git-receive-pack-result';
+
+function extractToken(request: FastifyRequest): string | null {
+  const authHeader = request.headers.authorization;
+  if (!authHeader) return null;
+  if (authHeader.startsWith('Bearer ')) return authHeader.slice(7);
+  if (authHeader.startsWith('Basic ')) {
+    const decoded = Buffer.from(authHeader.slice(6), 'base64').toString('utf-8');
+    const [, password] = decoded.split(':');
+    return password ?? null;
+  }
+  return null;
+}
 
 export default async function gitHttpRoutes(fastify: FastifyInstance): Promise<void> {
   const basePath = process.env['GIT_REPOS_PATH'] ?? '/tmp/git-repos';
@@ -15,6 +28,24 @@ export default async function gitHttpRoutes(fastify: FastifyInstance): Promise<v
   const uploadPack = new GitUploadPackService();
   const hooksService = new GitHooksService();
   const receivePack = new GitReceivePackService(hooksService);
+  const authService = new GitAuthService();
+
+  const requireAuth = async (request: FastifyRequest, reply: FastifyReply, scope: string) => {
+    const token = extractToken(request);
+    if (!token) {
+      return reply
+        .code(401)
+        .header('WWW-Authenticate', 'Basic realm="Git Server"')
+        .send({ error: 'Authentication required' });
+    }
+    const payload = await authService.validateToken(token);
+    if (!payload) {
+      return reply.code(403).send({ error: 'Invalid or expired token' });
+    }
+    if (!payload.scopes.includes(scope)) {
+      return reply.code(403).send({ error: `Token lacks required scope: ${scope}` });
+    }
+  };
 
   // Register content type parser for git protocol requests
   fastify.addContentTypeParser(
@@ -70,6 +101,8 @@ export default async function gitHttpRoutes(fastify: FastifyInstance): Promise<v
       }
 
       if (service === 'git-receive-pack') {
+        await requireAuth(request, reply, 'repo:write');
+        if (reply.sent) return;
         const refs = await receivePack.advertiseRefs(repoPath);
         return reply
           .header('Content-Type', RECEIVE_PACK_ADV_CONTENT_TYPE)
@@ -123,6 +156,9 @@ export default async function gitHttpRoutes(fastify: FastifyInstance): Promise<v
       }>,
       reply: FastifyReply,
     ) => {
+      await requireAuth(request, reply, 'repo:write');
+      if (reply.sent) return;
+
       const { owner, repo } = request.params;
       const repoPath = repoStorage.getRepoPath(owner, repo.replace(/\.git$/, ''));
 
