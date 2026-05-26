@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "feat",
   "description": "Create Agent Dock UI components in packages/shared-ui/src/agent/: AgentDock, AgentCard, ApprovalDialog, AgentTimeline, AgentCreator, AgentMiniWidget. These React components provide the user-facing interface for the agent swarm system.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create packages/shared-ui/src/agent/AgentDock.tsx - Bottom sheet (mobile) / side panel (desktop) showing all running agents. Props: agents[], onAgentSelect, isOpen, onClose. Renders list of AgentCards. Responsive layout.",
     "Create packages/shared-ui/src/agent/AgentCard.tsx - Per-agent card showing: icon, name, status badge, progress bar, current action text, pause/stop buttons. Props: agent, onPause, onStop, onResume.",
@@ -27,5 +27,5 @@
     "NODE_OPTIONS='' npx vitest run packages/shared-ui"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Tests must be run with --config packages/shared-ui/vitest.config.ts from root to pick up jsdom environment. Pre-existing TS errors in src/advanced/ directory do not affect agent components. Prettier formats on commit via lint-staged. Must use NODE_OPTIONS=\"\" for git commit hooks."
 }
