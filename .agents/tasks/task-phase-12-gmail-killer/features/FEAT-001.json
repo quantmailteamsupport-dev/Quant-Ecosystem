@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Create 12 AI-powered email services in apps/quantmail/backend/services/ that use @quant/ai AIEngine for inference, with Zod schemas for input/output validation and co-located test files.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create apps/quantmail/backend/services/ai-triage.service.ts - Classifies emails into act_now/delegate/read_later/ignore using AIEngine.infer(). Include TriageResultSchema with category, reason, urgency (0-1), suggestedAction. Methods: triage(email, userId), triageBatch(emails, userId).",
     "Create apps/quantmail/backend/services/ai-reply.service.ts - Drafts reply in user's writing style. Takes original email + user writing samples. Uses AIEngine.infer() with system prompt for style matching. Methods: draftReply(originalEmail, userId, options?), learnStyleFromDraft(draft, userId).",
@@ -34,5 +34,5 @@
     "Run: npx tsc --noEmit -p apps/quantmail/tsconfig.backend.json"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "postcss.config.js had module.exports which conflicted with package.json type:module - fixed to ESM export default. vitest.config.ts updated to include backend/__tests__/** pattern. All 12 services + 12 test files created. 90 tests pass across 15 test files. Pre-existing TS errors in Prisma client and src/ files are unrelated to this feature."
 }
