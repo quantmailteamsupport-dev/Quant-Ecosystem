@@ -1,5 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
-import { buildHandlerMap, routeEvent, type IndexerDeps, type EventPayload } from './main';
+import {
+  buildHandlerMap,
+  routeEvent,
+  retryWithBackoff,
+  deadLetterPublish,
+  type IndexerDeps,
+  type EventPayload,
+} from './main';
+import type { Producer } from 'kafkajs';
 import type { SearchClient, VectorClient } from '@quant/search';
 import type { BatchEmbedder } from './embedder';
 
@@ -219,5 +227,84 @@ describe('Event Routing', () => {
 
     await expect(routeEvent(handlers, event)).resolves.toBeUndefined();
     expect(deps.searchClient.indexDocument).not.toHaveBeenCalled();
+  });
+});
+
+function createMockProducer(): Producer {
+  return {
+    send: vi.fn().mockResolvedValue(undefined),
+    connect: vi.fn().mockResolvedValue(undefined),
+    disconnect: vi.fn().mockResolvedValue(undefined),
+  } as unknown as Producer;
+}
+
+function createMockLogger() {
+  return {
+    warn: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  } as unknown as Parameters<typeof retryWithBackoff>[5];
+}
+
+describe('retryWithBackoff', () => {
+  it('succeeds on third attempt after two failures', async () => {
+    const producer = createMockProducer();
+    const mockLogger = createMockLogger();
+    const event: EventPayload = { type: 'test.event', payload: { id: '1' } };
+
+    let callCount = 0;
+    const handler = vi.fn().mockImplementation(async () => {
+      callCount++;
+      if (callCount < 3) {
+        throw new Error(`fail-${callCount}`);
+      }
+    });
+
+    await retryWithBackoff(handler, 3, event, producer, 'test-topic', mockLogger);
+
+    expect(handler).toHaveBeenCalledTimes(3);
+    expect((producer.send as ReturnType<typeof vi.fn>)).not.toHaveBeenCalled();
+  });
+
+  it('publishes to DLQ after all retries are exhausted', async () => {
+    const producer = createMockProducer();
+    const mockLogger = createMockLogger();
+    const event: EventPayload = { type: 'test.event', payload: { id: '2' } };
+
+    const handler = vi.fn().mockRejectedValue(new Error('permanent failure'));
+
+    await expect(
+      retryWithBackoff(handler, 3, event, producer, 'test-topic', mockLogger),
+    ).rejects.toThrow('permanent failure');
+
+    expect(handler).toHaveBeenCalledTimes(3);
+    expect((producer.send as ReturnType<typeof vi.fn>)).toHaveBeenCalledTimes(1);
+
+    const sendCall = (producer.send as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(sendCall.topic).toBe('test-topic.dlq');
+
+    const payload = JSON.parse(sendCall.messages[0].value as string);
+    expect(payload.originalEvent).toEqual(event);
+    expect(payload.error).toBe('permanent failure');
+    expect(payload.failedAt).toBeDefined();
+  });
+});
+
+describe('deadLetterPublish', () => {
+  it('logs error and does not throw when DLQ publish fails', async () => {
+    const producer = createMockProducer();
+    (producer.send as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('kafka down'));
+    const mockLogger = createMockLogger();
+    const event: EventPayload = { type: 'test.event', payload: { id: '3' } };
+
+    await expect(
+      deadLetterPublish(producer, 'test-topic', event, new Error('original'), mockLogger),
+    ).resolves.toBeUndefined();
+
+    expect((mockLogger.error as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'test.event' }),
+      'Failed to publish to dead letter queue',
+    );
   });
 });

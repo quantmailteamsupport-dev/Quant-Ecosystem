@@ -59,6 +59,7 @@ export class HybridSearchEngine {
       this.searchClient.search(opts.index, query, {
         limit: 50,
         filter: opts.filter,
+        showRankingScore: true,
       }),
       this.vectorClient.search(opts.collection, embedding, 50, opts.vectorFilter),
     ]);

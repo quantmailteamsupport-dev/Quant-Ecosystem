@@ -2,7 +2,7 @@
 // Search Indexer Service - Kafka consumer for CDC event indexing
 // ============================================================================
 
-import { Kafka, type Consumer, type EachMessagePayload } from 'kafkajs';
+import { Kafka, type Consumer, type EachMessagePayload, type Producer } from 'kafkajs';
 import pino from 'pino';
 import { SearchClient, VectorClient } from '@quant/search';
 import { BatchEmbedder, type EmbeddingProvider } from './embedder';
@@ -71,18 +71,17 @@ export async function routeEvent(
 
 /**
  * Publish a failed event to a dead letter topic for later inspection/reprocessing.
+ * Accepts a pre-connected Producer instance to avoid connection churn under sustained failures.
  */
 export async function deadLetterPublish(
-  kafka: Kafka,
+  producer: Producer,
   originalTopic: string,
   event: EventPayload,
   error: unknown,
   pinoLogger: typeof logger,
 ): Promise<void> {
   const dlqTopic = `${originalTopic}.dlq`;
-  const producer = kafka.producer();
   try {
-    await producer.connect();
     await producer.send({
       topic: dlqTopic,
       messages: [
@@ -98,8 +97,6 @@ export async function deadLetterPublish(
     pinoLogger.warn({ type: event.type, dlqTopic }, 'Event sent to dead letter queue');
   } catch (dlqError) {
     pinoLogger.error({ dlqError, type: event.type }, 'Failed to publish to dead letter queue');
-  } finally {
-    await producer.disconnect();
   }
 }
 
@@ -111,7 +108,7 @@ export async function retryWithBackoff(
   fn: () => Promise<void>,
   maxRetries: number,
   event: EventPayload,
-  kafka: Kafka,
+  dlqProducer: Producer,
   originalTopic: string,
   pinoLogger: typeof logger,
 ): Promise<void> {
@@ -132,7 +129,7 @@ export async function retryWithBackoff(
       }
     }
   }
-  await deadLetterPublish(kafka, originalTopic, event, lastError, pinoLogger);
+  await deadLetterPublish(dlqProducer, originalTopic, event, lastError, pinoLogger);
   throw lastError;
 }
 
@@ -180,8 +177,10 @@ async function main(): Promise<void> {
 
   const kafka = new Kafka({ clientId, brokers });
   const consumer: Consumer = kafka.consumer({ groupId });
+  const dlqProducer: Producer = kafka.producer();
 
   await consumer.connect();
+  await dlqProducer.connect();
   await consumer.subscribe({ topic, fromBeginning: false });
 
   logger.info({ topic, groupId }, 'Search indexer started, consuming events');
@@ -193,7 +192,14 @@ async function main(): Promise<void> {
         if (!value) return;
 
         const event = JSON.parse(value) as EventPayload;
-        await retryWithBackoff(() => routeEvent(handlers, event), 3, event, kafka, topic, logger);
+        await retryWithBackoff(
+          () => routeEvent(handlers, event),
+          3,
+          event,
+          dlqProducer,
+          topic,
+          logger,
+        );
 
         logger.debug({ type: event.type }, 'Event processed successfully');
       } catch (error) {
@@ -208,6 +214,7 @@ async function main(): Promise<void> {
   const shutdown = async (): Promise<void> => {
     logger.info('Shutting down search indexer...');
     await consumer.disconnect();
+    await dlqProducer.disconnect();
     process.exit(0);
   };
 

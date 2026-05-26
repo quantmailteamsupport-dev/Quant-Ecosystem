@@ -270,7 +270,9 @@ describe('VectorClient', () => {
 
       const info = await client.getCollectionInfo('test-collection');
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:6333/collections/test-collection');
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:6333/collections/test-collection', {
+        headers: {},
+      });
       expect(info).toEqual({
         name: 'test-collection',
         vectorSize: 768,

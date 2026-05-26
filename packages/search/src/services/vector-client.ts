@@ -88,7 +88,7 @@ export class VectorClient {
     } else if (options?.https && host.startsWith('http://')) {
       this.baseUrl = `${host.replace('http://', 'https://')}:${port}`;
     } else {
-      this.baseUrl = `${host}:${port}`;
+      this.baseUrl = host.startsWith('http') ? `${host}:${port}` : `http://${host}:${port}`;
     }
     this.apiKey = options?.apiKey;
   }
@@ -204,9 +204,7 @@ export class VectorClient {
 
   async getCollectionInfo(collection: string): Promise<CollectionInfo> {
     const url = `${this.baseUrl}/collections/${collection}`;
-    const response = this.apiKey
-      ? await fetch(url, { headers: this.getHeaders(false) })
-      : await fetch(url);
+    const response = await fetch(url, { headers: this.getHeaders(false) });
 
     if (!response.ok) {
       const error = await response.text();
