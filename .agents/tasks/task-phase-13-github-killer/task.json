@@ -1,0 +1,7 @@
+{
+  "task_id": "task-phase-13-github-killer",
+  "task_description": "Phase 13: QuantMail GitHub Killer - Real Git Hosting + AI DevTools. Adds git hosting backend service with Smart HTTP protocol, Prisma models for repositories/PRs/issues/CI, PR/Issue/Review/BranchProtection services, CI runner service, AI DevTools (code review, commit messages, PR descriptions, CI fix, code search, security scan), and routes for all operations.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004"],
+  "blocked_reason": null
+}
