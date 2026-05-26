@@ -1,5 +1,5 @@
 import { Actor } from './actor.js';
-import { InboxProcessor, ActivitySchema } from './inbox.js';
+import { InboxProcessor, ActivitySchema, InboxSignatureVerifier } from './inbox.js';
 import { OutboxPublisher } from './outbox.js';
 import { FederationModeration } from '../moderation.js';
 
@@ -9,6 +9,13 @@ export interface RouteResponse {
   headers: Record<string, string>;
 }
 
+export interface RequestMetadata {
+  headers: Record<string, string>;
+  method: string;
+  url: string;
+  body?: string;
+}
+
 export class FederationServer {
   private actors: Map<string, Actor> = new Map();
   private inboxProcessor: InboxProcessor;
@@ -16,8 +23,8 @@ export class FederationServer {
   private followerSets: Map<string, Set<string>> = new Map();
   private followingSets: Map<string, Set<string>> = new Map();
 
-  constructor(moderation?: FederationModeration) {
-    this.inboxProcessor = new InboxProcessor(moderation);
+  constructor(moderation?: FederationModeration, signatureVerifier?: InboxSignatureVerifier) {
+    this.inboxProcessor = new InboxProcessor(moderation, signatureVerifier);
   }
 
   registerActor(actor: Actor): void {
@@ -28,7 +35,12 @@ export class FederationServer {
     );
   }
 
-  handle(method: string, path: string, body?: unknown): RouteResponse {
+  handle(
+    method: string,
+    path: string,
+    body?: unknown,
+    requestMeta?: RequestMetadata,
+  ): RouteResponse {
     const actorMatch = /^\/users\/([^/]+)$/.exec(path);
     const inboxMatch = /^\/users\/([^/]+)\/inbox$/.exec(path);
     const outboxMatch = /^\/users\/([^/]+)\/outbox$/.exec(path);
@@ -40,7 +52,7 @@ export class FederationServer {
     }
 
     if (method === 'POST' && inboxMatch) {
-      return this.handlePostInbox(inboxMatch[1]!, body);
+      return this.handlePostInbox(inboxMatch[1]!, body, requestMeta);
     }
 
     if (method === 'GET' && outboxMatch) {
@@ -79,7 +91,11 @@ export class FederationServer {
     };
   }
 
-  private handlePostInbox(username: string, body: unknown): RouteResponse {
+  private handlePostInbox(
+    username: string,
+    body: unknown,
+    requestMeta?: RequestMetadata,
+  ): RouteResponse {
     const parsed = ActivitySchema.safeParse(body);
     if (!parsed.success) {
       return {
@@ -91,7 +107,17 @@ export class FederationServer {
 
     const actorUrl = parsed.data.actor;
     const senderDomain = new URL(actorUrl).hostname;
-    const result = this.inboxProcessor.process(parsed.data, senderDomain);
+
+    const requestContext = requestMeta
+      ? {
+          headers: requestMeta.headers,
+          method: requestMeta.method,
+          url: requestMeta.url,
+          body: requestMeta.body,
+        }
+      : undefined;
+
+    const result = this.inboxProcessor.process(parsed.data, senderDomain, requestContext);
 
     if (!result.accepted) {
       return {

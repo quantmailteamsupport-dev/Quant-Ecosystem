@@ -12,6 +12,7 @@ export type { InboxSignatureVerifier } from './activitypub/inbox.js';
 export { OutboxPublisher } from './activitypub/outbox.js';
 export { DeliveryQueue, DeliveryJobSchema } from './activitypub/delivery-queue.js';
 export { FederationServer } from './activitypub/server.js';
+export type { RequestMetadata, RouteResponse } from './activitypub/server.js';
 
 // Matrix
 export { MatrixBridgeBot } from './matrix/bridge-bot.js';
