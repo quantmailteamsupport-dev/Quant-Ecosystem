@@ -124,4 +124,20 @@ describe('ServiceWorkerManager', () => {
     expect(manager.isRegistered()).toBe(true);
     expect(manager.getScriptUrl()).toBe('/sw.js');
   });
+
+  it('should evict oldest request when queue exceeds maxQueueSize', () => {
+    const manager = new ServiceWorkerManager(undefined, 3);
+
+    manager.queueRequest(createRequest('r1'));
+    manager.queueRequest(createRequest('r2'));
+    manager.queueRequest(createRequest('r3'));
+    // This should evict r1
+    manager.queueRequest(createRequest('r4'));
+
+    expect(manager.getQueueSize()).toBe(3);
+    const queued = manager.getQueuedRequests();
+    expect(queued[0]!.id).toBe('r2');
+    expect(queued[1]!.id).toBe('r3');
+    expect(queued[2]!.id).toBe('r4');
+  });
 });

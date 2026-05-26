@@ -98,4 +98,28 @@ describe('CRDTState', () => {
     expect(state.get('age')).toBe(99);
     expect(state.get('active')).toBe(true);
   });
+
+  it('should validate via full schema.parse for refined schemas without .shape', () => {
+    const RefinedSchema = z
+      .object({
+        name: z.string(),
+        age: z.number(),
+        active: z.boolean(),
+      })
+      .refine((data) => data.age >= 0, { message: 'Age must be non-negative' });
+
+    type RefinedState = z.infer<typeof RefinedSchema>;
+
+    const state = new CRDTState<RefinedState>(RefinedSchema);
+    state.set('name', 'Valid');
+    state.set('age', 25);
+    state.set('active', true);
+
+    // Setting a negative age should throw because the refine check fails
+    expect(() => state.set('age', -1)).toThrow();
+
+    // Valid value should still work
+    state.set('age', 30);
+    expect(state.get('age')).toBe(30);
+  });
 });

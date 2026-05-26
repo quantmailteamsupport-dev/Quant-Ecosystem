@@ -33,12 +33,36 @@ export class CRDTState<T extends Record<string, unknown>> {
   }
 
   set<K extends keyof T>(key: K, value: T[K]): void {
-    // Validate the individual field if the schema supports shape access
-    const schema = this.schema as unknown as { shape?: Record<string, z.ZodType<unknown>> };
-    if (schema.shape && key in schema.shape) {
-      const fieldSchema = schema.shape[key as string];
+    // Validate the individual field using schema.shape if available (z.object()),
+    // otherwise fall back to full-object validation via schema.parse()
+    const schemaWithShape = this.schema as unknown as {
+      shape?: Record<string, z.ZodType<unknown>>;
+    };
+    if (schemaWithShape.shape && (key as string) in schemaWithShape.shape) {
+      const fieldSchema = schemaWithShape.shape[key as string];
       if (fieldSchema) {
         fieldSchema.parse(value);
+      }
+    } else {
+      // For refined/transformed schemas without .shape, validate the full snapshot.
+      // Only validate if the snapshot is complete (all fields set); otherwise
+      // field-level validation is not possible without .shape and we defer to
+      // full-object validation once the state is populated.
+      const current = this.getSnapshot();
+      const candidate = { ...current, [key]: value };
+      const result = this.schema.safeParse(candidate);
+      if (!result.success) {
+        // Check if failures relate to the field being set or to refinement checks
+        const fieldErrors = result.error.issues.filter(
+          (issue) =>
+            (issue.path.length > 0 && issue.path[0] === key) ||
+            (issue.path.length === 0 && issue.code === 'custom'),
+        );
+        if (fieldErrors.length > 0) {
+          throw result.error;
+        }
+        // If only errors are on other (unset) fields, allow the write -
+        // state is still being built incrementally
       }
     }
     this.map.set(key as string, value);

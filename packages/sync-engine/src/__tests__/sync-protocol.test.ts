@@ -213,4 +213,124 @@ describe('SyncProtocol', () => {
       }),
     ).toThrow();
   });
+
+  it('should evict oldest message when queue exceeds maxQueueSize', () => {
+    const smallQueueProtocol = new SyncProtocol({
+      wsUrl: 'wss://example.com/sync',
+      httpUrl: 'https://example.com/sync',
+      maxQueueSize: 3,
+    });
+
+    // Queue 4 messages (exceeding maxQueueSize of 3)
+    for (let i = 1; i <= 4; i++) {
+      smallQueueProtocol.send({
+        type: 'update',
+        documentId: 'doc1',
+        timestamp: i,
+        messageId: `msg-${i}`,
+      });
+    }
+
+    const queued = smallQueueProtocol.getQueuedMessages();
+    expect(queued).toHaveLength(3);
+    // Oldest message (msg-1) should have been evicted
+    expect(queued[0]!.messageId).toBe('msg-2');
+    expect(queued[1]!.messageId).toBe('msg-3');
+    expect(queued[2]!.messageId).toBe('msg-4');
+
+    smallQueueProtocol.disconnect();
+  });
+
+  it('should fire onError callback and increment errorCount on invalid inbound message', () => {
+    const mockWs = createMockWebSocket();
+    protocol.setWebSocketFactory(() => mockWs);
+
+    const errorHandler = vi.fn();
+    protocol.onError(errorHandler);
+
+    protocol.connect();
+    mockWs.triggerOpen();
+
+    expect(protocol.errorCount).toBe(0);
+
+    // Send invalid JSON
+    mockWs.triggerMessage('not valid json{{{');
+    expect(protocol.errorCount).toBe(1);
+    expect(errorHandler).toHaveBeenCalledTimes(1);
+
+    // Send valid JSON but invalid schema (missing required fields)
+    mockWs.triggerMessage(JSON.stringify({ type: 'invalid_type' }));
+    expect(protocol.errorCount).toBe(2);
+    expect(errorHandler).toHaveBeenCalledTimes(2);
+  });
+
+  it('should fire onConnectionStateChange on connect, disconnect, and reconnect', () => {
+    const mockWs = createMockWebSocket();
+    protocol.setWebSocketFactory(() => mockWs);
+
+    const stateChanges: string[] = [];
+    protocol.onConnectionStateChange((state) => {
+      stateChanges.push(state);
+    });
+
+    // Connect
+    protocol.connect();
+    mockWs.triggerOpen();
+    expect(stateChanges).toEqual(['connecting', 'connected']);
+
+    // Disconnect via close (triggers reconnecting)
+    mockWs.triggerClose();
+    expect(stateChanges).toEqual(['connecting', 'connected', 'reconnecting']);
+
+    // Advance timer to trigger reconnect attempt, ws opens again
+    vi.advanceTimersByTime(100);
+    mockWs.triggerOpen();
+    expect(stateChanges).toEqual(['connecting', 'connected', 'reconnecting', 'connected']);
+
+    // Explicit disconnect
+    protocol.disconnect();
+    expect(stateChanges).toEqual([
+      'connecting',
+      'connected',
+      'reconnecting',
+      'connected',
+      'disconnected',
+    ]);
+  });
+
+  it('should not lose messages during HTTP fallback flush when httpSender is not set', () => {
+    const mockWs = createMockWebSocket();
+    protocol.setWebSocketFactory(() => mockWs);
+
+    // Queue messages while disconnected
+    protocol.send({
+      type: 'update',
+      documentId: 'doc1',
+      timestamp: 1,
+      messageId: 'msg-1',
+    });
+    protocol.send({
+      type: 'update',
+      documentId: 'doc1',
+      timestamp: 2,
+      messageId: 'msg-2',
+    });
+
+    expect(protocol.getQueuedMessages()).toHaveLength(2);
+
+    // Connect and exhaust retries to enter http_fallback without httpSender
+    protocol.connect();
+    mockWs.triggerClose(); // retry 1
+    vi.advanceTimersByTime(100);
+    mockWs.triggerClose(); // retry 2
+    vi.advanceTimersByTime(200);
+    mockWs.triggerClose(); // retry 3
+    vi.advanceTimersByTime(400);
+    mockWs.triggerClose(); // exceeded -> http_fallback
+
+    expect(protocol.getConnectionState()).toBe('http_fallback');
+    // Messages should be retained since no httpSender is available
+    expect(protocol.getQueuedMessages()).toHaveLength(2);
+    expect(protocol.getQueuedMessages()[0]!.messageId).toBe('msg-1');
+  });
 });

@@ -249,14 +249,18 @@ export class SyncProtocol {
   }
 
   private flushQueue(): void {
-    while (this.messageQueue.length > 0) {
-      const message = this.messageQueue.shift()!;
-      if (this.connectionState === 'connected' && this.ws) {
+    if (this.connectionState === 'connected' && this.ws) {
+      while (this.messageQueue.length > 0) {
+        const message = this.messageQueue.shift()!;
         this.ws.send(JSON.stringify(message));
-      } else if (this.connectionState === 'http_fallback' && this.httpSender) {
+      }
+    } else if (this.connectionState === 'http_fallback' && this.httpSender) {
+      while (this.messageQueue.length > 0) {
+        const message = this.messageQueue.shift()!;
         void this.httpSender(message);
       }
     }
+    // If neither delivery path is available, messages remain in the queue
   }
 
   private setConnectionState(state: ConnectionState): void {
