@@ -12,6 +12,7 @@ export const SearchOptionsSchema = z.object({
   offset: z.number().int().nonnegative().optional(),
   attributesToRetrieve: z.array(z.string()).optional(),
   attributesToHighlight: z.array(z.string()).optional(),
+  showRankingScore: z.boolean().optional(),
 });
 
 export type SearchOptions = z.infer<typeof SearchOptionsSchema>;

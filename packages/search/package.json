@@ -14,7 +14,8 @@
     "meilisearch": "^0.44.0",
     "zod": "^3.24.2",
     "pino": "^9.6.0",
-    "@quant/common": "workspace:*"
+    "@quant/common": "workspace:*",
+    "@quant/ai": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
