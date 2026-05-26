@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "AI Creator Tools for QuantTube in apps/quantube/backend/services/creator-tools/ - thumbnail generation, title A/B testing, clip maker, and caption/transcription services with tests",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create directory apps/quantube/backend/services/creator-tools/",
     "Create apps/quantube/backend/services/creator-tools/ai-thumbnail.service.ts - Generate thumbnail options from video metadata. Methods: generateThumbnails(videoId, videoUrl, options?), selectBestThumbnail(thumbnails, criteria). Returns array of ThumbnailOption with url, score, description. Uses AI inference (mocked pattern). Zod validation on inputs.",
