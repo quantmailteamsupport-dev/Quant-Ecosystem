@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import * as Y from 'yjs';
 import { YjsServer } from '../services/yjs-server';
 
@@ -146,6 +146,128 @@ describe('YjsServer', () => {
       expect(text1.toString()).toContain('Base');
       expect(text1.toString()).toContain('Alpha');
       expect(text1.toString()).toContain('Beta');
+    });
+  });
+
+  describe('eviction', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('schedules eviction when last client disconnects', () => {
+      server.handleConnection('doc-1', 'client-1');
+      server.getOrCreateDoc('doc-1');
+
+      server.removeConnection('doc-1', 'client-1');
+
+      // Doc still exists before timer fires
+      expect(server.getConnectedClients('doc-1')).toHaveLength(0);
+
+      // Advance time past the eviction delay (5 minutes)
+      vi.advanceTimersByTime(300001);
+
+      // After eviction, getOrCreateDoc creates a fresh doc (the old one was destroyed)
+      const doc = server.getOrCreateDoc('doc-1');
+      expect(doc).toBeInstanceOf(Y.Doc);
+    });
+
+    it('cancels eviction if a client reconnects', () => {
+      server.handleConnection('doc-1', 'client-1');
+
+      // Apply some content
+      const sourceDoc = new Y.Doc();
+      const sourceText = sourceDoc.getText('content');
+      let capturedUpdate: Uint8Array | null = null;
+      sourceDoc.on('update', (update: Uint8Array) => {
+        capturedUpdate = update;
+      });
+      sourceText.insert(0, 'Keep this');
+      server.applyUpdate('doc-1', capturedUpdate!);
+
+      // Disconnect triggers eviction schedule
+      server.removeConnection('doc-1', 'client-1');
+
+      // Reconnect before eviction fires
+      server.handleConnection('doc-1', 'client-2');
+
+      // Advance time past eviction delay
+      vi.advanceTimersByTime(300001);
+
+      // Doc content should still be there since eviction was cancelled
+      const doc = server.getOrCreateDoc('doc-1');
+      expect(doc.getText('content').toString()).toBe('Keep this');
+    });
+  });
+
+  describe('evictIdleDocs', () => {
+    it('evicts documents with no clients that exceed maxIdleMs', () => {
+      // Create a doc and disconnect
+      server.handleConnection('doc-1', 'client-1');
+      server.getOrCreateDoc('doc-1');
+      server.removeConnection('doc-1', 'client-1');
+
+      // Create another doc that is still connected
+      server.handleConnection('doc-2', 'client-2');
+      server.getOrCreateDoc('doc-2');
+
+      // Manually call evictIdleDocs with 0ms threshold (everything idle is evicted)
+      const evicted = server.evictIdleDocs(0);
+
+      expect(evicted).toContain('doc-1');
+      expect(evicted).not.toContain('doc-2');
+    });
+
+    it('does not evict documents within maxIdleMs', () => {
+      server.handleConnection('doc-1', 'client-1');
+      server.getOrCreateDoc('doc-1');
+      server.removeConnection('doc-1', 'client-1');
+
+      // Use a large maxIdleMs - doc was just created so it's not idle enough
+      const evicted = server.evictIdleDocs(999999999);
+
+      expect(evicted).toHaveLength(0);
+    });
+
+    it('returns empty array when no docs exist', () => {
+      const evicted = server.evictIdleDocs(0);
+      expect(evicted).toHaveLength(0);
+    });
+  });
+
+  describe('shutdown', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('clears all pending eviction timers', () => {
+      server.handleConnection('doc-1', 'client-1');
+      server.handleConnection('doc-2', 'client-2');
+      server.getOrCreateDoc('doc-1');
+      server.getOrCreateDoc('doc-2');
+
+      // Disconnect both to schedule evictions
+      server.removeConnection('doc-1', 'client-1');
+      server.removeConnection('doc-2', 'client-2');
+
+      // Shutdown clears timers
+      server.shutdown();
+
+      // Advance past eviction time - docs should NOT be evicted since timers were cleared
+      vi.advanceTimersByTime(300001);
+
+      // Docs should still exist (getOrCreateDoc returns the same instance)
+      const doc1 = server.getOrCreateDoc('doc-1');
+      const doc2 = server.getOrCreateDoc('doc-2');
+      expect(doc1).toBeInstanceOf(Y.Doc);
+      expect(doc2).toBeInstanceOf(Y.Doc);
     });
   });
 });

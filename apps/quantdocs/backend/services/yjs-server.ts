@@ -93,6 +93,17 @@ export class YjsServer {
     return evicted;
   }
 
+  /**
+   * Shut down the server by clearing all pending eviction timers.
+   * This allows the Node.js process to exit gracefully.
+   */
+  shutdown(): void {
+    for (const timer of this.evictionTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.evictionTimers.clear();
+  }
+
   private scheduleEviction(docId: string, delayMs = 300000): void {
     const timer = setTimeout(() => {
       this.evictionTimers.delete(docId);
@@ -103,6 +114,7 @@ export class YjsServer {
         this.lastActivity.delete(docId);
       }
     }, delayMs);
+    timer.unref();
     this.evictionTimers.set(docId, timer);
   }
 }
