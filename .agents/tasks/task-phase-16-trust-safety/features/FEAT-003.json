@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "feat",
   "description": "Create the Moderation Worker Service at services/moderation-worker/. This service consumes ModerationJob messages from @quant/queue, routes to text/image/video/audio handlers, applies policy, executes actions (hide/remove/warn/ban), and creates audit log entries via @quant/data-plane.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Step 1: Create services/moderation-worker/package.json - Dependencies: @quant/moderation (workspace:*), @quant/queue (workspace:*), @quant/data-plane (workspace:*), @quant/security (workspace:*), @quant/common (workspace:*), zod, pino, bullmq, ioredis. DevDeps: vitest, typescript, @types/node, ts-node. Add scripts: start, dev, typecheck, test.",
     "Step 2: Create services/moderation-worker/tsconfig.json extending ../../tsconfig.json and services/moderation-worker/vitest.config.ts.",
@@ -32,5 +32,5 @@
     "Run: NODE_OPTIONS=\"\" npx vitest run packages/queue"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 24 tests pass. Redis connection errors in stderr are expected since main() tries to connect during module import, but test functions (buildHandlerMap, routeJob) work independently. Used NODE_OPTIONS='' for pnpm install and git commit due to proxy-bootstrap.js missing in sandbox."
 }
