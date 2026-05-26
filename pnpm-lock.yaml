@@ -749,6 +749,9 @@ importers:
 
   packages/search:
     dependencies:
+      '@quant/ai':
+        specifier: workspace:*
+        version: link:../ai
       '@quant/common':
         specifier: workspace:*
         version: link:../common

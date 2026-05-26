@@ -90,6 +90,15 @@ services:
     volumes:
       - redpanda_data:/var/lib/redpanda/data
 
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: quant-qdrant
+    ports:
+      - '6333:6333'
+      - '6334:6334'
+    volumes:
+      - qdrant_data:/qdrant/storage
+
 volumes:
   postgres_data:
   redis_data:
@@ -97,3 +106,4 @@ volumes:
   meilisearch_data:
   nats_data:
   redpanda_data:
+  qdrant_data:
