@@ -116,6 +116,11 @@ export default async function aiRoutes(fastify: FastifyInstance) {
       throw parseResult.error;
     }
 
+    const userId = (request as unknown as { auth: { userId: string } }).auth?.userId;
+    if (!userId) {
+      throw createAppError('Authentication required', 401, 'UNAUTHORIZED');
+    }
+
     const ai = (fastify as unknown as { ai: unknown }).ai;
     const service = new AICancelDetectorService(ai as never);
 

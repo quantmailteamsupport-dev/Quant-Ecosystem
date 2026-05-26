@@ -27,8 +27,8 @@ export class AvailabilityService {
     const events = await this.prisma.event.findMany({
       where: {
         userId,
-        startTime: { gte: dayStart },
-        endTime: { lte: dayEnd },
+        startTime: { lt: dayEnd },
+        endTime: { gt: dayStart },
       },
       orderBy: { startTime: 'asc' },
     });

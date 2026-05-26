@@ -102,8 +102,8 @@ export class BookingLinkService {
     const events = await this.prisma.event.findMany({
       where: {
         userId: link.userId,
-        startTime: { gte: dayStart },
-        endTime: { lte: dayEnd },
+        startTime: { lt: dayEnd },
+        endTime: { gt: dayStart },
       },
     });
 
@@ -145,8 +145,8 @@ export class BookingLinkService {
     const existingEvents = await this.prisma.event.findMany({
       where: {
         userId: link.userId,
-        startTime: { gte: startTime },
-        endTime: { lte: endTime },
+        startTime: { lt: endTime },
+        endTime: { gt: startTime },
       },
     });
 
