@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Add comprehensive tests for all new observability modules, plus infrastructure YAML SLO definitions and runbook documentation files.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create packages/observability/src/__tests__/instrument.test.ts - Test the @instrument() decorator: verify it creates spans for sync methods, async methods, records error spans on thrown exceptions, handles method arguments as span attributes, respects decorator options (custom span name).",
     "Create packages/observability/src/__tests__/otel-setup.test.ts - Test OTelSetup class: verify setup() initializes tracer/metrics/logger, Fastify auto-instrumentation hook creates request spans, Prisma hook creates query spans, shutdown() cleans up resources.",
