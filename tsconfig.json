@@ -48,7 +48,9 @@
       "@quant/storage": ["packages/storage/src/index.ts"],
       "@quant/storage/*": ["packages/storage/src/*"],
       "@quant/agent-runtime": ["packages/agent-runtime/src/index.ts"],
-      "@quant/agent-runtime/*": ["packages/agent-runtime/src/*"]
+      "@quant/agent-runtime/*": ["packages/agent-runtime/src/*"],
+      "@quant/cross-publish": ["packages/cross-publish/src/index.ts"],
+      "@quant/cross-publish/*": ["packages/cross-publish/src/*"]
     }
   },
   "references": [
@@ -64,7 +66,8 @@
     { "path": "packages/data-plane" },
     { "path": "packages/queue" },
     { "path": "packages/storage" },
-    { "path": "packages/agent-runtime" }
+    { "path": "packages/agent-runtime" },
+    { "path": "packages/cross-publish" }
   ],
   "exclude": ["node_modules", "dist", "build"]
 }
