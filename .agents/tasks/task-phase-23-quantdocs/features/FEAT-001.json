@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Set up apps/quantdocs workspace with package.json, tsconfig files, vitest config, app.ts entry point, and all backend services (doc, yjs-server, presence, comment, export, template) plus routes (docs, ai). Add 'quantdocs' to QuantApp type in packages/common/src/types.ts.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create apps/quantdocs/package.json following apps/quantmail/package.json pattern. Name: @quant/quantdocs, deps: @quant/auth, @quant/ai, @quant/common, @quant/database, @quant/realtime, @quant/server-core, @quant/shared-ui, fastify, ioredis, zod, yjs, y-protocols (for Yjs collab), uuid. Scripts: test: vitest run, typecheck: tsc --noEmit -p tsconfig.backend.json",
     "Create apps/quantdocs/tsconfig.json and apps/quantdocs/tsconfig.backend.json following quantmail pattern with paths to workspace packages",
@@ -30,5 +30,5 @@
     "Run: NODE_OPTIONS='' npx vitest run from workspace root targeting quantdocs tests (after FEAT-002 adds tests)"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Used local PrismaClient interface definitions instead of importing from @prisma/client (which is not available as a generated type in this workspace, same pre-existing issue as quantchat). TypeScript compiles cleanly. Also had to add quantdocs entry to QUANT_APPS constant in packages/common/src/constants.ts to satisfy Record<QuantApp, ...> type constraint. NODE_OPTIONS must be cleared for all node/pnpm commands."
 }
