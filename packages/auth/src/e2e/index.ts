@@ -27,3 +27,5 @@ export type { EncryptedBackup } from './encrypted-backup';
 
 export { DeviceLinkingService } from './device-linking';
 export type { LinkingCode, LinkingSession } from './device-linking';
+
+export * from './zk-email';
