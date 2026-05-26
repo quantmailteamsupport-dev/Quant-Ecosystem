@@ -46,7 +46,9 @@
       "@quant/queue": ["packages/queue/src/index.ts"],
       "@quant/queue/*": ["packages/queue/src/*"],
       "@quant/storage": ["packages/storage/src/index.ts"],
-      "@quant/storage/*": ["packages/storage/src/*"]
+      "@quant/storage/*": ["packages/storage/src/*"],
+      "@quant/agent-runtime": ["packages/agent-runtime/src/index.ts"],
+      "@quant/agent-runtime/*": ["packages/agent-runtime/src/*"]
     }
   },
   "references": [
@@ -61,7 +63,8 @@
     { "path": "packages/api-client" },
     { "path": "packages/data-plane" },
     { "path": "packages/queue" },
-    { "path": "packages/storage" }
+    { "path": "packages/storage" },
+    { "path": "packages/agent-runtime" }
   ],
   "exclude": ["node_modules", "dist", "build"]
 }
