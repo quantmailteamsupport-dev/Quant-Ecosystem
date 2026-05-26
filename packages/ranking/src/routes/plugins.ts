@@ -27,6 +27,11 @@ export interface PluginRouteDeps {
 export default function pluginRoutes(deps: PluginRouteDeps) {
   return async function (fastify: FastifyInstance) {
     fastify.post('/plugins', async (request: FastifyRequest, reply: FastifyReply) => {
+      const userId = (request as unknown as { auth: { userId: string } }).auth?.userId;
+      if (!userId) {
+        return reply.status(401).send({ success: false, error: 'Authentication required' });
+      }
+
       const parseResult = pluginManifestSchema.safeParse(request.body);
       if (!parseResult.success) {
         return reply.status(400).send({ success: false, error: parseResult.error.format() });
@@ -38,7 +43,12 @@ export default function pluginRoutes(deps: PluginRouteDeps) {
       return reply.status(201).send({ success: true, data: manifest });
     });
 
-    fastify.get('/plugins', async (_request: FastifyRequest, reply: FastifyReply) => {
+    fastify.get('/plugins', async (request: FastifyRequest, reply: FastifyReply) => {
+      const userId = (request as unknown as { auth: { userId: string } }).auth?.userId;
+      if (!userId) {
+        return reply.status(401).send({ success: false, error: 'Authentication required' });
+      }
+
       const plugins = deps.pluginSystem.listPlugins();
       return reply.send({ success: true, data: plugins });
     });
@@ -46,6 +56,11 @@ export default function pluginRoutes(deps: PluginRouteDeps) {
     fastify.get(
       '/plugins/:id',
       async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        const userId = (request as unknown as { auth: { userId: string } }).auth?.userId;
+        if (!userId) {
+          return reply.status(401).send({ success: false, error: 'Authentication required' });
+        }
+
         const plugin = deps.pluginSystem.getPlugin(request.params.id);
         if (!plugin) {
           return reply.status(404).send({ success: false, error: 'Plugin not found' });
@@ -57,6 +72,11 @@ export default function pluginRoutes(deps: PluginRouteDeps) {
     fastify.put(
       '/plugins/:id',
       async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        const userId = (request as unknown as { auth: { userId: string } }).auth?.userId;
+        if (!userId) {
+          return reply.status(401).send({ success: false, error: 'Authentication required' });
+        }
+
         const parseResult = updatePluginSchema.safeParse(request.body);
         if (!parseResult.success) {
           return reply.status(400).send({ success: false, error: parseResult.error.format() });
@@ -77,6 +97,11 @@ export default function pluginRoutes(deps: PluginRouteDeps) {
     fastify.delete(
       '/plugins/:id',
       async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        const userId = (request as unknown as { auth: { userId: string } }).auth?.userId;
+        if (!userId) {
+          return reply.status(401).send({ success: false, error: 'Authentication required' });
+        }
+
         const existing = deps.pluginSystem.getPlugin(request.params.id);
         if (!existing) {
           return reply.status(404).send({ success: false, error: 'Plugin not found' });

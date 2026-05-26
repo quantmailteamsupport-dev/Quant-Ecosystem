@@ -59,16 +59,18 @@ export class PluginSystem {
       );
     }
 
-    // Simulate timeout enforcement
-    const start = Date.now();
-    const result = rankingFn(items);
-    const elapsed = Date.now() - start;
+    // Enforce timeout with Promise.race
+    const executionPromise = new Promise<RankedItem[]>((resolve) => {
+      resolve(rankingFn(items));
+    });
 
-    if (elapsed > this.timeoutMs) {
-      throw new Error(`Plugin ${pluginId} exceeded timeout: ${elapsed}ms > ${this.timeoutMs}ms`);
-    }
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`Plugin ${pluginId} exceeded timeout: ${this.timeoutMs}ms`));
+      }, this.timeoutMs);
+    });
 
-    return result;
+    return Promise.race([executionPromise, timeoutPromise]);
   }
 
   unloadPlugin(pluginId: string): void {

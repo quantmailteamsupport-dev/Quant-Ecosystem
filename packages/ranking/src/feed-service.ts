@@ -42,9 +42,12 @@ export class FeedService {
     // 4) Apply anti-rage filter
     const filtered = this.antiRageFilter.applyFilter(ranked);
 
-    // 5) Paginate and return
+    // 5) Re-sort by score for non-chrono algorithms
+    const sorted = this.sortAfterFilter(filtered, algorithmType);
+
+    // 6) Paginate and return
     const start = (request.page - 1) * request.pageSize;
-    const paged = filtered.slice(start, start + request.pageSize);
+    const paged = sorted.slice(start, start + request.pageSize);
 
     return {
       items: paged,
@@ -59,8 +62,11 @@ export class FeedService {
     const ranked = this.applyAlgorithm(candidates, algorithmType, request.userId);
     const filtered = this.antiRageFilter.applyFilter(ranked);
 
+    // Re-sort by score for non-chrono algorithms
+    const sorted = this.sortAfterFilter(filtered, algorithmType);
+
     const start = (request.page - 1) * request.pageSize;
-    const paged = filtered.slice(start, start + request.pageSize);
+    const paged = sorted.slice(start, start + request.pageSize);
 
     return {
       items: paged,
@@ -68,6 +74,13 @@ export class FeedService {
       pageSize: request.pageSize,
       algorithmUsed: algorithmType,
     };
+  }
+
+  private sortAfterFilter(items: RankedItem[], algorithmType: AlgorithmType): RankedItem[] {
+    if (algorithmType === AlgorithmType.Chrono) {
+      return items;
+    }
+    return [...items].sort((a, b) => b.score - a.score);
   }
 
   private applyAlgorithm(
