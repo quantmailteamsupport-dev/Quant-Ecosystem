@@ -11,6 +11,7 @@ export const ProactiveRequestSchema = z.object({
   contextId: z.string(),
   contentSnippet: z.string(),
   userId: z.string(),
+  isAdmin: z.boolean().default(false),
   limit: z.number().int().positive().max(20).default(5),
 });
 
@@ -60,6 +61,8 @@ export class ProactiveRouter {
     );
 
     // Apply permission filter to results
+    // TODO: For production scale, add pre-query filtering into the vector search layer
+    // to avoid retrieving unauthorized results in the first place.
     const withPermissions: SearchResultWithPermissions[] = relatedItems.map((item) => ({
       id: item.id,
       ownerUserId: String(item.metadata?.userId ?? ''),
@@ -71,7 +74,7 @@ export class ProactiveRouter {
 
     const filtered = this.permissionFilter.filterResults(withPermissions, validated.userId, {
       userId: validated.userId,
-      isAdmin: false,
+      isAdmin: validated.isAdmin,
     });
 
     // Map filtered items back to response format

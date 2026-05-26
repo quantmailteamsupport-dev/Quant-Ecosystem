@@ -40,6 +40,7 @@ export type {
   VectorSearchOptions,
   VectorSearchResult,
   CollectionInfo,
+  VectorClientOptions,
 } from './services/vector-client';
 export type { HybridSearchOptions, HybridSearchResult } from './services/hybrid-search';
 export type { ParsedQuery, ParsedFilter, DateRange } from './services/query-parser';

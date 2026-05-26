@@ -66,6 +66,11 @@ const DeletePointsInputSchema = z.object({
   ids: z.array(z.string()).min(1),
 });
 
+export interface VectorClientOptions {
+  apiKey?: string;
+  https?: boolean;
+}
+
 /**
  * VectorClient - Qdrant REST API wrapper
  *
@@ -74,9 +79,29 @@ const DeletePointsInputSchema = z.object({
  */
 export class VectorClient {
   private readonly baseUrl: string;
+  private readonly apiKey?: string;
 
-  constructor(host: string, port: number = 6333) {
-    this.baseUrl = `${host}:${port}`;
+  constructor(host: string, port: number = 6333, options?: VectorClientOptions) {
+    const protocol = options?.https ? 'https' : host.startsWith('http') ? '' : 'http';
+    if (protocol && !host.startsWith('http')) {
+      this.baseUrl = `${protocol}://${host}:${port}`;
+    } else if (options?.https && host.startsWith('http://')) {
+      this.baseUrl = `${host.replace('http://', 'https://')}:${port}`;
+    } else {
+      this.baseUrl = `${host}:${port}`;
+    }
+    this.apiKey = options?.apiKey;
+  }
+
+  private getHeaders(contentType?: boolean): Record<string, string> {
+    const headers: Record<string, string> = {};
+    if (contentType) {
+      headers['Content-Type'] = 'application/json';
+    }
+    if (this.apiKey) {
+      headers['api-key'] = this.apiKey;
+    }
+    return headers;
   }
 
   async createCollection(name: string, vectorSize: number): Promise<void> {
@@ -84,7 +109,7 @@ export class VectorClient {
 
     const response = await fetch(`${this.baseUrl}/collections/${input.name}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders(true),
       body: JSON.stringify({
         vectors: {
           size: input.vectorSize,
@@ -104,7 +129,7 @@ export class VectorClient {
 
     const response = await fetch(`${this.baseUrl}/collections/${input.collection}/points`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders(true),
       body: JSON.stringify({
         points: input.points.map((p) => ({
           id: p.id,
@@ -140,7 +165,7 @@ export class VectorClient {
 
     const response = await fetch(`${this.baseUrl}/collections/${collection}/points/search`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders(true),
       body: JSON.stringify(body),
     });
 
@@ -165,7 +190,7 @@ export class VectorClient {
 
     const response = await fetch(`${this.baseUrl}/collections/${input.collection}/points/delete`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders(true),
       body: JSON.stringify({
         points: input.ids,
       }),
@@ -178,7 +203,10 @@ export class VectorClient {
   }
 
   async getCollectionInfo(collection: string): Promise<CollectionInfo> {
-    const response = await fetch(`${this.baseUrl}/collections/${collection}`);
+    const url = `${this.baseUrl}/collections/${collection}`;
+    const response = this.apiKey
+      ? await fetch(url, { headers: this.getHeaders(false) })
+      : await fetch(url);
 
     if (!response.ok) {
       const error = await response.text();

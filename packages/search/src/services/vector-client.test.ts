@@ -16,6 +16,67 @@ describe('VectorClient', () => {
     client = new VectorClient('http://localhost', 6333);
   });
 
+  describe('constructor options', () => {
+    it('should include api-key header when apiKey is provided', async () => {
+      const authClient = new VectorClient('http://localhost', 6333, { apiKey: 'test-secret-key' });
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          result: {
+            config: { params: { vectors: { size: 768 } } },
+            points_count: 100,
+            status: 'green',
+          },
+        }),
+      });
+
+      await authClient.getCollectionInfo('test-collection');
+
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:6333/collections/test-collection', {
+        headers: { 'api-key': 'test-secret-key' },
+      });
+    });
+
+    it('should use https protocol when https option is true', async () => {
+      const httpsClient = new VectorClient('http://localhost', 6333, { https: true });
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          result: {
+            config: { params: { vectors: { size: 768 } } },
+            points_count: 0,
+            status: 'green',
+          },
+        }),
+      });
+
+      await httpsClient.getCollectionInfo('test');
+
+      const calledUrl = mockFetch.mock.calls[0][0] as string;
+      expect(calledUrl).toContain('https://');
+    });
+
+    it('should include both api-key header and Content-Type for write operations', async () => {
+      const authClient = new VectorClient('http://localhost', 6333, { apiKey: 'my-key' });
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ result: true }),
+      });
+
+      await authClient.createCollection('secured', 768);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:6333/collections/secured',
+        expect.objectContaining({
+          headers: { 'Content-Type': 'application/json', 'api-key': 'my-key' },
+        }),
+      );
+    });
+  });
+
   describe('createCollection', () => {
     it('should create a collection with the correct vector size', async () => {
       mockFetch.mockResolvedValue({

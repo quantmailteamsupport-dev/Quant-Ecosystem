@@ -69,6 +69,73 @@ export async function routeEvent(
   await handler(event.payload);
 }
 
+/**
+ * Publish a failed event to a dead letter topic for later inspection/reprocessing.
+ */
+export async function deadLetterPublish(
+  kafka: Kafka,
+  originalTopic: string,
+  event: EventPayload,
+  error: unknown,
+  pinoLogger: typeof logger,
+): Promise<void> {
+  const dlqTopic = `${originalTopic}.dlq`;
+  const producer = kafka.producer();
+  try {
+    await producer.connect();
+    await producer.send({
+      topic: dlqTopic,
+      messages: [
+        {
+          value: JSON.stringify({
+            originalEvent: event,
+            error: error instanceof Error ? error.message : String(error),
+            failedAt: new Date().toISOString(),
+          }),
+        },
+      ],
+    });
+    pinoLogger.warn({ type: event.type, dlqTopic }, 'Event sent to dead letter queue');
+  } catch (dlqError) {
+    pinoLogger.error({ dlqError, type: event.type }, 'Failed to publish to dead letter queue');
+  } finally {
+    await producer.disconnect();
+  }
+}
+
+/**
+ * Retry a handler up to maxRetries times with exponential backoff.
+ * If all retries fail, publish to dead letter queue.
+ */
+export async function retryWithBackoff(
+  fn: () => Promise<void>,
+  maxRetries: number,
+  event: EventPayload,
+  kafka: Kafka,
+  originalTopic: string,
+  pinoLogger: typeof logger,
+): Promise<void> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await fn();
+      return;
+    } catch (error) {
+      lastError = error;
+      pinoLogger.warn(
+        { type: event.type, attempt, maxRetries, error },
+        'Event processing failed, retrying',
+      );
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt) * 100;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+  await deadLetterPublish(kafka, originalTopic, event, lastError, pinoLogger);
+  throw lastError;
+}
+
 async function main(): Promise<void> {
   const brokers = (process.env['KAFKA_BROKERS'] ?? 'localhost:9092').split(',');
   const clientId = process.env['KAFKA_CLIENT_ID'] ?? 'search-indexer';
@@ -81,12 +148,28 @@ async function main(): Promise<void> {
   const qdrantPort = Number(process.env['QDRANT_PORT'] ?? '6333');
 
   const searchClient = new SearchClient(meiliHost, meiliKey);
-  const vectorClient = new VectorClient(qdrantHost, qdrantPort);
+  const qdrantApiKey = process.env['QDRANT_API_KEY'];
+  const qdrantHttps = process.env['QDRANT_HTTPS'] === 'true';
+  const vectorClient = new VectorClient(qdrantHost, qdrantPort, {
+    apiKey: qdrantApiKey,
+    https: qdrantHttps,
+  });
 
-  // In production this would route to bge-large-en-v1.5 via @quant/ai RoutingTable
+  // Check if a real embedding provider is configured. If EMBEDDING_PROVIDER is not set,
+  // a zero-vector placeholder is used which makes vector search non-functional.
+  // This is acceptable for local dev but must be replaced in production.
+  const embeddingProviderEnv = process.env['EMBEDDING_PROVIDER'];
+  if (!embeddingProviderEnv) {
+    logger.warn(
+      'EMBEDDING_PROVIDER env is not set. Vector search will be non-functional. ' +
+        'All embeddings will be zero vectors. Set EMBEDDING_PROVIDER to enable real embeddings.',
+    );
+  }
+
+  // Placeholder: returns zero vectors for all inputs. In production, replace with
+  // RoutingTable.getRoute("embedding_bulk") to route to bge-large-en-v1.5 or similar.
   const embeddingProvider: EmbeddingProvider = {
     embed: async (texts: string[]) => {
-      // Placeholder: real implementation uses RoutingTable.getRoute('embedding_bulk')
       return texts.map(() => new Array(1024).fill(0) as number[]);
     },
   };
@@ -110,11 +193,14 @@ async function main(): Promise<void> {
         if (!value) return;
 
         const event = JSON.parse(value) as EventPayload;
-        await routeEvent(handlers, event);
+        await retryWithBackoff(() => routeEvent(handlers, event), 3, event, kafka, topic, logger);
 
         logger.debug({ type: event.type }, 'Event processed successfully');
       } catch (error) {
-        logger.error({ error, offset: message.offset }, 'Failed to process event');
+        logger.error(
+          { error, offset: message.offset },
+          'Failed to process event after all retries',
+        );
       }
     },
   });

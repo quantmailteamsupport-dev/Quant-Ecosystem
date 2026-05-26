@@ -13,6 +13,7 @@ import type { BatchEmbedder } from '../embedder';
 export const SearchAPIRequestSchema = z.object({
   query: z.string().min(1),
   userId: z.string(),
+  isAdmin: z.boolean().default(false),
   scopes: z.array(z.enum(['emails', 'messages', 'posts', 'videos', 'files', 'users'])).optional(),
   limit: z.number().int().positive().max(100).default(10),
   page: z.number().int().positive().default(1),
@@ -111,7 +112,8 @@ export class SearchRouter {
       .sort((a, b) => b.score - a.score)
       .slice(0, 50);
 
-    // 4. Rerank top-50 to get top-N
+    // 4. Rerank top-50 to get top-N (over-fetch 3x to account for permission filtering)
+    const overFetchLimit = validated.limit * 3;
     const reranked: RerankResult[] = await this.reranker.rerank(
       validated.query,
       allResults.map((r) => ({
@@ -119,10 +121,15 @@ export class SearchRouter {
         text: String(r.document.title ?? r.document.subject ?? r.id),
         score: r.score,
       })),
-      validated.limit,
+      overFetchLimit,
     );
 
     // 5. Apply permission filter
+    // TODO: For production scale, push tenant/visibility filters into the Qdrant `filter`
+    // clause and MeiliSearch `filter` parameter as pre-query filtering. Post-query filtering
+    // alone leaks result counts, degrades performance at scale, and can return fewer results
+    // than requested. Pre-query filtering should be layered alongside this post-query check
+    // for defense in depth.
     const withPermissions: SearchResultWithPermissions[] = reranked.map((r) => {
       const original = allResults.find((o) => o.id === r.id);
       const doc = original?.document ?? {};
@@ -138,11 +145,14 @@ export class SearchRouter {
 
     const filtered = this.permissionFilter.filterResults(withPermissions, validated.userId, {
       userId: validated.userId,
-      isAdmin: false,
+      isAdmin: validated.isAdmin,
     });
 
+    // Trim to the originally requested limit after permission filtering
+    const trimmed = filtered.slice(0, validated.limit);
+
     // 6. Build facets
-    const facetableResults: FacetableResult[] = filtered.map((r) => ({
+    const facetableResults: FacetableResult[] = trimmed.map((r) => ({
       id: r.id,
       type: String(r.document.type ?? 'unknown'),
       date: r.document.date as string | undefined,
@@ -153,7 +163,7 @@ export class SearchRouter {
     const facets = this.facetAggregator.buildFacets(facetableResults);
 
     // 7. Build response
-    const results = filtered.map((r) => ({
+    const results = trimmed.map((r) => ({
       id: r.id,
       type: String(r.document.type ?? 'unknown'),
       score: r.score,
@@ -166,7 +176,7 @@ export class SearchRouter {
 
     return SearchAPIResponseSchema.parse({
       results,
-      total: filtered.length,
+      total: trimmed.length,
       facets: facets.map((f) => ({
         name: f.name,
         buckets: f.buckets.map((b) => ({ key: b.key, count: b.count })),
