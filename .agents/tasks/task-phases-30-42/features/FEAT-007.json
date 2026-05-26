@@ -2,7 +2,7 @@
   "id": "FEAT-007",
   "type": "feat",
   "description": "Phase 36: QuantLearn - Education Platform App. Create apps/quantlearn/ with interactive courses, live classes, certifications, AI tutor, personalized learning paths, study groups, mentorship, course builder, and code execution sandbox.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create apps/quantlearn/package.json with deps: @quant/common, @quant/auth, @quant/server-core, @quant/ai, @quant/realtime, fastify, zod, ioredis. Create apps/quantlearn/tsconfig.json.",
     "Create apps/quantlearn/backend/app.ts following createApp pattern with routes for courses, classes, tutor, collaboration",
