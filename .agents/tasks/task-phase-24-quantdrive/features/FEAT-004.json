@@ -2,7 +2,7 @@
   "id": "FEAT-004",
   "type": "fix",
   "description": "Address review issues: fix version history encryption key, duplicate detection on ciphertext, folder move cascading, quota enforcement at upload, share ownership verification, folder delete with files check, folder rename implementation, and search indexing hook.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Fix version history loses encryption key - store encryptionKey in fileVersion record",
     "Fix duplicate detection on ciphertext - store contentHash at upload and compare hashes",
@@ -30,5 +30,5 @@
     "Run `NODE_OPTIONS='' npx tsc --noEmit -p apps/quantdrive/tsconfig.backend.json`"
   ],
   "blocked_reason": null,
-  "findings": null
+  "findings": "All 89 tests pass (7 new tests added for ownership verification, file check on folder delete, folder rename, cascade path updates, contentHash in uploads, and encryptionKey in versions). TypeScript compiles cleanly. Prettier formatted all files via lint-staged on commit."
 }
