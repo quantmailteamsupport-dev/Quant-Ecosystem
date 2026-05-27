@@ -51,6 +51,21 @@ describe('BrandSafetyService', () => {
       expect(categories).toContain('violence');
     });
 
+    it('should NOT flag "skill" as violence (word boundary)', () => {
+      const categories = service.classifyContent('She has great skill in cooking and baking.');
+      expect(categories).not.toContain('violence');
+    });
+
+    it('should NOT flag "whatever" as hate speech (word boundary)', () => {
+      const categories = service.classifyContent('Whatever you choose to do, enjoy the day.');
+      expect(categories).not.toContain('hate_speech');
+    });
+
+    it('should still detect actual violence keyword at word boundary', () => {
+      const categories = service.classifyContent('The murder suspect was arrested downtown.');
+      expect(categories).toContain('violence');
+    });
+
     it('should detect gambling content', () => {
       const categories = service.classifyContent(
         'Best online casino offers for betting and poker games.',

@@ -1,6 +1,7 @@
 // ============================================================================
 // Payments - Pay-Per-View Service
 // Gates content behind one-time payments with 85/15 creator/platform split
+// Uses integer-cent arithmetic internally to avoid floating-point drift.
 // ============================================================================
 
 import { z } from 'zod';
@@ -21,16 +22,29 @@ export const PurchaseAccessSchema = z.object({
   contentId: z.string().min(1),
 });
 
+/** Convert a dollar amount to integer cents */
+function toCents(amount: number): number {
+  return Math.round(amount * 100);
+}
+
+/** Convert integer cents to a dollar amount */
+function toDollars(cents: number): number {
+  return cents / 100;
+}
+
 /**
  * PayPerViewService - Gates content behind one-time payments
  *
  * Creators can set a price for individual content. Users pay once to access.
  * Revenue is split 85/15 (creator/platform).
+ * Revenue is tracked internally in integer cents to avoid floating-point drift.
  */
 export class PayPerViewService {
   private readonly paywalls: Map<string, PayPerViewPaywall> = new Map();
   private readonly paywallsByContent: Map<string, PayPerViewPaywall> = new Map();
   private readonly accessRecords: Map<string, PayPerViewAccess[]> = new Map();
+  /** Internal revenue in integer cents, keyed by paywall id */
+  private readonly revenueCents: Map<string, number> = new Map();
 
   /**
    * Create a paywall for content
@@ -62,6 +76,7 @@ export class PayPerViewService {
 
     this.paywalls.set(paywall.id, paywall);
     this.paywallsByContent.set(paywall.contentId, paywall);
+    this.revenueCents.set(paywall.id, 0);
     return paywall;
   }
 
@@ -83,7 +98,9 @@ export class PayPerViewService {
       throw new Error('Access already purchased for this content');
     }
 
-    const creatorRevenue = Math.round(paywall.price * CREATOR_SHARE * 100) / 100;
+    // Compute creator revenue in integer cents to avoid float drift
+    const priceCents = toCents(paywall.price);
+    const creatorRevenueCents = Math.round(priceCents * CREATOR_SHARE);
 
     const access: PayPerViewAccess = {
       id: `ppva_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -94,9 +111,12 @@ export class PayPerViewService {
       purchasedAt: Date.now(),
     };
 
-    // Update paywall stats
+    // Update paywall stats using integer-cent accumulation
     paywall.accessCount += 1;
-    paywall.revenue += creatorRevenue;
+    const currentCents = this.revenueCents.get(paywall.id) ?? 0;
+    const newCents = currentCents + creatorRevenueCents;
+    this.revenueCents.set(paywall.id, newCents);
+    paywall.revenue = toDollars(newCents);
 
     // Store access record
     if (!this.accessRecords.has(validated.userId)) {
@@ -119,16 +139,17 @@ export class PayPerViewService {
    * Get revenue for a creator across all paywalls
    */
   getRevenue(creatorId: string): { total: number; byContent: Map<string, number> } {
-    let total = 0;
+    let totalCents = 0;
     const byContent = new Map<string, number>();
 
     for (const [, paywall] of this.paywalls) {
       if (paywall.creatorId === creatorId) {
-        total += paywall.revenue;
-        byContent.set(paywall.contentId, paywall.revenue);
+        const cents = this.revenueCents.get(paywall.id) ?? 0;
+        totalCents += cents;
+        byContent.set(paywall.contentId, toDollars(cents));
       }
     }
 
-    return { total, byContent };
+    return { total: toDollars(totalCents), byContent };
   }
 }

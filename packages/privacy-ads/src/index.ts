@@ -13,7 +13,9 @@ export {
   BehavioralOptInService,
   SetConsentSchema,
   GetConsentSchema,
+  InMemoryConsentStore,
 } from './services/behavioral-opt-in.service';
+export type { ConsentStore } from './services/behavioral-opt-in.service';
 export { AdDisclosureService, GenerateDisclosureSchema } from './services/ad-disclosure.service';
 export { PrivacyEnforcerService, ValidateRequestSchema } from './services/privacy-enforcer.service';
 export {

@@ -87,13 +87,22 @@ export class OnDeviceRankerService {
 
   /**
    * Update local interests based on aggregate feedback.
+   * Only updates interest categories that match the interacted ad's contextCategories.
    * Only uses the action type (clicked/dismissed), never user profile data.
    */
   updateLocalInterests(
     model: OnDeviceInterestModel,
     feedback: AggregateFeedback,
   ): OnDeviceInterestModel {
+    const matchedCategories = new Set(feedback.contextCategories ?? []);
+
     const updatedInterests = model.interests.map((interest) => {
+      // Only update interests whose category appears in the ad's contextCategories
+      const isMatched = matchedCategories.size === 0 || matchedCategories.has(interest.category);
+      if (!isMatched) {
+        return interest;
+      }
+
       if (feedback.action === 'clicked') {
         return { ...interest, weight: interest.weight + 0.1, lastSeen: feedback.timestamp };
       }

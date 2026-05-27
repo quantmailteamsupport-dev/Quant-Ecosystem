@@ -1,6 +1,7 @@
 // Mobile Offline Sync - Integrates with @quant/sync-engine OfflineOperationQueue
 
 import { OfflineOperationQueue } from '@quant/sync-engine';
+import type { OfflineOperation } from '@quant/sync-engine';
 
 export type NetworkState = 'online' | 'offline' | 'metered';
 
@@ -20,14 +21,22 @@ export interface QueuedMutation {
 
 export type NetworkChangeHandler = (state: NetworkState) => void;
 
+/**
+ * Executor callback that performs the actual mutation for a queued operation.
+ * Returns true if the operation was successfully applied, false otherwise.
+ */
+export type MutationExecutor = (op: OfflineOperation) => Promise<boolean>;
+
 export class MobileOfflineSync {
   private readonly queue: OfflineOperationQueue;
+  private readonly executor: MutationExecutor;
   private networkState: NetworkState = 'online';
   private networkHandlers: NetworkChangeHandler[] = [];
   private mutationCount = 0;
 
-  constructor(config?: { maxRetries?: number }) {
+  constructor(config?: { maxRetries?: number; executor?: MutationExecutor }) {
     this.queue = new OfflineOperationQueue({ maxRetries: config?.maxRetries ?? 5 });
+    this.executor = config?.executor ?? (async () => true);
   }
 
   queueMutation(operation: QueuedMutation): void {
@@ -45,9 +54,7 @@ export class MobileOfflineSync {
       return { successful: 0, failed: 0 };
     }
 
-    const result = await this.queue.replayAll(async () => {
-      return true;
-    });
+    const result = await this.queue.replayAll(this.executor);
 
     return { successful: result.successful, failed: result.failed + result.deadLettered };
   }

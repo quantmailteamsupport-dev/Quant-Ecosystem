@@ -80,6 +80,8 @@ export interface AggregateFeedback {
   adId: string;
   action: 'clicked' | 'dismissed';
   timestamp: number;
+  /** Categories of the ad that was interacted with, used to update only matched interests */
+  contextCategories?: string[];
 }
 
 /** Privacy configuration for ad serving */

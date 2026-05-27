@@ -106,6 +106,7 @@ export type {
   SyncQueueStatus,
   QueuedMutation,
   NetworkChangeHandler,
+  MutationExecutor,
 } from './offline/offline-sync.js';
 
 // Crash Reporting

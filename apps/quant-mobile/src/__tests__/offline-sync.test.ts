@@ -54,6 +54,38 @@ describe('MobileOfflineSync', () => {
       await sync.replayOnReconnect();
       expect(sync.getQueueStatus().pendingCount).toBe(0);
     });
+
+    it('should invoke the executor callback for each operation', async () => {
+      const executedKeys: string[] = [];
+      const customSync = new MobileOfflineSync({
+        maxRetries: 3,
+        executor: async (op) => {
+          executedKeys.push(op.key);
+          return true;
+        },
+      });
+
+      customSync.queueMutation({ id: 'op1', key: 'user/1', payload: { name: 'A' } });
+      customSync.queueMutation({ id: 'op2', key: 'user/2', payload: { name: 'B' } });
+
+      const result = await customSync.replayOnReconnect();
+      expect(result.successful).toBe(2);
+      expect(executedKeys).toContain('user/1');
+      expect(executedKeys).toContain('user/2');
+    });
+
+    it('should report failures when executor returns false', async () => {
+      const customSync = new MobileOfflineSync({
+        maxRetries: 1,
+        executor: async () => false,
+      });
+
+      customSync.queueMutation({ id: 'op1', key: 'a', payload: {} });
+
+      const result = await customSync.replayOnReconnect();
+      // With maxRetries=1, first failure goes to dead letter
+      expect(result.failed).toBeGreaterThan(0);
+    });
   });
 
   describe('getQueueStatus', () => {

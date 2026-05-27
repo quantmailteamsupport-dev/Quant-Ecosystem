@@ -128,8 +128,28 @@ describe('PayPerViewService', () => {
       service.purchaseAccess({ userId: 'user_3', contentId: 'content_1' });
 
       const revenue = service.getRevenue('creator_1');
-      // 5 * 0.85 = 4.25 per purchase, 3 purchases = 12.75
+      // 5 * 0.85 = 4.25 per purchase, 3 purchases = 12.75 (exact with integer-cent math)
       expect(revenue.total).toBe(12.75);
+    });
+
+    it('should not drift with many purchases (integer-cent arithmetic)', () => {
+      service.createPaywall({
+        creatorId: 'creator_1',
+        contentId: 'content_1',
+        price: 5.07,
+        title: 'Video',
+      });
+
+      for (let i = 0; i < 100; i++) {
+        service.purchaseAccess({ userId: `user_${i}`, contentId: 'content_1' });
+      }
+
+      const revenue = service.getRevenue('creator_1');
+      // 507 cents * 0.85 = 430.95 => Math.round = 431 cents per purchase
+      // 100 * 431 = 43100 cents = $431.00
+      expect(revenue.total).toBe(431.0);
+      // Verify it's an exact number without floating-point imprecision
+      expect(revenue.total.toString()).not.toContain('000000');
     });
   });
 

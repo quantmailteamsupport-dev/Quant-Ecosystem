@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { PrivacyAdServingService } from '../services/privacy-ad-serving.service';
+import { PrivacyEnforcerService } from '@quant/privacy-ads';
 
 const candidatesSchema = z.object({
   placement: z.string(),
@@ -15,9 +16,20 @@ const feedbackSchema = z.object({
 
 export default async function privacyAdsRoutes(fastify: FastifyInstance) {
   const service = new PrivacyAdServingService();
+  const privacyEnforcer = new PrivacyEnforcerService();
 
   // Returns ~50 candidates for on-device ranking - NO user profile data
   fastify.post('/candidates', async (request, reply) => {
+    // Validate inbound request headers for tracking cookies
+    const validation = privacyEnforcer.validateRequest(request.headers as Record<string, string>);
+    if (!validation.valid) {
+      return reply.status(403).send({
+        success: false,
+        error: 'Privacy violation in request',
+        violations: validation.violations,
+      });
+    }
+
     const parseResult = candidatesSchema.safeParse(request.body);
     if (!parseResult.success) throw parseResult.error;
     const candidates = service.getCandidates(parseResult.data);
@@ -26,6 +38,16 @@ export default async function privacyAdsRoutes(fastify: FastifyInstance) {
 
   // Receives ONLY aggregate feedback (clicked/dismissed) - never raw user features
   fastify.post('/feedback', async (request, reply) => {
+    // Validate inbound request headers for tracking cookies
+    const validation = privacyEnforcer.validateRequest(request.headers as Record<string, string>);
+    if (!validation.valid) {
+      return reply.status(403).send({
+        success: false,
+        error: 'Privacy violation in request',
+        violations: validation.violations,
+      });
+    }
+
     const parseResult = feedbackSchema.safeParse(request.body);
     if (!parseResult.success) throw parseResult.error;
     service.recordFeedback(parseResult.data);

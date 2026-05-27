@@ -15,21 +15,68 @@ export const GetConsentSchema = z.object({
 });
 
 /**
+ * ConsentStore interface for pluggable persistence backends.
+ * Implement this to persist consent state across restarts or replicas.
+ */
+export interface ConsentStore {
+  get(userId: string): boolean | undefined | Promise<boolean | undefined>;
+  set(userId: string, consented: boolean): void | Promise<void>;
+}
+
+/**
+ * Default in-memory consent store. Suitable for testing or single-process use.
+ */
+export class InMemoryConsentStore implements ConsentStore {
+  private readonly store = new Map<string, boolean>();
+
+  get(userId: string): boolean | undefined {
+    return this.store.get(userId);
+  }
+
+  set(userId: string, consented: boolean): void {
+    this.store.set(userId, consented);
+  }
+}
+
+/**
  * BehavioralOptInService - Manages user consent state
  *
  * Behavioral targeting is strictly opt-in. Default consent state is false.
  * Users must explicitly opt in before the on-device ranker can use
  * behavioral signals for ad targeting.
+ *
+ * Accepts an optional ConsentStore for persistent backends. Falls back
+ * to in-memory storage if none is provided.
  */
 export class BehavioralOptInService {
-  private readonly consentStore = new Map<string, boolean>();
+  private readonly consentStore: ConsentStore;
+
+  constructor(store?: ConsentStore) {
+    this.consentStore = store ?? new InMemoryConsentStore();
+  }
 
   /**
    * Get consent state for a user. Default is false (not opted in).
    */
   getConsent(userId: string): boolean {
     GetConsentSchema.parse({ userId });
-    return this.consentStore.get(userId) ?? false;
+    const value = this.consentStore.get(userId);
+    // Handle both sync and async stores; for sync stores the value is immediate
+    if (value instanceof Promise) {
+      // Synchronous callers expect a boolean; only sync stores are supported
+      // in the synchronous API path. Async stores should use getConsentAsync.
+      return false;
+    }
+    return value ?? false;
+  }
+
+  /**
+   * Get consent state asynchronously. Supports async ConsentStore backends.
+   */
+  async getConsentAsync(userId: string): Promise<boolean> {
+    GetConsentSchema.parse({ userId });
+    const value = await this.consentStore.get(userId);
+    return value ?? false;
   }
 
   /**
@@ -45,6 +92,10 @@ export class BehavioralOptInService {
    */
   isOptedIn(userId: string): boolean {
     GetConsentSchema.parse({ userId });
-    return this.consentStore.get(userId) ?? false;
+    const value = this.consentStore.get(userId);
+    if (value instanceof Promise) {
+      return false;
+    }
+    return value ?? false;
   }
 }

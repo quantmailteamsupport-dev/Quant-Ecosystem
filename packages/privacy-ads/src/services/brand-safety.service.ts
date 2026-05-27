@@ -52,6 +52,7 @@ export class BrandSafetyService {
   /**
    * Classify content into brand safety categories.
    * Returns all matching categories (empty array means content is safe).
+   * Uses word-boundary matching to avoid false positives (e.g. "skill" matching "kill").
    */
   classifyContent(content: string): BrandSafetyCategory[] {
     ClassifyContentSchema.parse({ content });
@@ -62,7 +63,16 @@ export class BrandSafetyService {
     for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
       if (category === 'safe') continue;
 
-      const hasMatch = keywords.some((keyword) => lowerContent.includes(keyword));
+      const hasMatch = keywords.some((keyword) => {
+        // Use word-boundary matching for single-word keywords
+        // Multi-word keywords (containing spaces) use includes since they are
+        // already specific enough to avoid false positives
+        if (keyword.includes(' ')) {
+          return lowerContent.includes(keyword);
+        }
+        const regex = new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+        return regex.test(lowerContent);
+      });
       if (hasMatch) {
         matchedCategories.push(category as BrandSafetyCategory);
       }

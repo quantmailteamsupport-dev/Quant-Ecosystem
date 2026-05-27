@@ -1,6 +1,7 @@
 // ============================================================================
 // Payments - Storefront Service
 // Course/product storefront for creators with 85/15 split
+// Uses integer-cent arithmetic internally to avoid floating-point drift.
 // ============================================================================
 
 import { z } from 'zod';
@@ -24,15 +25,28 @@ export const PurchaseProductSchema = z.object({
   productId: z.string().min(1),
 });
 
+/** Convert a dollar amount to integer cents */
+function toCents(amount: number): number {
+  return Math.round(amount * 100);
+}
+
+/** Convert integer cents to a dollar amount */
+function toDollars(cents: number): number {
+  return cents / 100;
+}
+
 /**
  * StorefrontService - Course/product storefront for creators
  *
  * Creators can list digital goods, courses, templates, presets, and ebooks.
  * Purchases use an 85/15 creator/platform split.
+ * Revenue is tracked internally in integer cents to avoid floating-point drift.
  */
 export class StorefrontService {
   private readonly products: Map<string, StorefrontProduct> = new Map();
   private readonly purchases: ProductPurchase[] = [];
+  /** Internal revenue in integer cents, keyed by product id */
+  private readonly revenueCents: Map<string, number> = new Map();
 
   /**
    * Create a new product listing
@@ -66,6 +80,7 @@ export class StorefrontService {
     };
 
     this.products.set(product.id, product);
+    this.revenueCents.set(product.id, 0);
     return product;
   }
 
@@ -97,8 +112,10 @@ export class StorefrontService {
       throw new Error('Product is no longer available');
     }
 
-    const creatorShare = Math.round(product.price * CREATOR_SHARE * 100) / 100;
-    const platformShare = Math.round((product.price - creatorShare) * 100) / 100;
+    // Compute shares in integer cents to avoid float drift
+    const priceCents = toCents(product.price);
+    const creatorShareCents = Math.round(priceCents * CREATOR_SHARE);
+    const platformShareCents = priceCents - creatorShareCents;
 
     const purchase: ProductPurchase = {
       id: `purchase_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -106,14 +123,17 @@ export class StorefrontService {
       productId: validated.productId,
       creatorId: product.creatorId,
       amount: product.price,
-      creatorShare,
-      platformShare,
+      creatorShare: toDollars(creatorShareCents),
+      platformShare: toDollars(platformShareCents),
       purchasedAt: Date.now(),
     };
 
-    // Update product stats
+    // Update product stats using integer-cent accumulation
     product.salesCount += 1;
-    product.revenue += creatorShare;
+    const currentCents = this.revenueCents.get(product.id) ?? 0;
+    const newCents = currentCents + creatorShareCents;
+    this.revenueCents.set(product.id, newCents);
+    product.revenue = toDollars(newCents);
 
     this.purchases.push(purchase);
     return purchase;
@@ -137,9 +157,12 @@ export class StorefrontService {
     products: StorefrontProduct[];
   } {
     const products = this.listProducts(creatorId);
+    let totalRevenueCents = 0;
+    for (const p of products) {
+      totalRevenueCents += this.revenueCents.get(p.id) ?? 0;
+    }
     const totalSales = products.reduce((sum, p) => sum + p.salesCount, 0);
-    const totalRevenue = products.reduce((sum, p) => sum + p.revenue, 0);
 
-    return { totalSales, totalRevenue, products };
+    return { totalSales, totalRevenue: toDollars(totalRevenueCents), products };
   }
 }

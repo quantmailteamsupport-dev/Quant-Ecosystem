@@ -122,8 +122,51 @@ describe('OnDeviceRankerService', () => {
   });
 
   describe('updateLocalInterests', () => {
-    it('should increase weight on click feedback', () => {
-      const model = createModel([{ category: 'tech', weight: 1.0 }]);
+    it('should increase weight only for matched categories on click feedback', () => {
+      const model = createModel([
+        { category: 'tech', weight: 1.0 },
+        { category: 'sports', weight: 1.0 },
+      ]);
+      const feedback: AggregateFeedback = {
+        adId: 'ad_1',
+        action: 'clicked',
+        timestamp: Date.now(),
+        contextCategories: ['tech'],
+      };
+
+      const updated = service.updateLocalInterests(model, feedback);
+
+      // Only 'tech' should be updated
+      expect(updated.interests[0]!.weight).toBeGreaterThan(1.0);
+      // 'sports' should remain unchanged
+      expect(updated.interests[1]!.weight).toBe(1.0);
+    });
+
+    it('should decrease weight only for matched categories on dismiss feedback', () => {
+      const model = createModel([
+        { category: 'tech', weight: 1.0 },
+        { category: 'sports', weight: 1.0 },
+      ]);
+      const feedback: AggregateFeedback = {
+        adId: 'ad_1',
+        action: 'dismissed',
+        timestamp: Date.now(),
+        contextCategories: ['tech'],
+      };
+
+      const updated = service.updateLocalInterests(model, feedback);
+
+      // Only 'tech' should be decreased
+      expect(updated.interests[0]!.weight).toBeLessThan(1.0);
+      // 'sports' should remain unchanged
+      expect(updated.interests[1]!.weight).toBe(1.0);
+    });
+
+    it('should update all interests when no contextCategories provided (legacy)', () => {
+      const model = createModel([
+        { category: 'tech', weight: 1.0 },
+        { category: 'sports', weight: 1.0 },
+      ]);
       const feedback: AggregateFeedback = {
         adId: 'ad_1',
         action: 'clicked',
@@ -133,19 +176,7 @@ describe('OnDeviceRankerService', () => {
       const updated = service.updateLocalInterests(model, feedback);
 
       expect(updated.interests[0]!.weight).toBeGreaterThan(1.0);
-    });
-
-    it('should decrease weight on dismiss feedback', () => {
-      const model = createModel([{ category: 'tech', weight: 1.0 }]);
-      const feedback: AggregateFeedback = {
-        adId: 'ad_1',
-        action: 'dismissed',
-        timestamp: Date.now(),
-      };
-
-      const updated = service.updateLocalInterests(model, feedback);
-
-      expect(updated.interests[0]!.weight).toBeLessThan(1.0);
+      expect(updated.interests[1]!.weight).toBeGreaterThan(1.0);
     });
 
     it('should not let weight go below 0 on dismiss', () => {
@@ -154,6 +185,7 @@ describe('OnDeviceRankerService', () => {
         adId: 'ad_1',
         action: 'dismissed',
         timestamp: Date.now(),
+        contextCategories: ['tech'],
       };
 
       const updated = service.updateLocalInterests(model, feedback);
