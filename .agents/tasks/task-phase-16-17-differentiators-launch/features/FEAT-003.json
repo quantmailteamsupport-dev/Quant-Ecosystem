@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "chore",
   "description": "Phase 17 - Launch Readiness Gate: Run all hard gates, verify Docker/Helm/Terraform, check for production fallback secrets, verify WebSocket auth, verify critical flow test coverage, README setup, demo mode, error/metrics/logging. Update all state files with final launch readiness report.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Run all 6 quality gates and capture output: pnpm install --frozen-lockfile, pnpm typecheck, pnpm build, pnpm test, pnpm lint, pnpm audit --audit-level=high",
     "Validate Dockerfiles: check that at least the key services (identity, chat-api, mail-api, ai-api) have valid Dockerfiles that would build (inspect structure, confirm FROM/COPY/CMD patterns are correct)",

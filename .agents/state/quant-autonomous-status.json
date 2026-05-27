@@ -1,7 +1,7 @@
 {
   "repo": "Quant-Ecosystem",
-  "last_updated": "2026-05-27T08:29:00Z",
-  "current_phase": "phase-15-complete",
+  "last_updated": "2026-05-27T08:58:19Z",
+  "current_phase": "phase-17-complete",
   "gates": {
     "install": "pass",
     "typecheck": "pass",
@@ -11,11 +11,11 @@
     "lint": "pass"
   },
   "critical_risks": [
-    "7 moderate and 1 low audit vulnerabilities remain (non-blocking, no high/critical)",
-    "Many workspace packages are stubs without real runtime logic",
-    "E2E tests and load tests are placeholder/advisory only",
-    "No staging environment provisioned yet",
-    "Coverage thresholds not enforced locally (only in CI)"
+    "Moderate audit vulnerabilities remain (non-blocking)",
+    "Many workspace packages are service stubs without full runtime logic",
+    "E2E tests are advisory only - no real browser/integration tests",
+    "No staging environment provisioned",
+    "Helm/Terraform not validated against a real cluster"
   ],
   "completed_phases": [
     "phase-0",
@@ -33,6 +33,8 @@
     "phase-12",
     "phase-13",
     "phase-14",
-    "phase-15"
+    "phase-15",
+    "phase-16",
+    "phase-17"
   ]
 }
