@@ -13,6 +13,7 @@ import type { SearchHistoryService, SearchHistoryEntry } from '@quant/search';
 export const UniversalSearchRequestSchema = z.object({
   query: z.string().min(1),
   userId: z.string().min(1),
+  isAdmin: z.boolean().default(false),
   options: z
     .object({
       aiMode: z.boolean().default(false),
@@ -157,7 +158,7 @@ export class UniversalSearchRouter {
     const response: UniversalSearchResponse = await this.universalSearch.search({
       query: validated.query,
       userId: validated.userId,
-      permissions: { userId: validated.userId, isAdmin: false },
+      permissions: { userId: validated.userId, isAdmin: validated.isAdmin },
       options: validated.options
         ? {
             aiMode: validated.options.aiMode,

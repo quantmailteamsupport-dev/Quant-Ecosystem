@@ -236,6 +236,23 @@ describe('UniversalSearchService', () => {
       expect(deps.ragAnswerSynthesizer.synthesize).not.toHaveBeenCalled();
       expect(response.ragAnswer).toBeUndefined();
     });
+
+    it('should still return results when RAG synthesizer fails', async () => {
+      vi.mocked(deps.ragAnswerSynthesizer.synthesize).mockRejectedValue(
+        new Error('AI provider timeout'),
+      );
+
+      const response = await service.search({
+        query: 'What is TypeScript?',
+        userId: 'user-1',
+        permissions: defaultPermissions,
+        options: { aiMode: true },
+      });
+
+      expect(response.results.length).toBeGreaterThan(0);
+      expect(response.ragAnswer).toBeUndefined();
+      expect(response.query).toBe('What is TypeScript?');
+    });
   });
 
   describe('incognito mode', () => {
@@ -314,6 +331,44 @@ describe('UniversalSearchService', () => {
 
       const calls = vi.mocked(deps.hybridSearchPipeline.search).mock.calls;
       expect(calls[0]![1]!.index).toBe('default');
+    });
+  });
+
+  describe('pagination', () => {
+    it('should return different results for page 2 than page 1', async () => {
+      // Mock pipeline to return enough results for multiple pages
+      const manyResults: PipelineSearchResult[] = Array.from({ length: 10 }, (_, i) => ({
+        id: `doc-${i}`,
+        score: 1 - i * 0.05,
+        document: {
+          title: `Document ${i}`,
+          content: `Content for doc ${i}`,
+          ownerUserId: 'user-1',
+          visibility: 'public' as const,
+        },
+        explanation: { itemId: `doc-${i}`, topSignals: [] },
+      }));
+      vi.mocked(deps.hybridSearchPipeline.search).mockResolvedValue(manyResults);
+      vi.mocked(deps.permissionFilter.filterResults).mockImplementation((results) => results);
+
+      const page1 = await service.search({
+        query: 'test',
+        userId: 'user-1',
+        permissions: defaultPermissions,
+        options: { limit: 3, page: 1 },
+      });
+
+      const page2 = await service.search({
+        query: 'test',
+        userId: 'user-1',
+        permissions: defaultPermissions,
+        options: { limit: 3, page: 2 },
+      });
+
+      expect(page1.results).toHaveLength(3);
+      expect(page2.results).toHaveLength(3);
+      expect(page1.results[0]!.id).toBe('doc-0');
+      expect(page2.results[0]!.id).toBe('doc-3');
     });
   });
 });

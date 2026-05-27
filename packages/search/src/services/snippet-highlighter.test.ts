@@ -102,6 +102,17 @@ describe('SnippetHighlighter', () => {
       const result = highlighter.highlight('some text', ['  ', '']);
       expect(result.matchCount).toBe(0);
     });
+
+    it('should HTML-escape source text to prevent XSS', () => {
+      const result = highlighter.highlight('<script>alert("xss")</script> is dangerous keyword', [
+        'keyword',
+      ]);
+      expect(result.text).not.toContain('<script>');
+      expect(result.text).toContain('&lt;script&gt;');
+      expect(result.text).toContain('&quot;');
+      expect(result.text).toContain('<mark>keyword</mark>');
+      expect(result.matchCount).toBe(1);
+    });
   });
 
   describe('custom options', () => {

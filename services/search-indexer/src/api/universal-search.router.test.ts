@@ -80,6 +80,13 @@ describe('UniversalSearchRouter', () => {
       });
       expect(valid.success).toBe(true);
 
+      const validWithAdmin = UniversalSearchRequestSchema.safeParse({
+        query: 'test',
+        userId: 'user-1',
+        isAdmin: true,
+      });
+      expect(validWithAdmin.success).toBe(true);
+
       const invalid = UniversalSearchRequestSchema.safeParse({
         query: '',
         userId: 'user-1',
@@ -88,7 +95,7 @@ describe('UniversalSearchRouter', () => {
     });
 
     it('should call universalSearch.search with correct params', async () => {
-      await router.search({ query: 'hello', userId: 'user-1' });
+      await router.search({ query: 'hello', userId: 'user-1', isAdmin: false });
 
       expect(mockUniversalSearch.search).toHaveBeenCalledWith({
         query: 'hello',
@@ -98,10 +105,22 @@ describe('UniversalSearchRouter', () => {
       });
     });
 
+    it('should pass isAdmin from request to permissions', async () => {
+      await router.search({ query: 'hello', userId: 'user-1', isAdmin: true });
+
+      expect(mockUniversalSearch.search).toHaveBeenCalledWith({
+        query: 'hello',
+        userId: 'user-1',
+        permissions: { userId: 'user-1', isAdmin: true },
+        options: undefined,
+      });
+    });
+
     it('should pass options when provided', async () => {
       await router.search({
         query: 'hello',
         userId: 'user-1',
+        isAdmin: false,
         options: { aiMode: true, limit: 10, page: 1, incognito: false },
       });
 
@@ -119,7 +138,7 @@ describe('UniversalSearchRouter', () => {
     });
 
     it('should return expected response shape', async () => {
-      const result = await router.search({ query: 'test', userId: 'user-1' });
+      const result = await router.search({ query: 'test', userId: 'user-1', isAdmin: false });
 
       expect(result.query).toBe('test');
       expect(result.results).toHaveLength(1);
@@ -146,6 +165,7 @@ describe('UniversalSearchRouter', () => {
       const result = await router.search({
         query: 'test',
         userId: 'user-1',
+        isAdmin: false,
         options: { aiMode: true, limit: 20, page: 1, incognito: false },
       });
 

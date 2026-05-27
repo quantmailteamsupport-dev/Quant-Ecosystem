@@ -89,7 +89,7 @@ export class UniversalSearchService {
   async search(request: UniversalSearchRequest): Promise<UniversalSearchResponse> {
     const startTime = Date.now();
     const { query, userId, permissions, options = {} } = request;
-    const { aiMode = false, scopes, limit = 20, incognito = false } = options;
+    const { aiMode = false, scopes, limit = 20, page = 1, incognito = false } = options;
 
     // Step 1: Record in history (unless incognito)
     if (!incognito) {
@@ -99,18 +99,18 @@ export class UniversalSearchService {
     // Step 2: Enhance query
     const enhancedQuery = this.nlEnhancer.enhance(query);
 
-    // Step 3: Run hybrid search pipeline across scopes
+    // Step 3: Run hybrid search pipeline across scopes (concurrently)
     const searchScopes = scopes ?? ['default'];
-    const allResults: PipelineSearchResult[] = [];
-
-    for (const scope of searchScopes) {
-      const scopeResults = await this.pipeline.search(enhancedQuery.keywords.join(' ') || query, {
-        index: scope,
-        collection: `${scope}-vectors`,
-        limit: limit * 2, // Over-fetch so permission filtering still leaves enough
-      });
-      allResults.push(...scopeResults);
-    }
+    const scopeResultArrays = await Promise.all(
+      searchScopes.map((scope) =>
+        this.pipeline.search(enhancedQuery.keywords.join(' ') || query, {
+          index: scope,
+          collection: `${scope}-vectors`,
+          limit: limit * 2, // Over-fetch so permission filtering still leaves enough
+        }),
+      ),
+    );
+    const allResults: PipelineSearchResult[] = scopeResultArrays.flat();
 
     // Sort by score
     allResults.sort((a, b) => b.score - a.score);
@@ -137,7 +137,8 @@ export class UniversalSearchService {
         ? enhancedQuery.keywords
         : query.split(/\s+/).filter(Boolean);
 
-    const paginatedResults = filteredResults.slice(0, limit);
+    const offset = (page - 1) * limit;
+    const paginatedResults = filteredResults.slice(offset, offset + limit);
     const resultItems: UniversalSearchResultItem[] = paginatedResults.map((r) => {
       const textContent = this.extractText(r.document);
       const snippet = this.snippetHighlighter.highlight(textContent, queryTerms);
@@ -152,13 +153,18 @@ export class UniversalSearchService {
     // Step 6: If aiMode, run RAG synthesizer
     let ragAnswer: RagAnswer | undefined;
     if (aiMode && filteredResults.length > 0) {
-      const ragContexts: RagContext[] = filteredResults.slice(0, 20).map((r) => ({
-        id: r.id,
-        content: this.extractText(r.document),
-        title: (r.document.title as string) ?? undefined,
-        score: r.score,
-      }));
-      ragAnswer = await this.ragSynthesizer.synthesize(query, ragContexts);
+      try {
+        const ragContexts: RagContext[] = filteredResults.slice(0, 20).map((r) => ({
+          id: r.id,
+          content: this.extractText(r.document),
+          title: (r.document.title as string) ?? undefined,
+          score: r.score,
+        }));
+        ragAnswer = await this.ragSynthesizer.synthesize(query, ragContexts);
+      } catch {
+        // RAG failure should not prevent returning search results
+        ragAnswer = undefined;
+      }
     }
 
     // Step 7: Record metrics in observability

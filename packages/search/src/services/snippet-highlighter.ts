@@ -136,6 +136,9 @@ export class SnippetHighlighter {
   }
 
   private applyHighlighting(snippet: string, terms: string[]): string {
+    // HTML-escape the source text to prevent XSS
+    const escaped = this.escapeHtml(snippet);
+
     // Escape special regex characters in terms
     const escapedTerms = terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
 
@@ -145,6 +148,14 @@ export class SnippetHighlighter {
     const openTag = `<${this.highlightTag}>`;
     const closeTag = `</${this.highlightTag}>`;
 
-    return snippet.replace(pattern, `${openTag}$1${closeTag}`);
+    return escaped.replace(pattern, `${openTag}$1${closeTag}`);
+  }
+
+  private escapeHtml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 }
