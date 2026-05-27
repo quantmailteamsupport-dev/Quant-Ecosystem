@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Phase 29: Creator Economy Enhancements - Pay-per-view, course/product storefront in packages/payments, Quant Compute Credits (pay-per-AI-action), and E2E test for earn-withdraw-tax-doc flow",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "1. Create `packages/payments/src/services/pay-per-view.service.ts` - PayPerViewService: allows creators to gate content behind one-time payments. Methods: createPaywall(creatorId, contentId, price), purchaseAccess(userId, contentId), checkAccess(userId, contentId), getRevenue(creatorId). Uses 85/15 creator/platform split.",
     "2. Create `packages/payments/src/services/storefront.service.ts` - StorefrontService: course/product storefront for creators. Types: Product (digital goods, courses), StorefrontConfig. Methods: createProduct(creatorId, product), listProducts(creatorId), purchaseProduct(userId, productId), getOrderHistory(userId), getCreatorSales(creatorId).",
@@ -27,5 +27,5 @@
     "cd /projects/sandbox/Quant-Ecosystem && pnpm turbo build --filter=@quant/payments"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Floating point precision issue with revenue calculations (e.g., 169.15 * 3 = 507.45000000000005). Used toBeCloseTo in E2E test for accumulated revenue assertions. Pre-commit hook runs prettier and lint-staged successfully."
 }
