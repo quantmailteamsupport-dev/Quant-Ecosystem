@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Phase 12: Add fraud detection, ad billing, agent spending limits, and dispute handling to the payments package. This completes the Phase 12 requirements that are not yet implemented.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create packages/payments/src/services/fraud-detection.service.ts - A FraudDetectionService class that performs velocity checks (too many transactions in short period), amount anomaly detection (sudden large transactions vs user history), geographic anomaly (transactions from unusual locations), device fingerprint tracking, and risk scoring. Use in-memory storage like other services. Include Zod validation schemas. Risk levels: low/medium/high/critical. Actions: allow/flag/block/review.",
     "Create packages/payments/src/services/ad-billing.service.ts - An AdBillingService class that manages ad campaign budgets, records ad impressions/clicks/conversions with cost, enforces daily/total budget caps, calculates CPM/CPC/CPA billing, supports advertiser spending guardrails (max daily spend, max total spend), and integrates with the ledger for billing entries. Include Zod schemas for campaign creation and impression recording.",
@@ -31,5 +31,5 @@
     "pnpm --filter @quant/payments build"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 222 tests pass. Typecheck and build succeed. Pre-commit hook enforces max 100 char header. Lint-staged runs prettier on commit."
 }
