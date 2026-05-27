@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Phase 8: Enhance the search package with saved searches, alerts, search observability metrics, and reindex job support. The search package already has hybrid search, permission filter, query parser, facets, proactive search, and cross-app search. This feature adds the remaining Phase 8 capabilities: SavedSearchService (CRUD for saved searches with alert scheduling), SearchObservability (latency/query metrics tracking), ReindexJobManager (trigger and track reindex jobs per index), and NLQueryEnhancer (wraps QueryParser with intent detection for natural language queries like 'show me everything about X'). All modules get unit tests.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create packages/search/src/services/saved-search.ts with SavedSearchService class: CRUD operations for saved searches (id, userId, query, filters, alertFrequency), matchNewDocument() for alert triggering, getAlertsDue() for scheduled alert checks. Use in-memory store with interface for persistence.",
     "Create packages/search/src/services/search-observability.ts with SearchObservabilityService class: recordQuery(query, latencyMs, resultCount, userId), getMetrics(timeRange), getSlowQueries(thresholdMs), getPopularQueries(limit). Track p50/p95/p99 latencies, query volume, zero-result queries.",
@@ -25,5 +25,5 @@
   ],
   "verification": ["pnpm typecheck", "pnpm test", "pnpm build", "pnpm lint"],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All quality gates pass. Fastify added as direct dependency to search-indexer for type imports in reindex.ts. The reindex routes are registered on the health server Fastify instance (shared port). The savedSearchService is wired into routeEvent as an optional third parameter to maintain backward compatibility with existing tests."
 }
