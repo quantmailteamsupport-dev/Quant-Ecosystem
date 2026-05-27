@@ -487,3 +487,108 @@
 
 - Public content creation paths have moderation hooks (all content types go through moderation worker with policy engine, spam detection, and bot checks available)
 - AI-generated content is labeled where appropriate (AIOutputSafetyService provides label injection and checking)
+
+---
+
+## Phase 14: Infrastructure, Deploy, Observability, And SRE
+
+**Started:** 2026-05-27T08:10:00Z
+**Status:** Complete
+
+### What Was Added
+
+1. **Metrics Endpoint Plugin** (`packages/server-core/src/plugins/metrics.ts`)
+   - Fastify plugin exposing /metrics endpoint for Prometheus scraping
+   - Tracks http_requests_total, http_request_duration_seconds, http_requests_in_flight
+   - Automatically registered by server-core app scaffold
+
+2. **Request-ID Plugin** (`packages/server-core/src/plugins/request-id.ts`)
+   - Fastify plugin that propagates or generates X-Request-Id headers
+   - Ensures distributed tracing context flows through all services
+
+3. **SLO Burn-Rate Alerts** (`infra/prometheus/alerts/platform.yml`)
+   - Multi-window burn-rate alerting for latency and error-rate SLOs
+   - 1h/6h fast-burn and 3d/30d slow-burn rules
+   - Platform health alerts for pod restarts, OOM kills, disk pressure
+
+4. **Business Metric Alerts** (`infra/prometheus/alerts/business.yml`)
+   - Revenue, signup, active-user, and engagement-rate alerts
+   - Agent-specific alerts for execution failures and budget overruns
+
+5. **Environment and Rollback Documentation** (`infra/docs/`)
+   - `environments.md`: staging/production topology, promotion criteria
+   - `rollback-runbook.md`: step-by-step rollback procedures for services, infrastructure, and databases
+   - `cost-management.md`: cost allocation tags, budget alerts, optimization strategies
+
+6. **Canary Analysis Configuration** (`packages/observability/src/core/canary-analyzer.ts`)
+   - CanaryAnalyzer with configurable metrics (latency_p99, error_rate, cpu_usage, memory_usage)
+   - Automatic promotion/rollback decisions based on statistical comparison
+
+7. **OTel Collector Config** (`infra/otel/otel-collector.yml`)
+   - Full pipeline: OTLP receivers -> batch/memory-limiter processors -> multi-backend exporters
+   - Exports to Jaeger, Prometheus, and Loki
+
+### Gate Results
+
+- install: PASS
+- typecheck: PASS (73/73)
+- build: PASS (52/52)
+- test: PASS (76/76)
+- lint: PASS (62/62)
+- audit: PASS (0 high vulnerabilities, 7 moderate + 1 low)
+
+### Exit Criteria Met
+
+- Every service exposes /metrics and propagates request IDs for distributed tracing
+- SLO burn-rate alerts and business metric alerts are defined for production
+- Environment topology, rollback runbooks, and cost management are documented
+- Canary analysis rules are implemented for automated deployment decisions
+
+---
+
+## Phase 15: Growth, Onboarding, And Launch Experience
+
+**Started:** 2026-05-27T08:20:00Z
+**Status:** Complete
+
+### What Was Added
+
+1. **Account Onboarding** (`packages/onboarding/src/account-onboarding.ts`)
+   - Full account creation flow: email verification, profile setup, password strength validation
+   - Step-by-step state machine with validation at each transition
+
+2. **Workspace Onboarding** (`packages/onboarding/src/workspace-onboarding.ts`)
+   - Workspace creation with name validation, plan selection (free/pro/enterprise)
+   - Member invitation flow with role assignment
+   - App selection from available ecosystem apps
+
+3. **Role Onboarding** (`packages/onboarding/src/role-onboarding.ts`)
+   - Role-specific personalization: developer, designer, manager, marketer, creator, executive
+   - Suggested apps and workflows per role
+   - Customizable feature preferences (ai_assistance, notifications, integrations)
+
+4. **Demo Mode** (`packages/onboarding/src/demo-mode.ts`)
+   - Interactive demo with pre-seeded data for all ecosystem apps
+   - Guided tours with step-by-step instructions
+   - Demo data generation for mail, chat, docs, drive, calendar scenarios
+   - Time-limited sessions with cleanup
+
+5. **Comprehensive Test Suite**
+   - 44 tests across 4 test files covering all onboarding flows
+   - Tests for validation, state transitions, error handling, and edge cases
+
+### Gate Results
+
+- install: PASS
+- typecheck: PASS (73/73)
+- build: PASS (52/52)
+- test: PASS (76/76)
+- lint: PASS (62/62)
+- audit: PASS (0 high vulnerabilities, 7 moderate + 1 low)
+
+### Exit Criteria Met
+
+- New user can go from signup to productive use through guided onboarding flows
+- Demo mode allows exploration of ecosystem without requiring real data
+- Role-based personalization ensures relevant features are highlighted for each user type
+- All onboarding state machines are well-tested with clear validation rules

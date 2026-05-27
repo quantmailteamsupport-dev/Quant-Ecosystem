@@ -1,7 +1,7 @@
 {
   "repo": "Quant-Ecosystem",
-  "last_updated": "2026-05-27T08:02:00Z",
-  "current_phase": "phase-13-complete",
+  "last_updated": "2026-05-27T08:29:00Z",
+  "current_phase": "phase-15-complete",
   "gates": {
     "install": "pass",
     "typecheck": "pass",
@@ -31,6 +31,8 @@
     "phase-10",
     "phase-11",
     "phase-12",
-    "phase-13"
+    "phase-13",
+    "phase-14",
+    "phase-15"
   ]
 }
