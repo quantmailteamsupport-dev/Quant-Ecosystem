@@ -8,12 +8,41 @@ import type { FindSimilarService, FindSimilarResult } from '@quant/search';
 import type { TypeaheadService, TypeaheadResponse } from '@quant/search';
 import type { SearchHistoryService, SearchHistoryEntry } from '@quant/search';
 
+// ---- Permission Resolution ----
+
+/**
+ * UserPermissions - Derived from server-side auth, never from client input.
+ */
+export interface UserPermissions {
+  userId: string;
+  isAdmin: boolean;
+}
+
+/**
+ * PermissionResolver - Derives user permissions from the authenticated userId.
+ *
+ * The server framework (middleware/auth layer) provides a concrete implementation
+ * that checks JWT claims, session data, or RBAC tables. The router never trusts
+ * client-supplied permission claims.
+ */
+export interface PermissionResolver {
+  resolve(userId: string): Promise<UserPermissions> | UserPermissions;
+}
+
+/**
+ * Default resolver for testing/development - always returns non-admin permissions.
+ */
+export class DefaultPermissionResolver implements PermissionResolver {
+  resolve(userId: string): UserPermissions {
+    return { userId, isAdmin: false };
+  }
+}
+
 // ---- Request/Response Schemas ----
 
 export const UniversalSearchRequestSchema = z.object({
   query: z.string().min(1),
   userId: z.string().min(1),
-  isAdmin: z.boolean().default(false),
   options: z
     .object({
       aiMode: z.boolean().default(false),
@@ -142,23 +171,29 @@ export type ClearHistoryRequest = z.infer<typeof ClearHistoryRequestSchema>;
  * service, and returns typed JSON responses.
  */
 export class UniversalSearchRouter {
+  private readonly permissionResolver: PermissionResolver;
+
   constructor(
     private readonly universalSearch: UniversalSearchService,
     private readonly findSimilarService: FindSimilarService,
     private readonly typeaheadService: TypeaheadService,
     private readonly searchHistory: SearchHistoryService,
-  ) {}
+    permissionResolver?: PermissionResolver,
+  ) {
+    this.permissionResolver = permissionResolver ?? new DefaultPermissionResolver();
+  }
 
   /**
    * POST /search - Full universal search
    */
   async search(request: UniversalSearchRequest): Promise<UniversalSearchAPIResponse> {
     const validated = UniversalSearchRequestSchema.parse(request);
+    const permissions = await this.permissionResolver.resolve(validated.userId);
 
     const response: UniversalSearchResponse = await this.universalSearch.search({
       query: validated.query,
       userId: validated.userId,
-      permissions: { userId: validated.userId, isAdmin: validated.isAdmin },
+      permissions,
       options: validated.options
         ? {
             aiMode: validated.options.aiMode,

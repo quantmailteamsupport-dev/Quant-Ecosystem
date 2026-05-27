@@ -61,14 +61,45 @@ export class ContentExtractor {
 
       // If no BT/ET markers found, try to extract any printable text runs
       if (textSegments.length === 0) {
-        const printableRegex = /[\x20-\x7E]{4,}/g;
+        const printableRegex = /[\x20-\x7E]{8,}/g;
         let printableMatch: RegExpExecArray | null;
         while ((printableMatch = printableRegex.exec(raw)) !== null) {
           const text = printableMatch[0].trim();
+          if (!text || text.length < 8) continue;
+
           // Filter out common PDF structure tokens
-          if (text && !text.match(/^(obj|endobj|stream|endstream|xref|trailer|startxref)$/)) {
-            textSegments.push(text);
+          if (text.match(/^(obj|endobj|stream|endstream|xref|trailer|startxref)$/)) {
+            continue;
           }
+
+          // Filter out PDF structural patterns: font names, encoding entries
+          if (
+            /\/BaseFont/i.test(text) ||
+            /\/Encoding/i.test(text) ||
+            /\/Font/i.test(text) ||
+            /\/Type\s/i.test(text) ||
+            /\/Subtype\s/i.test(text) ||
+            /\/Filter\s/i.test(text) ||
+            /\/Length\s/i.test(text) ||
+            /WinAnsiEncoding/i.test(text) ||
+            /MacRomanEncoding/i.test(text) ||
+            /Identity-H/i.test(text)
+          ) {
+            continue;
+          }
+
+          // Reject runs that are mostly digits (>70% digit characters)
+          const digitCount = (text.match(/\d/g) || []).length;
+          if (digitCount / text.length > 0.7) {
+            continue;
+          }
+
+          // Reject common PDF cross-reference patterns (e.g. "0000000015 00000 n")
+          if (/^\d{10}\s\d{5}\s[nf]$/.test(text)) {
+            continue;
+          }
+
+          textSegments.push(text);
         }
       }
 

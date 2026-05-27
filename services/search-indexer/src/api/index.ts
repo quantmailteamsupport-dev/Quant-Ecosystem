@@ -16,6 +16,7 @@ export {
   HistoryRequestSchema,
   HistoryResponseSchema,
   ClearHistoryRequestSchema,
+  DefaultPermissionResolver,
 } from './universal-search.router';
 
 export type { SearchAPIRequest, SearchAPIResponse } from './search.router';
@@ -30,4 +31,6 @@ export type {
   HistoryRequest,
   HistoryResponse,
   ClearHistoryRequest,
+  PermissionResolver,
+  UserPermissions,
 } from './universal-search.router';

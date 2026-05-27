@@ -10,7 +10,9 @@ import {
   FindSimilarRequestSchema,
   HistoryRequestSchema,
   ClearHistoryRequestSchema,
+  DefaultPermissionResolver,
 } from './universal-search.router';
+import type { PermissionResolver } from './universal-search.router';
 import type { UniversalSearchService } from '@quant/search';
 import type { FindSimilarService } from '@quant/search';
 import type { TypeaheadService } from '@quant/search';
@@ -25,6 +27,7 @@ describe('UniversalSearchRouter', () => {
     getHistory: ReturnType<typeof vi.fn>;
     clearHistory: ReturnType<typeof vi.fn>;
   };
+  let mockPermissionResolver: PermissionResolver;
 
   beforeEach(() => {
     mockUniversalSearch = {
@@ -64,11 +67,16 @@ describe('UniversalSearchRouter', () => {
       clearHistory: vi.fn(),
     };
 
+    mockPermissionResolver = {
+      resolve: vi.fn().mockReturnValue({ userId: 'user-1', isAdmin: false }),
+    };
+
     router = new UniversalSearchRouter(
       mockUniversalSearch as unknown as UniversalSearchService,
       mockFindSimilar as unknown as FindSimilarService,
       mockTypeahead as unknown as TypeaheadService,
       mockHistory as unknown as SearchHistoryService,
+      mockPermissionResolver,
     );
   });
 
@@ -80,13 +88,6 @@ describe('UniversalSearchRouter', () => {
       });
       expect(valid.success).toBe(true);
 
-      const validWithAdmin = UniversalSearchRequestSchema.safeParse({
-        query: 'test',
-        userId: 'user-1',
-        isAdmin: true,
-      });
-      expect(validWithAdmin.success).toBe(true);
-
       const invalid = UniversalSearchRequestSchema.safeParse({
         query: '',
         userId: 'user-1',
@@ -94,9 +95,23 @@ describe('UniversalSearchRouter', () => {
       expect(invalid.success).toBe(false);
     });
 
-    it('should call universalSearch.search with correct params', async () => {
-      await router.search({ query: 'hello', userId: 'user-1', isAdmin: false });
+    it('should not accept isAdmin from request body', () => {
+      const result = UniversalSearchRequestSchema.safeParse({
+        query: 'test',
+        userId: 'user-1',
+        isAdmin: true,
+      });
+      // Schema should still parse but strip unknown fields
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect('isAdmin' in result.data).toBe(false);
+      }
+    });
 
+    it('should call universalSearch.search with permissions from resolver', async () => {
+      await router.search({ query: 'hello', userId: 'user-1' });
+
+      expect(mockPermissionResolver.resolve).toHaveBeenCalledWith('user-1');
       expect(mockUniversalSearch.search).toHaveBeenCalledWith({
         query: 'hello',
         userId: 'user-1',
@@ -105,13 +120,19 @@ describe('UniversalSearchRouter', () => {
       });
     });
 
-    it('should pass isAdmin from request to permissions', async () => {
-      await router.search({ query: 'hello', userId: 'user-1', isAdmin: true });
+    it('should use resolver to derive admin permissions instead of trusting client', async () => {
+      (mockPermissionResolver.resolve as ReturnType<typeof vi.fn>).mockReturnValue({
+        userId: 'admin-1',
+        isAdmin: true,
+      });
 
+      await router.search({ query: 'hello', userId: 'admin-1' });
+
+      expect(mockPermissionResolver.resolve).toHaveBeenCalledWith('admin-1');
       expect(mockUniversalSearch.search).toHaveBeenCalledWith({
         query: 'hello',
-        userId: 'user-1',
-        permissions: { userId: 'user-1', isAdmin: true },
+        userId: 'admin-1',
+        permissions: { userId: 'admin-1', isAdmin: true },
         options: undefined,
       });
     });
@@ -120,7 +141,6 @@ describe('UniversalSearchRouter', () => {
       await router.search({
         query: 'hello',
         userId: 'user-1',
-        isAdmin: false,
         options: { aiMode: true, limit: 10, page: 1, incognito: false },
       });
 
@@ -138,7 +158,7 @@ describe('UniversalSearchRouter', () => {
     });
 
     it('should return expected response shape', async () => {
-      const result = await router.search({ query: 'test', userId: 'user-1', isAdmin: false });
+      const result = await router.search({ query: 'test', userId: 'user-1' });
 
       expect(result.query).toBe('test');
       expect(result.results).toHaveLength(1);
@@ -165,13 +185,20 @@ describe('UniversalSearchRouter', () => {
       const result = await router.search({
         query: 'test',
         userId: 'user-1',
-        isAdmin: false,
         options: { aiMode: true, limit: 20, page: 1, incognito: false },
       });
 
       expect(result.ragAnswer).toBeDefined();
       expect(result.ragAnswer!.answer).toBe('AI response');
       expect(result.ragAnswer!.citations).toHaveLength(1);
+    });
+  });
+
+  describe('DefaultPermissionResolver', () => {
+    it('should return non-admin permissions by default', () => {
+      const resolver = new DefaultPermissionResolver();
+      const permissions = resolver.resolve('user-123');
+      expect(permissions).toEqual({ userId: 'user-123', isAdmin: false });
     });
   });
 

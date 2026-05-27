@@ -41,10 +41,45 @@ describe('ContentExtractor', () => {
     });
 
     it('should fallback to printable text extraction when no BT/ET markers', async () => {
-      const pdfContent = 'binary\x00\x01\x02This is readable text\x00\x01more binary';
+      const pdfContent = 'binary\x00\x01\x02This is readable text content\x00\x01more binary';
       const buffer = Buffer.from(pdfContent, 'latin1');
       const result = await extractor.extractPdfText(buffer);
-      expect(result).toContain('This is readable text');
+      expect(result).toContain('This is readable text content');
+    });
+
+    it('should filter out font name entries in fallback', async () => {
+      const pdfContent =
+        '\x00\x01/BaseFont /TimesNewRomanPSMT\x00\x01\x02This is real document content\x00';
+      const buffer = Buffer.from(pdfContent, 'latin1');
+      const result = await extractor.extractPdfText(buffer);
+      expect(result).not.toContain('BaseFont');
+      expect(result).not.toContain('TimesNewRomanPSMT');
+      expect(result).toContain('This is real document content');
+    });
+
+    it('should filter out encoding entries in fallback', async () => {
+      const pdfContent = '\x00/Encoding /WinAnsiEncoding\x00\x01Actual readable sentence here\x00';
+      const buffer = Buffer.from(pdfContent, 'latin1');
+      const result = await extractor.extractPdfText(buffer);
+      expect(result).not.toContain('WinAnsiEncoding');
+      expect(result).not.toContain('Encoding');
+      expect(result).toContain('Actual readable sentence here');
+    });
+
+    it('should filter out mostly-digit runs in fallback', async () => {
+      const pdfContent = '\x00\x010000000015 00000 n\x00\x01\x02The document text is here\x00';
+      const buffer = Buffer.from(pdfContent, 'latin1');
+      const result = await extractor.extractPdfText(buffer);
+      expect(result).not.toContain('0000000015');
+      expect(result).toContain('The document text is here');
+    });
+
+    it('should reject short runs below 8 characters in fallback', async () => {
+      const pdfContent = '\x00\x01abcd\x00\x01\x02Longer meaningful text here\x00';
+      const buffer = Buffer.from(pdfContent, 'latin1');
+      const result = await extractor.extractPdfText(buffer);
+      expect(result).not.toContain('abcd');
+      expect(result).toContain('Longer meaningful text here');
     });
 
     it('should handle errors gracefully', async () => {
