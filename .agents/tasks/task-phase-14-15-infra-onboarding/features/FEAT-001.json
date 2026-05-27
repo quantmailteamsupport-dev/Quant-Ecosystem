@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Phase 14 - Infrastructure micro-features: Add /metrics endpoint, request-ID propagation, trace-ID in logs, environment config validation, rollback documentation, and SLO burn-rate alert rules. Enhance server-core with metrics and request-id middleware. Add cost dashboard config and canary/SLO Prometheus rules.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "1. Add a /metrics endpoint to packages/server-core/src/plugins/health.ts (Prometheus text format exposition of basic HTTP metrics: request count, latency histogram, active connections). Export a metricsPlugin alongside the health plugin.",
     "2. Add request-ID propagation middleware in packages/server-core/src/plugins/request-id.ts - extract X-Request-ID from incoming headers (or use Fastify genReqId), set it on reply headers, and attach to Pino logger context so all logs include request_id and trace_id fields.",
@@ -30,5 +30,5 @@
   ],
   "verification": ["pnpm typecheck 2>&1 | tail -5", "pnpm test 2>&1 | tail -5"],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All gates passing: typecheck 72/72 tasks, test 75/75 tasks. Prettier formatted files during pre-commit hook. Commit header limited to 100 chars by commitlint."
 }
