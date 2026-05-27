@@ -2,7 +2,7 @@
   "id": "FEAT-004",
   "type": "feat",
   "description": "Production A/B experiment framework with sticky bucketing, guardrail metrics, and auto-rollback. Enhance the existing ExperimentService and ABTestIntegration. Add 'time well spent' regret prediction, 'show me less' negative signal retraining, topic hide list, following mode, and reset-recommendations.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Enhance packages/recommendations/src/experiment/experiment-service.ts: add sticky bucketing (persist user bucket assignment in a Map or external store interface). Add guardrail metrics: define GuardrailMetric interface (name, threshold, direction: 'above'|'below'). Add checkGuardrails() method that evaluates all metrics and returns { breached: boolean, metric: string }. Add autoRollback() that disables an experiment when a guardrail is breached.",
     "Create packages/recommendations/src/experiment/guardrails.ts: GuardrailEvaluator class. Predefined guardrails: session_duration_drop > 20%, rage_quit_rate > 5%, report_rate > 1%. Methods: evaluate(experimentId, metrics) -> GuardrailResult, triggerRollback(experimentId).",
@@ -34,5 +34,5 @@
     "cd /projects/sandbox/Quant-Ecosystem && pnpm test --filter=@quant/recommendations --filter=@quant/ranking"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 100 recommendation tests pass (33 new: 9 guardrails, 10 user-signals, 9 time-well-spent, 5 following-mode). All 57 ranking tests pass unchanged. Typecheck passes for both packages. Prettier reformatted files via lint-staged. Fixed pagination bug in FollowingMode where limit-based fetching prevented accurate totalAvailable counts."
 }
