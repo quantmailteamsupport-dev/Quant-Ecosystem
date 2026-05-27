@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "feat",
   "description": "One Wallet + One Subscription (Quant Pro) - Extend packages/payments/ with: unified wallet visible in AppShell user menu (add-money via Stripe/Razorpay/UPI, spend: tips/boosts/AI/courses, cashout via Stripe Connect + Razorpay Payouts), GST/VAT/sales-tax handling, and Quant Pro single subscription across all apps with Stripe Subscription + Apple/Google IAP server-side receipt validation.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "1. Update packages/payments/src/types.ts: Add types - RazorpayPayment, UPIPayment, AddMoneySource ('stripe' | 'razorpay' | 'upi'), SpendCategory ('tip' | 'boost_ad' | 'ai_usage' | 'course_unlock' | 'premium_content'), QuantProPlan (free, pro_monthly, pro_yearly), IAPReceipt (platform: 'apple' | 'google', receiptData, transactionId, productId), IAPValidationResult, TaxBreakdown (subtotal, taxType, taxRate, taxAmount, total), IndianTaxInfo (gstin, state, hsnCode).",
     "2. Create packages/payments/src/services/razorpay-gateway.service.ts: Implement RazorpayGateway with: createOrder(amount, currency), verifyPayment(orderId, paymentId, signature), createPayout(accountId, amount), getPaymentStatus(paymentId). Uses razorpay npm package types but works with in-memory simulation for testing.",
@@ -32,5 +32,5 @@
   ],
   "verification": ["pnpm typecheck --filter=@quant/payments", "pnpm test --filter=@quant/payments"],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 329 tests pass across 17 test files. Typecheck clean. Prettier auto-formatted via lint-staged pre-commit hook. 96 new tests added for the 5 new/extended services."
 }
