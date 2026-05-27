@@ -99,6 +99,17 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
 
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: quant-livekit
+    command: --dev --bind 0.0.0.0
+    environment:
+      LIVEKIT_KEYS: 'devkey: devsecret'
+    ports:
+      - '7880:7880'
+      - '7881:7881'
+      - '7882:7882/udp'
+
 volumes:
   postgres_data:
   redis_data:

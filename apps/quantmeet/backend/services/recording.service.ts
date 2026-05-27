@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { createAppError } from '@quant/server-core';
 import type { StorageClient } from '@quant/storage';
+import type { LiveKitGateway, S3EgressConfig } from './livekit-gateway.service';
 
 export interface Recording {
   id: string;
@@ -12,16 +13,27 @@ export interface Recording {
   storageKey: string;
   duration: number | null;
   fileSize: number | null;
+  egressId: string | null;
 }
 
 export class RecordingService {
   private readonly recordings = new Map<string, Recording>();
 
-  constructor(private readonly storage: StorageClient) {}
+  constructor(
+    private readonly storage: StorageClient,
+    private readonly livekitGateway?: LiveKitGateway,
+    private readonly s3Config?: S3EgressConfig,
+  ) {}
 
-  startRecording(roomId: string, userId: string): Recording {
+  async startRecording(roomId: string, userId: string): Promise<Recording> {
     const id = randomUUID();
     const storageKey = `recordings/${roomId}/${id}.webm`;
+    let egressId: string | null = null;
+
+    if (this.livekitGateway && this.s3Config) {
+      const egress = await this.livekitGateway.startRecordingEgress(roomId, this.s3Config);
+      egressId = egress.egressId;
+    }
 
     const recording: Recording = {
       id,
@@ -33,13 +45,14 @@ export class RecordingService {
       storageKey,
       duration: null,
       fileSize: null,
+      egressId,
     };
 
     this.recordings.set(id, recording);
     return recording;
   }
 
-  stopRecording(recordingId: string): Recording {
+  async stopRecording(recordingId: string): Promise<Recording> {
     const recording = this.recordings.get(recordingId);
     if (!recording) {
       throw createAppError('Recording not found', 404, 'RECORDING_NOT_FOUND');
@@ -47,6 +60,10 @@ export class RecordingService {
 
     if (recording.status !== 'recording') {
       throw createAppError('Recording is not active', 400, 'RECORDING_NOT_ACTIVE');
+    }
+
+    if (this.livekitGateway && recording.egressId) {
+      await this.livekitGateway.stopEgress(recording.egressId);
     }
 
     recording.status = 'completed';
@@ -64,6 +81,11 @@ export class RecordingService {
       throw createAppError('Recording not found', 404, 'RECORDING_NOT_FOUND');
     }
     return recording;
+  }
+
+  getRecordingUrl(recordingId: string): string {
+    const recording = this.getRecording(recordingId);
+    return recording.storageKey;
   }
 
   listRecordings(roomId: string): Recording[] {
