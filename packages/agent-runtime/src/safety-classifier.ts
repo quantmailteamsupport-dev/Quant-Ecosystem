@@ -89,6 +89,18 @@ export class SafetyClassifier {
     return [...this.rules];
   }
 
+  /**
+   * Classify the safety level of an action given its context.
+   *
+   * The following context keys are inspected by the default rules:
+   * - `piiAccess` (boolean): Whether the action accesses personally identifiable information.
+   * - `consent` (boolean): Whether user consent has been granted for PII access.
+   * - `amount` (number): Monetary amount for financial actions (triggers caution above 1000).
+   * - `affectedCount` (number): Number of records affected by bulk actions (triggers caution above 100).
+   *
+   * Callers should inject these keys into the context before calling classify.
+   * Use {@link enrichContext} to document and prepare domain-specific metadata.
+   */
   classify(action: string, context: Record<string, unknown>): SafetyClassificationResult {
     const triggeredRules: string[] = [];
     let highestLevel = SafetyLevel.Safe;
@@ -112,5 +124,17 @@ export class SafetyClassifier {
       reason,
       rules_triggered: triggeredRules,
     };
+  }
+
+  /**
+   * Prepare context for safety classification by merging tool arguments with safety-relevant
+   * metadata from the caller's domain. This is the extension point for injecting signals from
+   * identity-permissions (consent status, PII flags) or other systems.
+   *
+   * Currently returns args unchanged. When identity-permissions integration is wired in,
+   * this method will look up consent, resource ownership, and PII flags automatically.
+   */
+  enrichContext(args: Record<string, unknown>): Record<string, unknown> {
+    return args;
   }
 }

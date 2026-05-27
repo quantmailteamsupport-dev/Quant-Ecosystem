@@ -1,6 +1,10 @@
 // ============================================================================
 // Consent Manager - AI consent and data usage tracking
 // ============================================================================
+// NOTE: This is an in-memory implementation for the foundation phase. All consent prompts,
+// responses, and data usage logs are held in Maps with no persistence, eviction, or size limits.
+// Database-backed storage and eviction policies will be added when persistence integration
+// is implemented.
 
 import type { ConsentPrompt, ConsentResponse, ResourceType } from '../types.js';
 

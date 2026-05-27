@@ -171,6 +171,7 @@ export { CostTracker } from './cost-tracker.js';
 
 // Execution Engine
 export { ExecutionEngine, tierToPermissionLevel } from './execution-engine.js';
+export type { ExecutionEngineOptions } from './execution-engine.js';
 
 // Workflows
 export { BaseWorkflow } from './workflows/base-workflow.js';

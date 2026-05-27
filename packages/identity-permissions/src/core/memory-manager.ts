@@ -1,6 +1,9 @@
 // ============================================================================
 // Memory Manager - User-controlled memory with per-app controls
 // ============================================================================
+// NOTE: This is an in-memory implementation for the foundation phase. All memory entries are held
+// in Maps with no persistence, eviction, TTL, or size limits. Database-backed storage and
+// eviction policies will be added when persistence integration is implemented.
 
 import type { MemoryEntry } from '../types.js';
 

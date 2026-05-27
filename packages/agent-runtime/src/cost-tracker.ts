@@ -1,3 +1,7 @@
+// NOTE: This is an in-memory implementation for the foundation phase. All cost records are held
+// in memory with no eviction or size limits. Persistence (database-backed storage) and eviction
+// policies will be added when database integration is implemented.
+
 import type { BudgetConfig, CostRecord } from './types.js';
 
 const PERIOD_MS: Record<string, number> = {

@@ -1,3 +1,7 @@
+// NOTE: Identity-permissions integration (RBAC, consent checks, AI access toggles) is not yet
+// wired into the execution pipeline. This will be added in a future phase when the cross-package
+// integration layer is implemented. See review issue #4.
+
 import type { AgentPlan, AgentWorkflowResult, ToolExecutionResult } from './types.js';
 import { AgentActionTier, SafetyLevel } from './types.js';
 import { PermissionLevel } from './permissions.js';
@@ -24,8 +28,9 @@ const TIER_COST: Record<number, number> = {
 export function tierToPermissionLevel(tier: AgentActionTier): PermissionLevel {
   switch (tier) {
     case AgentActionTier.Tier0_ReadOnly:
-    case AgentActionTier.Tier1_DraftOnly:
       return PermissionLevel.OBSERVE;
+    case AgentActionTier.Tier1_DraftOnly:
+      return PermissionLevel.SUGGEST;
     case AgentActionTier.Tier2_LowRisk:
       return PermissionLevel.ACT_LOW;
     case AgentActionTier.Tier3_HighRisk:
@@ -35,7 +40,15 @@ export function tierToPermissionLevel(tier: AgentActionTier): PermissionLevel {
   }
 }
 
+export interface ExecutionEngineOptions {
+  /** When true, approval requests are auto-approved immediately. Default: true.
+   * Set to false when async approval flows (human-in-the-loop, external webhook) are wired in. */
+  autoApprove?: boolean;
+}
+
 export class ExecutionEngine {
+  private readonly autoApprove: boolean;
+
   constructor(
     private toolRegistry: TypedToolRegistry,
     private safetyClassifier: SafetyClassifier,
@@ -44,7 +57,10 @@ export class ExecutionEngine {
     private undoEngine: UndoEngine,
     private costTracker: CostTracker,
     private permissionGuard: PermissionGuard,
-  ) {}
+    options?: ExecutionEngineOptions,
+  ) {
+    this.autoApprove = options?.autoApprove ?? true;
+  }
 
   async executePlan(plan: AgentPlan, agentId: string): Promise<AgentWorkflowResult> {
     const actionsTaken: { step: string; result: ToolExecutionResult }[] = [];
@@ -69,6 +85,8 @@ export class ExecutionEngine {
       }
 
       // 2. Safety check
+      // Context enrichment (injecting piiAccess, consent, amount, affectedCount from
+      // identity-permissions) will be added when cross-package integration is wired in.
       const safety = this.safetyClassifier.classify(step.toolName, step.args);
       if (safety.level === SafetyLevel.Blocked) {
         step.status = 'failed';
@@ -82,7 +100,10 @@ export class ExecutionEngine {
         continue;
       }
 
-      // 3. If requires approval, submit to queue (auto-approve for execution flow)
+      // 3. Submit to approval queue if required.
+      // Foundation phase: auto-approve is enabled by default because async approval requires
+      // external integrations (webhooks, human-in-the-loop UI) not yet built. In production,
+      // set autoApprove=false so the engine yields here and awaits external approval/rejection.
       if (step.requiresApproval) {
         const approvalId = generateId('approval');
         this.approvalQueue.submit({
@@ -92,8 +113,16 @@ export class ExecutionEngine {
           riskLevel: step.tier >= AgentActionTier.Tier3_HighRisk ? 'high' : 'medium',
           metadata: { stepId: step.id, planId: plan.id },
         });
-        this.approvalQueue.approve(approvalId);
-        step.status = 'approved';
+
+        if (this.autoApprove) {
+          this.approvalQueue.approve(approvalId);
+          step.status = 'approved';
+        } else {
+          // When autoApprove is disabled, skip execution of this step.
+          // A future implementation will suspend and resume on external callback.
+          step.status = 'skipped';
+          continue;
+        }
       }
 
       // 4. Execute

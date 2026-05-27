@@ -33,10 +33,28 @@ export class PlanGenerator {
         intentLower.includes(toolLower) ||
         intentLower.includes(categoryLower) ||
         toolLower.split(/[-_]/).some((word) => word.length > 2 && intentLower.includes(word)) ||
-        categoryLower.split(/[-_]/).some((word) => word.length > 2 && intentLower.includes(word)) ||
-        true; // Include all available tools in the plan
+        categoryLower.split(/[-_]/).some((word) => word.length > 2 && intentLower.includes(word));
 
       if (isRelevant) {
+        steps.push({
+          id: generateId('step'),
+          toolName: tool.name,
+          args: {},
+          tier: tool.requiredTier,
+          description: tool.description,
+          requiresApproval: tool.requiredTier >= AgentActionTier.Tier2_LowRisk,
+          status: 'pending',
+        });
+      }
+    }
+
+    // Fallback: if no tools matched via relevance, include all available tools so the plan
+    // is not empty. This handles cases where the intent does not contain tool/category keywords.
+    if (steps.length === 0) {
+      for (const toolName of availableTools) {
+        const tool = this.toolRegistry.getTool(toolName);
+        if (!tool) continue;
+
         steps.push({
           id: generateId('step'),
           toolName: tool.name,

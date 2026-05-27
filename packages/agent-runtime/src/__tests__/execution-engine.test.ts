@@ -274,8 +274,8 @@ describe('ExecutionEngine', () => {
       expect(tierToPermissionLevel(AgentActionTier.Tier0_ReadOnly)).toBe(PermissionLevel.OBSERVE);
     });
 
-    it('maps Tier1 to OBSERVE', () => {
-      expect(tierToPermissionLevel(AgentActionTier.Tier1_DraftOnly)).toBe(PermissionLevel.OBSERVE);
+    it('maps Tier1 to SUGGEST', () => {
+      expect(tierToPermissionLevel(AgentActionTier.Tier1_DraftOnly)).toBe(PermissionLevel.SUGGEST);
     });
 
     it('maps Tier2 to ACT_LOW', () => {

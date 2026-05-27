@@ -1,6 +1,9 @@
 // ============================================================================
 // RBAC Engine - Role-Based Access Control for Workspaces
 // ============================================================================
+// NOTE: This is an in-memory implementation for the foundation phase. Role memberships are stored
+// in Maps with no persistence, eviction, or size limits. Database-backed storage will be added
+// when persistence integration is implemented.
 
 import type { ResourcePermission, RoleMembership, WorkspaceRole, ResourceEntry } from '../types.js';
 
