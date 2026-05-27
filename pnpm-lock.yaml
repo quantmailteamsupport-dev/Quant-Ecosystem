@@ -54,6 +54,25 @@ importers:
         specifier: ^2
         version: 2.1.9(@types/node@25.9.1)(jsdom@25.0.1)
 
+  apps/marketing:
+    dependencies:
+      react:
+        specifier: ^18.3.0
+        version: 18.3.1
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.19
+      '@types/react':
+        specifier: ^18.3.0
+        version: 18.3.29
+      typescript:
+        specifier: ~5.5.0
+        version: 5.5.4
+      vitest:
+        specifier: ^2
+        version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)
+
   apps/quant-mobile:
     dependencies:
       '@quant/auth':
@@ -752,6 +771,18 @@ importers:
         specifier: ^19.0.0
         version: 19.2.3(@types/react@19.2.15)
 
+  apps/status:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.19
+      typescript:
+        specifier: ~5.5.0
+        version: 5.5.4
+      vitest:
+        specifier: ^2
+        version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)
+
   packages/agent-runtime:
     dependencies:
       '@quant/ai':
@@ -882,6 +913,18 @@ importers:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)
 
+  packages/ai-organization:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.19
+      typescript:
+        specifier: ~5.5.0
+        version: 5.5.4
+      vitest:
+        specifier: ^2
+        version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)
+
   packages/api-client:
     dependencies:
       '@tanstack/react-query':
@@ -929,6 +972,18 @@ importers:
         specifier: ^22.0.0
         version: 22.19.19
 
+  packages/co-presence:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.19
+      typescript:
+        specifier: ~5.5.0
+        version: 5.5.4
+      vitest:
+        specifier: ^2
+        version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)
+
   packages/command-palette:
     dependencies:
       '@quant/common':
@@ -967,6 +1022,18 @@ importers:
         version: 5.5.4
       vitest:
         specifier: ^2.0.0
+        version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)
+
+  packages/cross-app-workflows:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.19
+      typescript:
+        specifier: ~5.5.0
+        version: 5.5.4
+      vitest:
+        specifier: ^2
         version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)
 
   packages/cross-publish:
@@ -1038,6 +1105,18 @@ importers:
         specifier: ^4.19.0
         version: 4.22.3
 
+  packages/encryption:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.19
+      typescript:
+        specifier: ~5.5.0
+        version: 5.5.4
+      vitest:
+        specifier: ^2
+        version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)
+
   packages/federation:
     dependencies:
       '@quant/common':
@@ -1052,6 +1131,18 @@ importers:
       zod:
         specifier: ^3.24.2
         version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.19
+      typescript:
+        specifier: ~5.5.0
+        version: 5.5.4
+      vitest:
+        specifier: ^2
+        version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)
+
+  packages/governance:
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -1096,6 +1187,18 @@ importers:
         version: 5.5.4
       vitest:
         specifier: ^2.0.0
+        version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)
+
+  packages/local-first:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.19
+      typescript:
+        specifier: ~5.5.0
+        version: 5.5.4
+      vitest:
+        specifier: ^2
         version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)
 
   packages/media:
@@ -1685,6 +1788,18 @@ importers:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)
 
+  packages/universal-capture:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.19
+      typescript:
+        specifier: ~5.5.0
+        version: 5.5.4
+      vitest:
+        specifier: ^2
+        version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)
+
   packages/universal-timeline:
     dependencies:
       '@quant/common':
@@ -1702,6 +1817,30 @@ importers:
         version: 5.5.4
       vitest:
         specifier: ^2.0.0
+        version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)
+
+  packages/user-owned-ai:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.19
+      typescript:
+        specifier: ~5.5.0
+        version: 5.5.4
+      vitest:
+        specifier: ^2
+        version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)
+
+  packages/voice-input:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.19
+      typescript:
+        specifier: ~5.5.0
+        version: 5.5.4
+      vitest:
+        specifier: ^2
         version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)
 
   services/ads-api:

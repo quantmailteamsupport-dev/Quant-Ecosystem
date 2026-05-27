@@ -25,7 +25,9 @@
     "doctor": "tsx scripts/doctor.ts",
     "env:check": "tsx scripts/env-check.ts",
     "db:reset": "tsx scripts/db-reset.ts",
-    "smoke": "tsx scripts/smoke.ts"
+    "smoke": "tsx scripts/smoke.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ci": "playwright test --shard=$CI_SHARD"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
