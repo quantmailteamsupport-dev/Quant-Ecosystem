@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Phase 10: Event Schema Registry, Notification Fanout, Idempotency Keys, and WS Gateway Integration. Add a central event schema registry with Zod-validated event definitions covering all cross-app events. Add notification fanout service that routes events to push/email/in-app based on user preferences. Add idempotency key middleware for write operations. Wire the ws-gateway service to use the realtime package auth, presence, and delivery systems.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Step 1: Create packages/realtime/src/event-schema-registry.ts - Define a central EventSchemaRegistry class that maps event type strings to Zod schemas. Register schemas for all event types in EventMap (message:new, message:typing, message:read, presence:update, post:new, post:interaction, call:signal, call:incoming, stream:event, notification:new, ai:chunk, ai:device). Add validate() method. Add new event types: 'document:updated', 'file:shared', 'calendar:reminder', 'payment:received', 'search:invalidate'. Export from packages/realtime/src/index.ts.",
     "Step 2: Create packages/notifications/src/services/notification-fanout.ts - Implement NotificationFanout class that accepts an event (from any app), determines recipients (via a resolver function), checks user preferences via PreferenceService, and routes to appropriate channels (in-app via UniversalNotificationCenter, push via PushService). Add mention detection logic. Export from packages/notifications/src/index.ts.",
@@ -31,5 +31,5 @@
     "pnpm lint (must pass all tasks)"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "ws-gateway needed project references in tsconfig.json to properly resolve @quant/realtime transitive imports with composite mode. Added references to ../../packages/realtime and ../../packages/common. All 4 quality gates pass: typecheck 72/72, build 51/51, test 75/75, lint 61/61."
 }
