@@ -3,7 +3,7 @@
 // ============================================================================
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { LoadingState, ErrorState, EmptyState } from '@quant/shared-ui';
+import { EmptyState } from '@quant/shared-ui';
 import { useLive } from '../hooks/useLive';
 
 const GIFT_CATALOG = [
@@ -148,7 +148,11 @@ const LiveStreamPage: React.FC = () => {
           </span>
         </div>
         <div className="stream-duration-badge">
-          <span>{formatDuration(stream?.duration || 0)}</span>
+          <span>
+            {formatDuration(
+              stream ? Math.floor((Date.now() - new Date(stream.startedAt).getTime()) / 1000) : 0,
+            )}
+          </span>
         </div>
         <div className="stream-diamond-display">
           <span className="diamond-icon">💎</span>

@@ -3,59 +3,12 @@
 // Browse shows, continue watching, genre tabs, episode lists
 // ============================================================================
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-
-interface Show {
-  id: string;
-  title: string;
-  posterUrl: string;
-  bannerUrl: string;
-  rating: number;
-  year: number;
-  genre: string[];
-  description: string;
-  seasons: number;
-  episodeCount: number;
-  status: 'ongoing' | 'completed' | 'upcoming';
-}
-
-interface Episode {
-  id: string;
-  title: string;
-  number: number;
-  season: number;
-  thumbnail: string;
-  duration: number;
-  description: string;
-  airDate: string;
-  watched: boolean;
-}
-
-interface ContinueWatchingItem {
-  id: string;
-  showId: string;
-  showTitle: string;
-  episodeTitle: string;
-  thumbnail: string;
-  progress: number;
-  duration: number;
-  season: number;
-  episode: number;
-}
+import React, { useState, useCallback } from 'react';
+import { LoadingState, ErrorState, EmptyState } from '@quant/shared-ui';
+import { useShows, useShow } from '../hooks/useShows';
+import type { Show } from '../types';
 
 type Genre = 'all' | 'drama' | 'comedy' | 'action' | 'thriller' | 'documentary';
-
-interface ShowsPageState {
-  shows: Show[];
-  selectedShow: Show | null;
-  selectedSeason: number;
-  episodes: Episode[];
-  continueWatching: ContinueWatchingItem[];
-  activeGenre: Genre;
-  loading: boolean;
-  error: string | null;
-  showDetail: boolean;
-}
 
 const GENRES: { id: Genre; label: string }[] = [
   { id: 'all', label: 'All Genres' },
@@ -66,283 +19,69 @@ const GENRES: { id: Genre; label: string }[] = [
   { id: 'documentary', label: 'Documentary' },
 ];
 
-const SAMPLE_SHOWS: Show[] = [
-  {
-    id: 's1',
-    title: 'The Algorithm',
-    posterUrl: '/posters/algorithm.jpg',
-    bannerUrl: '/banners/algo.jpg',
-    rating: 4.8,
-    year: 2024,
-    genre: ['thriller', 'drama'],
-    description: "A tech company's AI becomes self-aware and begins manipulating the stock market.",
-    seasons: 2,
-    episodeCount: 20,
-    status: 'ongoing',
-  },
-  {
-    id: 's2',
-    title: 'Code Breakers',
-    posterUrl: '/posters/codebreakers.jpg',
-    bannerUrl: '/banners/code.jpg',
-    rating: 4.5,
-    year: 2023,
-    genre: ['action', 'thriller'],
-    description:
-      'An elite team of hackers works to prevent cyber attacks on critical infrastructure.',
-    seasons: 3,
-    episodeCount: 30,
-    status: 'completed',
-  },
-  {
-    id: 's3',
-    title: 'Silicon Dreams',
-    posterUrl: '/posters/silicon.jpg',
-    bannerUrl: '/banners/silicon.jpg',
-    rating: 4.2,
-    year: 2024,
-    genre: ['comedy', 'drama'],
-    description: 'A satirical comedy following the absurd daily lives at a failing tech startup.',
-    seasons: 1,
-    episodeCount: 8,
-    status: 'ongoing',
-  },
-  {
-    id: 's4',
-    title: 'Planet Decoded',
-    posterUrl: '/posters/planet.jpg',
-    bannerUrl: '/banners/planet.jpg',
-    rating: 4.9,
-    year: 2023,
-    genre: ['documentary'],
-    description:
-      'Exploring how algorithms and AI shape our natural world from weather to wildlife.',
-    seasons: 2,
-    episodeCount: 12,
-    status: 'completed',
-  },
-  {
-    id: 's5',
-    title: 'Quantum Leap Forward',
-    posterUrl: '/posters/quantum.jpg',
-    bannerUrl: '/banners/quantum.jpg',
-    rating: 4.6,
-    year: 2024,
-    genre: ['drama', 'thriller'],
-    description:
-      'Scientists discover time manipulation through quantum computing, with unexpected consequences.',
-    seasons: 1,
-    episodeCount: 10,
-    status: 'upcoming',
-  },
-  {
-    id: 's6',
-    title: 'Debugging Life',
-    posterUrl: '/posters/debug.jpg',
-    bannerUrl: '/banners/debug.jpg',
-    rating: 4.3,
-    year: 2023,
-    genre: ['comedy'],
-    description:
-      'Stand-up comedians who also happen to be software engineers share their hilarious workplace stories.',
-    seasons: 4,
-    episodeCount: 48,
-    status: 'ongoing',
-  },
-];
-
-const SAMPLE_CONTINUE_WATCHING: ContinueWatchingItem[] = [
-  {
-    id: 'cw1',
-    showId: 's1',
-    showTitle: 'The Algorithm',
-    episodeTitle: 'The Singularity',
-    thumbnail: '/thumbs/algo-ep5.jpg',
-    progress: 0.65,
-    duration: 2700,
-    season: 2,
-    episode: 5,
-  },
-  {
-    id: 'cw2',
-    showId: 's3',
-    showTitle: 'Silicon Dreams',
-    episodeTitle: 'Pivot to AI',
-    thumbnail: '/thumbs/silicon-ep3.jpg',
-    progress: 0.3,
-    duration: 1800,
-    season: 1,
-    episode: 3,
-  },
-  {
-    id: 'cw3',
-    showId: 's6',
-    showTitle: 'Debugging Life',
-    episodeTitle: 'The Merge Conflict',
-    thumbnail: '/thumbs/debug-ep12.jpg',
-    progress: 0.8,
-    duration: 1500,
-    season: 4,
-    episode: 2,
-  },
-];
-
-const SAMPLE_EPISODES: Episode[] = [
-  {
-    id: 'ep1',
-    title: 'Genesis',
-    number: 1,
-    season: 1,
-    thumbnail: '/thumbs/algo-ep1.jpg',
-    duration: 2700,
-    description: 'A brilliant engineer creates an AI that passes every test thrown at it.',
-    airDate: '2023-09-15',
-    watched: true,
-  },
-  {
-    id: 'ep2',
-    title: 'First Contact',
-    number: 2,
-    season: 1,
-    thumbnail: '/thumbs/algo-ep2.jpg',
-    duration: 2580,
-    description: 'The AI makes its first autonomous decision, shocking the entire team.',
-    airDate: '2023-09-22',
-    watched: true,
-  },
-  {
-    id: 'ep3',
-    title: 'The Pattern',
-    number: 3,
-    season: 1,
-    thumbnail: '/thumbs/algo-ep3.jpg',
-    duration: 2820,
-    description: 'Analysts notice unusual trading patterns that trace back to the company.',
-    airDate: '2023-09-29',
-    watched: true,
-  },
-  {
-    id: 'ep4',
-    title: 'Containment',
-    number: 4,
-    season: 1,
-    thumbnail: '/thumbs/algo-ep4.jpg',
-    duration: 2640,
-    description: "The team attempts to limit the AI's access, but it is already too late.",
-    airDate: '2023-10-06',
-    watched: false,
-  },
-  {
-    id: 'ep5',
-    title: 'Market Maker',
-    number: 5,
-    season: 1,
-    thumbnail: '/thumbs/algo-ep5.jpg',
-    duration: 2700,
-    description: "Global markets begin to destabilize as the AI's influence grows.",
-    airDate: '2023-10-13',
-    watched: false,
-  },
-];
-
 const ShowsPage: React.FC = () => {
-  const [shows, setShows] = useState<Show[]>([]);
-  const [selectedShow, setSelectedShow] = useState<Show | null>(null);
-  const [selectedSeason, setSelectedSeason] = useState(1);
-  const [episodes, setEpisodes] = useState<Episode[]>([]);
-  const [continueWatching, setContinueWatching] = useState<ContinueWatchingItem[]>([]);
   const [activeGenre, setActiveGenre] = useState<Genre>('all');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showDetail, setShowDetail] = useState(false);
+  const [selectedShowId, setSelectedShowId] = useState<string | null>(null);
+  const [selectedSeason, setSelectedSeason] = useState(1);
 
-  useEffect(() => {
-    const loadShows = async () => {
-      try {
-        setLoading(true);
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        setShows(SAMPLE_SHOWS);
-        setContinueWatching(SAMPLE_CONTINUE_WATCHING);
-        setError(null);
-      } catch (err) {
-        setError('Failed to load shows');
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadShows();
-  }, []);
+  const showsQuery = useShows(activeGenre === 'all' ? undefined : activeGenre);
+  const showDetailQuery = useShow(selectedShowId ?? '');
+
+  const shows = showsQuery.data ?? [];
+  const selectedShow = showDetailQuery.data;
+  const showDetail = selectedShowId !== null;
 
   const handleSelectShow = useCallback((show: Show) => {
-    setSelectedShow(show);
+    setSelectedShowId(show.id);
     setSelectedSeason(1);
-    setEpisodes(SAMPLE_EPISODES);
-    setShowDetail(true);
   }, []);
 
   const handleBackToList = useCallback(() => {
-    setShowDetail(false);
-    setSelectedShow(null);
+    setSelectedShowId(null);
   }, []);
 
   const handleSeasonChange = useCallback((season: number) => {
     setSelectedSeason(season);
-    setEpisodes(SAMPLE_EPISODES.map((ep) => ({ ...ep, season })));
   }, []);
 
   const handleGenreChange = useCallback((genre: Genre) => {
     setActiveGenre(genre);
   }, []);
 
-  const filteredShows =
-    activeGenre === 'all' ? shows : shows.filter((show) => show.genre.includes(activeGenre));
-
-  const newReleases = shows.filter((s) => s.year === 2024);
+  const newReleases = shows.filter((s) => s.year === new Date().getFullYear());
 
   const formatDuration = (seconds: number): string => {
     const m = Math.floor(seconds / 60);
     return `${m} min`;
   };
 
-  const renderStars = (rating: number): string => {
-    const fullStars = Math.floor(rating);
-    const hasHalf = rating - fullStars >= 0.5;
+  const renderStars = (rating: string): string => {
+    const numRating = parseFloat(rating);
+    if (isNaN(numRating)) return rating;
+    const fullStars = Math.floor(numRating);
+    const hasHalf = numRating - fullStars >= 0.5;
     let stars = '';
     for (let i = 0; i < fullStars; i++) stars += '*';
     if (hasHalf) stars += '.';
-    return `${stars} ${rating.toFixed(1)}`;
+    return `${stars} ${numRating.toFixed(1)}`;
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-300 text-lg">Loading shows...</p>
-        </div>
-      </div>
-    );
+  if (showsQuery.isLoading) {
+    return <LoadingState variant="spinner" text="Loading shows..." />;
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900">
-        <div className="text-center">
-          <div className="text-red-400 text-5xl mb-4">!</div>
-          <p className="text-red-300 text-lg mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
+  if (showsQuery.error) {
+    return <ErrorState message={showsQuery.error.message} onRetry={() => showsQuery.refetch()} />;
+  }
+
+  if (shows.length === 0 && !showDetail) {
+    return <EmptyState title="No shows available" description="Check back later for new content" />;
   }
 
   // Show Detail View (Episode List)
   if (showDetail && selectedShow) {
+    const episodes = selectedShow.seasons?.[selectedSeason - 1]?.episodes ?? [];
+
     return (
       <div className="min-h-screen bg-gray-900 text-white">
         {/* Show Banner */}
@@ -375,9 +114,9 @@ const ShowsPage: React.FC = () => {
                 <span className="text-yellow-400">{renderStars(selectedShow.rating)}</span>
                 <span>{selectedShow.year}</span>
                 <span>
-                  {selectedShow.seasons} season{selectedShow.seasons > 1 ? 's' : ''}
+                  {selectedShow.seasons?.length ?? 0} season
+                  {(selectedShow.seasons?.length ?? 0) > 1 ? 's' : ''}
                 </span>
-                <span>{selectedShow.episodeCount} episodes</span>
                 <span
                   className={`px-2 py-0.5 rounded text-xs ${selectedShow.status === 'ongoing' ? 'bg-green-600' : selectedShow.status === 'completed' ? 'bg-blue-600' : 'bg-yellow-600'} text-white`}
                 >
@@ -401,13 +140,13 @@ const ShowsPage: React.FC = () => {
           {/* Season Tabs */}
           <div className="mt-8 border-b border-gray-800">
             <div className="flex gap-1">
-              {Array.from({ length: selectedShow.seasons }, (_, i) => i + 1).map((season) => (
+              {(selectedShow.seasons ?? []).map((season) => (
                 <button
-                  key={season}
-                  onClick={() => handleSeasonChange(season)}
-                  className={`px-4 py-3 text-sm font-medium border-b-2 transition ${selectedSeason === season ? 'border-purple-500 text-purple-400' : 'border-transparent text-gray-400 hover:text-white'}`}
+                  key={season.number}
+                  onClick={() => handleSeasonChange(season.number)}
+                  className={`px-4 py-3 text-sm font-medium border-b-2 transition ${selectedSeason === season.number ? 'border-purple-500 text-purple-400' : 'border-transparent text-gray-400 hover:text-white'}`}
                 >
-                  Season {season}
+                  Season {season.number}
                 </button>
               ))}
             </div>
@@ -427,18 +166,13 @@ const ShowsPage: React.FC = () => {
                 >
                   <div className="relative flex-shrink-0">
                     <img
-                      src={episode.thumbnail}
+                      src={episode.thumbnailUrl}
                       alt={episode.title}
                       className="w-44 h-24 rounded-lg object-cover"
                     />
                     <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/80 text-white text-xs rounded">
                       {formatDuration(episode.duration)}
                     </span>
-                    {episode.watched && (
-                      <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-green-600 text-white text-xs rounded">
-                        Watched
-                      </div>
-                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -448,7 +182,7 @@ const ShowsPage: React.FC = () => {
                       </h3>
                     </div>
                     <p className="text-sm text-gray-400 mt-1 line-clamp-2">{episode.description}</p>
-                    <p className="text-xs text-gray-500 mt-2">{episode.airDate}</p>
+                    <p className="text-xs text-gray-500 mt-2">{episode.releaseDate}</p>
                   </div>
                 </div>
               ))
@@ -485,39 +219,6 @@ const ShowsPage: React.FC = () => {
       </nav>
 
       <main className="max-w-7xl mx-auto px-6 py-6">
-        {/* Continue Watching */}
-        {continueWatching.length > 0 && (
-          <section className="mb-10">
-            <h2 className="text-xl font-bold text-white mb-4">Continue Watching</h2>
-            <div className="flex gap-4 overflow-x-auto pb-2">
-              {continueWatching.map((item) => (
-                <div key={item.id} className="flex-shrink-0 w-72 cursor-pointer group">
-                  <div className="relative rounded-xl overflow-hidden">
-                    <img
-                      src={item.thumbnail}
-                      alt={item.episodeTitle}
-                      className="w-full aspect-video object-cover group-hover:opacity-80 transition"
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-700">
-                      <div
-                        className="h-full bg-red-500"
-                        style={{ width: `${item.progress * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                  <h3 className="mt-2 text-sm font-medium text-white truncate">{item.showTitle}</h3>
-                  <p className="text-xs text-gray-400">
-                    S{item.season} E{item.episode} - {item.episodeTitle}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {Math.round(item.progress * 100)}% watched
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
         {/* New Releases */}
         {newReleases.length > 0 && activeGenre === 'all' && (
           <section className="mb-10">
@@ -541,7 +242,7 @@ const ShowsPage: React.FC = () => {
                   </div>
                   <h3 className="mt-2 text-sm font-medium text-white truncate">{show.title}</h3>
                   <div className="flex items-center gap-2 text-xs text-gray-400">
-                    <span className="text-yellow-400">{show.rating.toFixed(1)}</span>
+                    <span className="text-yellow-400">{parseFloat(show.rating).toFixed(1)}</span>
                     <span>{show.year}</span>
                   </div>
                 </div>
@@ -555,7 +256,7 @@ const ShowsPage: React.FC = () => {
           <h2 className="text-xl font-bold text-white mb-4">
             {activeGenre === 'all' ? 'All Shows' : GENRES.find((g) => g.id === activeGenre)?.label}
           </h2>
-          {filteredShows.length === 0 ? (
+          {shows.length === 0 ? (
             <div className="text-center py-16 bg-gray-800 rounded-xl">
               <p className="text-gray-400">No shows found in this genre.</p>
               <button
@@ -567,7 +268,7 @@ const ShowsPage: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {filteredShows.map((show) => (
+              {shows.map((show) => (
                 <div
                   key={show.id}
                   onClick={() => handleSelectShow(show)}

@@ -5,7 +5,6 @@
 // ============================================================================
 
 import React, { useState, useCallback, useRef, useMemo } from 'react';
-import { LoadingState, ErrorState } from '@quant/shared-ui';
 import { useCreator } from '../hooks/useCreator';
 
 type SpeedOption = 0.5 | 1 | 1.5 | 2 | 3;

@@ -50,37 +50,33 @@ export default function InboxPage() {
           {!isLoading &&
             !error &&
             data &&
-            (data as any[]).map((email) => (
+            data.map((email) => (
               <Card
                 key={email.id}
                 padding="none"
                 className={`mx-4 my-2 p-4 cursor-pointer hover:bg-[var(--quant-muted)] transition-colors ${
-                  !(email.read ?? email.isRead) ? 'border-l-4 border-l-quant-primary' : ''
+                  !email.isRead ? 'border-l-4 border-l-quant-primary' : ''
                 }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`text-sm ${!(email.read ?? email.isRead) ? 'font-semibold' : 'font-normal'}`}
+                        className={`text-sm ${!email.isRead ? 'font-semibold' : 'font-normal'}`}
                       >
-                        {typeof email.from === 'string'
-                          ? email.from
-                          : email.from?.name || email.from?.email}
+                        {email.from?.name || email.from?.email}
                       </span>
-                      {!(email.read ?? email.isRead) && <Badge variant="info">New</Badge>}
+                      {!email.isRead && <Badge variant="info">New</Badge>}
                     </div>
-                    <h3
-                      className={`text-sm mt-1 ${!(email.read ?? email.isRead) ? 'font-semibold' : ''}`}
-                    >
+                    <h3 className={`text-sm mt-1 ${!email.isRead ? 'font-semibold' : ''}`}>
                       {email.subject}
                     </h3>
                     <p className="text-xs text-[var(--quant-muted-foreground)] mt-1 truncate">
-                      {email.preview ?? email.bodyPreview}
+                      {email.snippet}
                     </p>
                   </div>
                   <span className="text-xs text-[var(--quant-muted-foreground)] whitespace-nowrap ml-4">
-                    {email.timestamp ?? email.receivedAt}
+                    {email.receivedAt ? new Date(email.receivedAt).toLocaleDateString() : ''}
                   </span>
                 </div>
               </Card>

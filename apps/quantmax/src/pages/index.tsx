@@ -4,7 +4,7 @@
 // sound ticker, progress bar, loading/error/empty states
 // ============================================================================
 
-import React, { useState, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { LoadingState, ErrorState, EmptyState } from '@quant/shared-ui';
 import { useFeed } from '../hooks/useFeed';
 
@@ -95,7 +95,7 @@ const ForYouFeedPage: React.FC = () => {
         >
           <video
             className="fullscreen-video"
-            src={currentVideo.url}
+            src={currentVideo.videoUrl}
             poster={currentVideo.thumbnailUrl}
             autoPlay={state.isPlaying}
             loop
@@ -119,8 +119,8 @@ const ForYouFeedPage: React.FC = () => {
               <div className="creator-avatar-container">
                 <img
                   className="creator-avatar"
-                  src={currentVideo.creatorAvatar}
-                  alt={currentVideo.creatorName}
+                  src={currentVideo.creator?.avatarUrl}
+                  alt={currentVideo.creator?.username}
                 />
               </div>
             </div>
@@ -167,9 +167,9 @@ const ForYouFeedPage: React.FC = () => {
 
           <div className="video-info-bottom">
             <div className="creator-row">
-              <span className="creator-name">@{currentVideo.creatorName}</span>
+              <span className="creator-name">@{currentVideo.creator?.username}</span>
             </div>
-            <p className="video-caption">{currentVideo.description}</p>
+            <p className="video-caption">{currentVideo.caption}</p>
             <div className="hashtags-row">
               {(currentVideo.hashtags || []).map((tag) => (
                 <span key={tag} className="hashtag">
@@ -180,7 +180,7 @@ const ForYouFeedPage: React.FC = () => {
             <div className="sound-ticker">
               <span className="music-note">&#9835;</span>
               <div className="ticker-scroll">
-                <span className="sound-name">{currentVideo.soundName}</span>
+                <span className="sound-name">{currentVideo.sound?.name}</span>
               </div>
             </div>
           </div>

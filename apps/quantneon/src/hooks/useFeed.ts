@@ -7,21 +7,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../services/api-client';
-
-interface FeedPost {
-  id: string;
-  authorId: string;
-  authorUsername: string;
-  authorAvatar: string;
-  mediaUrls: string[];
-  mediaType: 'image' | 'carousel' | 'video';
-  caption: string;
-  likeCount: number;
-  commentCount: number;
-  isLiked: boolean;
-  isSaved: boolean;
-  createdAt: string;
-}
+import type { Post } from '../types';
 
 interface StoryUser {
   id: string;
@@ -32,7 +18,7 @@ interface StoryUser {
 }
 
 interface FeedState {
-  posts: FeedPost[];
+  posts: Post[];
   stories: StoryUser[];
   loading: boolean;
   refreshing: boolean;
@@ -69,7 +55,7 @@ export function useFeed(): [FeedState, FeedActions] {
         throw new Error(response.error?.message || 'Failed to load feed');
       }
       return {
-        posts: (response.data as any)?.posts ?? [],
+        posts: response.data?.posts ?? [],
         page: pageParam,
       };
     },
@@ -85,7 +71,7 @@ export function useFeed(): [FeedState, FeedActions] {
     queryFn: async () => {
       const response = await apiClient.getStoriesFeed();
       return {
-        stories: (response.data as any)?.stories ?? (response.data as any) ?? [],
+        stories: (Array.isArray(response.data) ? response.data : []) as StoryUser[],
       };
     },
     initialPageParam: 0,
@@ -105,7 +91,7 @@ export function useFeed(): [FeedState, FeedActions] {
     },
   });
 
-  const allPosts: FeedPost[] = (feedQuery.data?.pages ?? [])
+  const allPosts: Post[] = (feedQuery.data?.pages ?? [])
     .flatMap((page) => page.posts)
     .filter((p) => !hiddenPosts.has(p.id));
 

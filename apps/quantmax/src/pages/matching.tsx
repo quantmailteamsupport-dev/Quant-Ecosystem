@@ -2,29 +2,32 @@
 // QuantMax - Dating Swipe Cards (Tinder-style)
 // ============================================================================
 
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { LoadingState, ErrorState, EmptyState } from '@quant/shared-ui';
 import { useMatching } from '../hooks/useMatching';
 
 const MatchingPage: React.FC = () => {
   const matching = useMatching();
-  const [showMatch, setShowMatch] = useState<boolean>(false);
 
   const currentProfile = matching.currentProfile;
 
   const handleLike = useCallback(() => {
-    const result = matching.swipe('like');
-    if (result && result.isMatch) setShowMatch(true);
-  }, [matching]);
+    if (currentProfile) {
+      matching.like(currentProfile.id);
+    }
+  }, [matching, currentProfile]);
 
   const handlePass = useCallback(() => {
-    matching.swipe('pass');
-  }, [matching]);
+    if (currentProfile) {
+      matching.pass(currentProfile.id);
+    }
+  }, [matching, currentProfile]);
 
   const handleSuperLike = useCallback(() => {
-    const result = matching.swipe('superlike');
-    if (result && result.isMatch) setShowMatch(true);
-  }, [matching]);
+    if (currentProfile) {
+      matching.superLike(currentProfile.id);
+    }
+  }, [matching, currentProfile]);
 
   if (matching.isLoading && !currentProfile) {
     return <LoadingState variant="skeleton" text="Finding people near you..." />;
@@ -48,21 +51,23 @@ const MatchingPage: React.FC = () => {
       <div className="card-stack">
         <div className="profile-card">
           <div className="card-photos">
-            {currentProfile.photos && currentProfile.photos.length > 0 && (
-              <img
-                className="profile-photo"
-                src={currentProfile.photos[0]}
-                alt={currentProfile.displayName}
-              />
-            )}
-            {currentProfile.verified && <span className="verified-badge">✓</span>}
+            {currentProfile.photos &&
+              currentProfile.photos.length > 0 &&
+              currentProfile.photos[0] && (
+                <img
+                  className="profile-photo"
+                  src={currentProfile.photos[0].url}
+                  alt={currentProfile.displayName}
+                />
+              )}
+            {currentProfile.verified === 'verified' && <span className="verified-badge">✓</span>}
           </div>
           <div className="card-info">
             <h2 className="profile-name">
               {currentProfile.displayName}, {currentProfile.age}
             </h2>
-            {currentProfile.distance && (
-              <span className="profile-distance">{currentProfile.distance} km away</span>
+            {currentProfile.location && (
+              <span className="profile-distance">{currentProfile.location.city}</span>
             )}
             {currentProfile.bio && <p className="profile-bio">{currentProfile.bio}</p>}
             {currentProfile.interests && currentProfile.interests.length > 0 && (
@@ -96,15 +101,15 @@ const MatchingPage: React.FC = () => {
         </button>
       )}
 
-      {showMatch && (
-        <div className="match-celebration-overlay" onClick={() => setShowMatch(false)}>
+      {matching.matchCelebration && (
+        <div className="match-celebration-overlay" onClick={() => matching.dismissCelebration()}>
           <div className="match-celebration">
             <h1>It is a Match!</h1>
-            <p>You and {currentProfile.displayName} liked each other</p>
-            <button className="send-message-btn" onClick={() => setShowMatch(false)}>
+            <p>You and {matching.matchCelebration.profileName} liked each other</p>
+            <button className="send-message-btn" onClick={() => matching.dismissCelebration()}>
               Send a Message
             </button>
-            <button className="keep-swiping-btn" onClick={() => setShowMatch(false)}>
+            <button className="keep-swiping-btn" onClick={() => matching.dismissCelebration()}>
               Keep Swiping
             </button>
           </div>

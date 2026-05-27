@@ -23,7 +23,7 @@ export default function ChatListPage() {
   if (conversations.length === 0)
     return <EmptyState title="No conversations" description="Start a new chat to get connected" />;
 
-  const chatItems = (conversations as any[]).map((conv) => ({
+  const chatItems = conversations.map((conv) => ({
     id: conv.id,
     name: conv.name || 'Chat',
     lastMessage: conv.lastMessage?.content || '',
