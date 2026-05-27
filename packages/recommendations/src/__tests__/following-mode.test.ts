@@ -20,8 +20,13 @@ describe('FollowingMode', () => {
 
     const contentStore: ContentStore = {
       getPostsByAuthors: (authorIds, options) => {
-        const filtered = posts.filter((p) => authorIds.includes(p.authorId));
-        return filtered.slice(0, options.limit);
+        const filtered = posts
+          .filter((p) => authorIds.includes(p.authorId))
+          .sort((a, b) => b.timestamp - a.timestamp);
+        return filtered.slice(options.offset, options.offset + options.limit);
+      },
+      countPostsByAuthors: (authorIds) => {
+        return posts.filter((p) => authorIds.includes(p.authorId)).length;
       },
     };
 

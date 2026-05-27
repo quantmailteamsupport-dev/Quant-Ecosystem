@@ -128,9 +128,42 @@ export class EmbeddingService {
   }
 
   async embed(texts: string[], language?: string): Promise<number[][]> {
-    const detectedLanguage = language ?? this.detectLanguage(texts.join(' '));
-    const backend = this.routeToBackend(detectedLanguage);
-    return backend.embed(texts);
+    if (language) {
+      // Explicit language provided: route all texts to a single backend
+      const backend = this.routeToBackend(language);
+      return backend.embed(texts);
+    }
+
+    // Detect language per-text and group by backend to handle mixed-language batches
+    const openaiTexts: { text: string; originalIndex: number }[] = [];
+    const tritonTexts: { text: string; originalIndex: number }[] = [];
+
+    for (let i = 0; i < texts.length; i++) {
+      const lang = this.detectLanguage(texts[i]!);
+      if (this.isIndicLanguage(lang)) {
+        tritonTexts.push({ text: texts[i]!, originalIndex: i });
+      } else {
+        openaiTexts.push({ text: texts[i]!, originalIndex: i });
+      }
+    }
+
+    const results: number[][] = new Array(texts.length);
+
+    if (openaiTexts.length > 0) {
+      const embeddings = await this.openaiBackend.embed(openaiTexts.map((t) => t.text));
+      for (let i = 0; i < openaiTexts.length; i++) {
+        results[openaiTexts[i]!.originalIndex] = embeddings[i]!;
+      }
+    }
+
+    if (tritonTexts.length > 0) {
+      const embeddings = await this.tritonBackend.embed(tritonTexts.map((t) => t.text));
+      for (let i = 0; i < tritonTexts.length; i++) {
+        results[tritonTexts[i]!.originalIndex] = embeddings[i]!;
+      }
+    }
+
+    return results;
   }
 
   async embedBatch(items: EmbeddingItem[]): Promise<number[][]> {
@@ -202,7 +235,6 @@ export class EmbeddingService {
  * - Oriya: U+0B00-U+0B7F
  */
 function containsIndicScript(text: string): boolean {
-  // eslint-disable-next-line no-control-regex
   const indicPattern =
     /[\u0900-\u097F\u0980-\u09FF\u0A00-\u0A7F\u0A80-\u0AFF\u0B00-\u0B7F\u0B80-\u0BFF\u0C00-\u0C7F\u0C80-\u0CFF\u0D00-\u0D7F]/;
   return indicPattern.test(text);

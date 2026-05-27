@@ -51,6 +51,12 @@ export class FeatureAggregator {
     }
     state.events.push(event);
     state.dirty = true;
+
+    // Prune events older than 7 days to prevent unbounded memory growth
+    const cutoff = event.timestamp - SEVEN_DAYS_MS;
+    if (state.events.length > 100 && state.events[0]!.timestamp < cutoff) {
+      state.events = state.events.filter((e) => e.timestamp >= cutoff);
+    }
   }
 
   getAggregatedFeatures(userId: string, now?: number): AggregatedFeatures {
@@ -123,10 +129,14 @@ export class FeatureAggregator {
     for (const [userId, state] of this.userStates.entries()) {
       if (!state.dirty) continue;
 
-      const features = this.getAggregatedFeatures(userId);
-      await this.onlineStore.setFeatures(userId, features as unknown as Record<string, unknown>);
-      state.dirty = false;
-      flushedCount++;
+      try {
+        const features = this.getAggregatedFeatures(userId);
+        await this.onlineStore.setFeatures(userId, features as unknown as Record<string, unknown>);
+        state.dirty = false;
+        flushedCount++;
+      } catch {
+        // Skip this user on failure; they remain dirty and will be retried on next flush
+      }
     }
 
     return flushedCount;

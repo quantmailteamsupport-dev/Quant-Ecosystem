@@ -19,6 +19,7 @@ export interface ContentStore {
     authorIds: string[],
     options: { limit: number; offset: number; before?: number },
   ): ContentPost[];
+  countPostsByAuthors?(authorIds: string[]): number;
 }
 
 export interface FollowingFeedResult {
@@ -44,18 +45,22 @@ export class FollowingMode {
       return { items: [], page, pageSize, totalAvailable: 0 };
     }
 
-    // Fetch all available posts from followed authors
-    const posts = this.contentStore.getPostsByAuthors(following, {
-      limit: Number.MAX_SAFE_INTEGER,
-      offset: 0,
+    const offset = (page - 1) * pageSize;
+
+    // Delegate pagination to the content store rather than loading all posts into memory.
+    // We fetch one extra item beyond the page to determine if more results exist.
+    const items = this.contentStore.getPostsByAuthors(following, {
+      limit: pageSize,
+      offset,
     });
 
-    // Sort by timestamp descending (pure chronological)
-    posts.sort((a, b) => b.timestamp - a.timestamp);
+    // Sort by timestamp descending (pure chronological) within the page
+    items.sort((a, b) => b.timestamp - a.timestamp);
 
-    const totalAvailable = posts.length;
-    const offset = (page - 1) * pageSize;
-    const items = posts.slice(offset, offset + pageSize);
+    // Use the optional count method if available, otherwise estimate from results
+    const totalAvailable = this.contentStore.countPostsByAuthors
+      ? this.contentStore.countPostsByAuthors(following)
+      : offset + items.length + (items.length === pageSize ? 1 : 0);
 
     return {
       items,

@@ -20,15 +20,25 @@ const VALID_EVENT_TYPES: Set<string> = new Set([
   'dismiss',
 ]);
 
+export interface NatsFeatureConsumerOptions {
+  onError?: (error: unknown, rawData: Uint8Array) => void;
+}
+
 export class NatsFeatureConsumer {
   private readonly nats: NatsSubscriber;
   private readonly aggregator: FeatureAggregator;
   private readonly subject = 'user.events.*';
+  private readonly onError: ((error: unknown, rawData: Uint8Array) => void) | undefined;
   private running = false;
 
-  constructor(nats: NatsSubscriber, aggregator: FeatureAggregator) {
+  constructor(
+    nats: NatsSubscriber,
+    aggregator: FeatureAggregator,
+    options?: NatsFeatureConsumerOptions,
+  ) {
     this.nats = nats;
     this.aggregator = aggregator;
+    this.onError = options?.onError;
   }
 
   async start(): Promise<void> {
@@ -58,8 +68,10 @@ export class NatsFeatureConsumer {
       if (event) {
         this.aggregator.processEvent(event);
       }
-    } catch {
-      // Malformed messages are silently dropped
+    } catch (error) {
+      if (this.onError) {
+        this.onError(error, data);
+      }
     }
   }
 

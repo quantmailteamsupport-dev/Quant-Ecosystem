@@ -4,7 +4,11 @@
 
 import type { TritonInferenceClient, InferResponse } from '@quant/triton-client';
 import type { NCFConfig } from '../types';
-import { InMemoryNeuralCF } from '../__tests__/fixtures/in-memory-ncf';
+
+// InMemoryNeuralCF type for the lazily-loaded fallback
+type InMemoryNeuralCFType = InstanceType<
+  typeof import('../__tests__/fixtures/in-memory-ncf').InMemoryNeuralCF
+>;
 
 /** Configuration for TritonNCFClient */
 export interface TritonNCFConfig {
@@ -22,7 +26,9 @@ export class NeuralCF {
   private readonly modelVersion?: string;
   private readonly embeddingSize: number;
   private readonly fallbackMode: boolean;
-  private fallback: InMemoryNeuralCF | null = null;
+  private readonly fallbackConfig: NCFConfig | undefined;
+  private fallback: InMemoryNeuralCFType | null = null;
+  private fallbackLoaded = false;
 
   constructor(client: TritonInferenceClient | null, config: TritonNCFConfig) {
     this.client = client;
@@ -30,16 +36,26 @@ export class NeuralCF {
     this.modelVersion = config.modelVersion;
     this.embeddingSize = config.embeddingSize;
     this.fallbackMode = config.fallbackMode ?? client === null;
+    this.fallbackConfig = config.fallbackConfig;
+  }
 
-    if (this.fallbackMode && config.fallbackConfig) {
-      this.fallback = new InMemoryNeuralCF(config.fallbackConfig);
+  /** Lazily load the in-memory fallback to avoid pulling test fixtures into production bundle */
+  private async loadFallback(): Promise<InMemoryNeuralCFType | null> {
+    if (this.fallbackLoaded) return this.fallback;
+    this.fallbackLoaded = true;
+
+    if (this.fallbackMode && this.fallbackConfig) {
+      const { InMemoryNeuralCF } = await import('../__tests__/fixtures/in-memory-ncf');
+      this.fallback = new InMemoryNeuralCF(this.fallbackConfig);
     }
+    return this.fallback;
   }
 
   /** Predict interaction probability for a user-item pair */
   async predict(userId: string, itemId: string): Promise<number> {
-    if (this.fallbackMode && this.fallback) {
-      return this.fallback.predict(userId, itemId);
+    if (this.fallbackMode) {
+      const fb = await this.loadFallback();
+      if (fb) return fb.predict(userId, itemId);
     }
 
     if (!this.client) {
@@ -67,8 +83,9 @@ export class NeuralCF {
     candidateItemIds: string[],
     topN: number = 10,
   ): Promise<Array<{ itemId: string; score: number }>> {
-    if (this.fallbackMode && this.fallback) {
-      return this.fallback.recommend(userId, candidateItemIds, topN);
+    if (this.fallbackMode) {
+      const fb = await this.loadFallback();
+      if (fb) return fb.recommend(userId, candidateItemIds, topN);
     }
 
     if (!this.client) {
@@ -103,8 +120,9 @@ export class NeuralCF {
 
   /** Get user embedding vector from Triton */
   async getUserEmbedding(userId: string): Promise<number[] | null> {
-    if (this.fallbackMode && this.fallback) {
-      return this.fallback.getUserEmbedding(userId);
+    if (this.fallbackMode) {
+      const fb = await this.loadFallback();
+      if (fb) return fb.getUserEmbedding(userId);
     }
 
     if (!this.client) {
@@ -132,8 +150,9 @@ export class NeuralCF {
 
   /** Get item embedding vector from Triton */
   async getItemEmbedding(itemId: string): Promise<number[] | null> {
-    if (this.fallbackMode && this.fallback) {
-      return this.fallback.getItemEmbedding(itemId);
+    if (this.fallbackMode) {
+      const fb = await this.loadFallback();
+      if (fb) return fb.getItemEmbedding(itemId);
     }
 
     if (!this.client) {
@@ -173,9 +192,10 @@ export class NeuralCF {
   }
 
   /** Initialize the in-memory fallback with user/item data (for local dev) */
-  initializeFallback(userIds: string[], itemIds: string[]): void {
-    if (this.fallback) {
-      this.fallback.initializeEmbeddings(userIds, itemIds);
+  async initializeFallback(userIds: string[], itemIds: string[]): Promise<void> {
+    const fb = await this.loadFallback();
+    if (fb) {
+      fb.initializeEmbeddings(userIds, itemIds);
     }
   }
 
