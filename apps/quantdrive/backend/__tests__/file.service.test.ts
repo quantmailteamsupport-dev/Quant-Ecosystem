@@ -226,4 +226,136 @@ describe('FileService', () => {
       });
     });
   });
+
+  describe('getFile', () => {
+    it('returns file metadata (alias for getFileMetadata)', async () => {
+      const mockFile = {
+        id: 'file-1',
+        name: 'test.txt',
+        mimeType: 'text/plain',
+        size: 100,
+        userId: 'user-1',
+        isDeleted: false,
+        deletedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      prisma.file.findUnique.mockResolvedValue(mockFile);
+
+      const result = await service.getFile('file-1', 'user-1');
+
+      expect(result.id).toBe('file-1');
+      expect(result.name).toBe('test.txt');
+    });
+  });
+
+  describe('listFiles', () => {
+    it('returns files for user', async () => {
+      const files = [
+        { id: 'f-1', name: 'a.txt', userId: 'user-1', isDeleted: false },
+        { id: 'f-2', name: 'b.txt', userId: 'user-1', isDeleted: false },
+      ];
+      prisma.file.findMany.mockResolvedValue(files);
+
+      const result = await service.listFiles('user-1');
+
+      expect(result).toHaveLength(2);
+      expect(prisma.file.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: 'user-1', isDeleted: false },
+        }),
+      );
+    });
+
+    it('filters by folderId when provided', async () => {
+      prisma.file.findMany.mockResolvedValue([]);
+
+      await service.listFiles('user-1', 'folder-1');
+
+      expect(prisma.file.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: 'user-1', isDeleted: false, folderId: 'folder-1' },
+        }),
+      );
+    });
+
+    it('supports limit and offset options', async () => {
+      prisma.file.findMany.mockResolvedValue([]);
+
+      await service.listFiles('user-1', undefined, { limit: 10, offset: 5 });
+
+      expect(prisma.file.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          take: 10,
+          skip: 5,
+        }),
+      );
+    });
+  });
+
+  describe('moveFile', () => {
+    it('updates file folderId to target folder', async () => {
+      const existingFile = {
+        id: 'file-1',
+        name: 'test.txt',
+        mimeType: 'text/plain',
+        size: 100,
+        userId: 'user-1',
+        folderId: 'folder-1',
+        isDeleted: false,
+        deletedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      prisma.file.findUnique.mockResolvedValue(existingFile);
+      prisma.file.update.mockResolvedValue({ ...existingFile, folderId: 'folder-2' });
+
+      const result = await service.moveFile('file-1', 'user-1', 'folder-2');
+
+      expect(result.folderId).toBe('folder-2');
+      expect(prisma.file.update).toHaveBeenCalledWith({
+        where: { id: 'file-1' },
+        data: { folderId: 'folder-2', updatedAt: expect.any(Date) },
+      });
+    });
+  });
+
+  describe('copyFile', () => {
+    it('creates a copy of the file in the target folder', async () => {
+      const existingFile = {
+        id: 'file-1',
+        name: 'test.txt',
+        mimeType: 'text/plain',
+        size: 100,
+        encryptedContent: 'encrypted-data',
+        encryptionIV: 'iv-hex',
+        encryptionAuthTag: 'tag-hex',
+        encryptionKey: 'key-hex',
+        contentHash: 'hash-abc',
+        userId: 'user-1',
+        folderId: 'folder-1',
+        isDeleted: false,
+        deletedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      prisma.file.findUnique.mockResolvedValue(existingFile);
+      prisma.file.create.mockImplementation(async (args: { data: Record<string, unknown> }) => ({
+        id: 'file-2',
+        ...args.data,
+      }));
+
+      const result = await service.copyFile('file-1', 'user-1', 'folder-2');
+
+      expect(result.name).toBe('test.txt (copy)');
+      expect(result.folderId).toBe('folder-2');
+      expect(prisma.file.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          name: 'test.txt (copy)',
+          folderId: 'folder-2',
+          encryptedContent: 'encrypted-data',
+        }),
+      });
+    });
+  });
 });

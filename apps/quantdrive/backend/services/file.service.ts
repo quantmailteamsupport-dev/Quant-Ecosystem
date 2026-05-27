@@ -131,6 +131,60 @@ export class FileService {
     };
   }
 
+  async getFile(fileId: string, userId: string): Promise<FileRecord> {
+    return this.getFileMetadata(fileId, userId);
+  }
+
+  async listFiles(
+    userId: string,
+    folderId?: string,
+    opts?: { limit?: number; offset?: number },
+  ): Promise<FileRecord[]> {
+    const where: Record<string, unknown> = { userId, isDeleted: false };
+    if (folderId !== undefined) {
+      where['folderId'] = folderId;
+    }
+    const files = await this.prisma.file.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: opts?.limit ?? 100,
+      skip: opts?.offset ?? 0,
+    });
+    return files as unknown as FileRecord[];
+  }
+
+  async moveFile(fileId: string, userId: string, targetFolderId: string): Promise<FileRecord> {
+    await this.getFileMetadata(fileId, userId);
+    const updated = await this.prisma.file.update({
+      where: { id: fileId },
+      data: { folderId: targetFolderId, updatedAt: new Date() },
+    });
+    return updated as unknown as FileRecord;
+  }
+
+  async copyFile(fileId: string, userId: string, targetFolderId: string): Promise<FileRecord> {
+    const original = await this.getFileMetadata(fileId, userId);
+    const copy = await this.prisma.file.create({
+      data: {
+        name: `${original.name} (copy)`,
+        mimeType: original.mimeType,
+        size: original.size,
+        encryptedContent: original.encryptedContent,
+        encryptionIV: original.encryptionIV,
+        encryptionAuthTag: original.encryptionAuthTag,
+        encryptionKey: original.encryptionKey,
+        contentHash: original.contentHash,
+        userId,
+        folderId: targetFolderId,
+        isDeleted: false,
+        deletedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    return copy as unknown as FileRecord;
+  }
+
   async getFileMetadata(fileId: string, userId: string): Promise<FileRecord> {
     const file = await this.prisma.file.findUnique({ where: { id: fileId } });
 
