@@ -1773,6 +1773,9 @@ importers:
       '@quant/search':
         specifier: workspace:*
         version: link:../../packages/search
+      fastify:
+        specifier: ^5.2.1
+        version: 5.8.5
       kafkajs:
         specifier: ^2.2.4
         version: 2.2.4

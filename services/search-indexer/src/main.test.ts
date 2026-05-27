@@ -9,6 +9,7 @@ import {
 } from './main';
 import type { Producer } from 'kafkajs';
 import type { SearchClient, VectorClient } from '@quant/search';
+import { SavedSearchService } from '@quant/search';
 import type { BatchEmbedder } from './embedder';
 
 function createMockDeps(): IndexerDeps {
@@ -25,7 +26,9 @@ function createMockDeps(): IndexerDeps {
     embedBatch: vi.fn().mockResolvedValue([[0.1, 0.2, 0.3]]),
   } as unknown as BatchEmbedder;
 
-  return { searchClient, vectorClient, embedder };
+  const savedSearchService = new SavedSearchService();
+
+  return { searchClient, vectorClient, embedder, savedSearchService };
 }
 
 describe('Event Routing', () => {
