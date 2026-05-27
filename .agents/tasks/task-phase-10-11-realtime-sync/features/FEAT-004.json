@@ -2,7 +2,7 @@
   "id": "FEAT-004",
   "type": "fix",
   "description": "Address 5 issues from the semantic review of Phase 10+11: (1) idempotency race on concurrent calls, (2) null ambiguity in IdempotencyKeyStore.get(), (3) WS gateway silent degradation, (4) soft-delete treated as hard-delete, (5) offline queue replay without circuit-breaking.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Step 1: Fix withIdempotency race condition by adding a pending-promise map so concurrent callers await the same promise.",
     "Step 2: Fix null ambiguity in IdempotencyKeyStore.get() by wrapping stored values internally and returning a discriminated result.",
@@ -31,5 +31,5 @@
     "pnpm lint (must pass all tasks)"
   ],
   "blocked_reason": null,
-  "findings": null
+  "findings": "All 5 review issues fixed. All gates pass: typecheck 72/72, build 51/51, test 75/75, lint 61/61. Added pino as ws-gateway dependency. Added IdempotencyLookup, RetentionRecord, OfflineQueueConfig types to barrel exports. Pre-commit hook ran prettier on all staged files."
 }
