@@ -21,12 +21,14 @@ export {
   createAccountOnboardingFlow,
   advanceAccountFlow,
   completeAccountStep,
+  skipOptionalStep as skipAccountOptionalStep,
 } from './flows/account-onboarding.js';
 
 export {
   createWorkspaceOnboardingFlow,
   advanceWorkspaceFlow,
   completeWorkspaceStep,
+  skipOptionalStep as skipWorkspaceOptionalStep,
 } from './flows/workspace-onboarding.js';
 
 export { createRoleOnboardingFlow } from './flows/role-onboarding.js';

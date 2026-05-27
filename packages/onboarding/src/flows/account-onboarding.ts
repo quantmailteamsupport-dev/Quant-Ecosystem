@@ -120,3 +120,50 @@ export function completeAccountStep(
     completedAt: allDone ? new Date() : undefined,
   };
 }
+
+/**
+ * Skips an optional step in the onboarding flow.
+ * Only steps with `required === false` can be skipped.
+ * Returns the flow unchanged if the step is required, already completed, or already skipped.
+ */
+export function skipOptionalStep(flow: OnboardingFlow, stepId: string): OnboardingFlow {
+  const stepIndex = flow.steps.findIndex((s) => s.id === stepId);
+  if (stepIndex === -1) {
+    return flow;
+  }
+
+  const step = flow.steps[stepIndex]!;
+
+  // Cannot skip required steps, already completed, or already skipped steps
+  if (step.required || step.status === 'completed' || step.status === 'skipped') {
+    return flow;
+  }
+
+  const updatedSteps = [...flow.steps];
+  updatedSteps[stepIndex] = {
+    ...step,
+    status: 'skipped',
+  };
+
+  // Advance currentStepIndex if the skipped step was the active one
+  let newCurrentIndex = flow.currentStepIndex;
+  if (stepIndex === flow.currentStepIndex) {
+    const nextPending = updatedSteps.findIndex((s, i) => i > stepIndex && s.status === 'pending');
+    if (nextPending !== -1) {
+      updatedSteps[nextPending] = {
+        ...updatedSteps[nextPending]!,
+        status: 'active',
+      };
+      newCurrentIndex = nextPending;
+    }
+  }
+
+  const allDone = updatedSteps.every((s) => s.status === 'completed' || s.status === 'skipped');
+
+  return {
+    ...flow,
+    steps: updatedSteps,
+    currentStepIndex: newCurrentIndex,
+    completedAt: allDone ? new Date() : undefined,
+  };
+}

@@ -15,6 +15,9 @@ interface RouteMetrics {
 
 const HISTOGRAM_BUCKETS = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10];
 
+/** Maximum number of unique route keys before overflow bucketing kicks in. */
+const MAX_ROUTE_CARDINALITY = 1000;
+
 function createBuckets(): MetricsBucket[] {
   return HISTOGRAM_BUCKETS.map((le) => ({ le, count: 0 }));
 }
@@ -27,6 +30,9 @@ async function metricsPlugin(fastify: FastifyInstance) {
     durationCount: new Map(),
   };
 
+  /** Set of known route keys for cardinality tracking. */
+  const knownRoutes = new Set<string>();
+
   fastify.addHook('onRequest', async (request: FastifyRequest) => {
     (request as unknown as Record<string, number>).__startTime = performance.now();
   });
@@ -35,9 +41,29 @@ async function metricsPlugin(fastify: FastifyInstance) {
     const startTime = (request as unknown as Record<string, number>).__startTime;
     if (startTime === undefined) return;
 
+    // Exclude the /metrics endpoint itself from being recorded to avoid self-counting noise.
+    const registeredRoute = request.routeOptions?.url;
+    if (registeredRoute === '/metrics') return;
+
     const duration = (performance.now() - startTime) / 1000;
     const method = request.method;
-    const route = request.routeOptions?.url ?? request.url;
+
+    // Use the registered route pattern (e.g. /users/:id) to avoid unbounded cardinality
+    // from path parameters. Fall back to a fixed label when no registered route exists
+    // (404s, unmatched paths).
+    let route = registeredRoute ?? '__unmatched__';
+
+    // Cardinality cap: once we exceed MAX_ROUTE_CARDINALITY unique route keys,
+    // bucket new routes under __overflow__ to prevent unbounded memory growth.
+    const routeKey = `${method}|${route}`;
+    if (!knownRoutes.has(routeKey)) {
+      if (knownRoutes.size >= MAX_ROUTE_CARDINALITY) {
+        route = '__overflow__';
+      } else {
+        knownRoutes.add(routeKey);
+      }
+    }
+
     const statusCode = reply.statusCode.toString();
 
     // Increment counter
@@ -62,6 +88,10 @@ async function metricsPlugin(fastify: FastifyInstance) {
     metrics.durationCount.set(durationKey, (metrics.durationCount.get(durationKey) ?? 0) + 1);
   });
 
+  // Security note: The /metrics endpoint is intentionally unauthenticated.
+  // It is designed to be scraped by Prometheus within the Kubernetes cluster
+  // and should not be exposed publicly. Access is restricted via k8s network
+  // policies that limit ingress to the monitoring namespace only.
   fastify.get('/metrics', async (_request, reply) => {
     const lines: string[] = [];
 

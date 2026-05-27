@@ -3,6 +3,7 @@ import {
   advanceWorkspaceFlow,
   completeWorkspaceStep,
   createWorkspaceOnboardingFlow,
+  skipOptionalStep,
 } from '../flows/workspace-onboarding.js';
 
 describe('Workspace Onboarding Flow', () => {
@@ -71,5 +72,77 @@ describe('Workspace Onboarding Flow', () => {
     const flow = createWorkspaceOnboardingFlow();
     expect(flow.steps[0]!.required).toBe(true);
     expect(flow.steps[3]!.required).toBe(true);
+  });
+});
+
+describe('skipOptionalStep', () => {
+  it('can skip an optional step', () => {
+    let flow = createWorkspaceOnboardingFlow();
+    // Advance past first step so invite-members becomes active
+    flow = advanceWorkspaceFlow(flow);
+    expect(flow.steps[1]!.status).toBe('active');
+
+    const skipped = skipOptionalStep(flow, 'invite-members');
+    expect(skipped.steps[1]!.status).toBe('skipped');
+  });
+
+  it('cannot skip a required step', () => {
+    const flow = createWorkspaceOnboardingFlow();
+    const result = skipOptionalStep(flow, 'create-workspace');
+    // Flow unchanged - required steps cannot be skipped
+    expect(result.steps[0]!.status).toBe('active');
+    expect(result).toEqual(flow);
+  });
+
+  it('skipping advances the flow to the next pending step', () => {
+    let flow = createWorkspaceOnboardingFlow();
+    // Complete the first step
+    flow = advanceWorkspaceFlow(flow);
+    // Now invite-members is active (index 1)
+    expect(flow.currentStepIndex).toBe(1);
+
+    const skipped = skipOptionalStep(flow, 'invite-members');
+    // Should advance to configure-permissions (index 2)
+    expect(skipped.currentStepIndex).toBe(2);
+    expect(skipped.steps[2]!.status).toBe('active');
+  });
+
+  it('flow with all required steps completed and optional steps skipped reaches completedAt', () => {
+    let flow = createWorkspaceOnboardingFlow();
+    // Complete first required step (create-workspace)
+    flow = advanceWorkspaceFlow(flow);
+    // Skip optional step (invite-members)
+    flow = skipOptionalStep(flow, 'invite-members');
+    // Skip optional step (configure-permissions)
+    flow = skipOptionalStep(flow, 'configure-permissions');
+    // Complete last required step (choose-apps)
+    flow = advanceWorkspaceFlow(flow);
+
+    expect(flow.completedAt).toBeDefined();
+    expect(flow.steps[0]!.status).toBe('completed');
+    expect(flow.steps[1]!.status).toBe('skipped');
+    expect(flow.steps[2]!.status).toBe('skipped');
+    expect(flow.steps[3]!.status).toBe('completed');
+  });
+
+  it('returns flow unchanged if step is already completed', () => {
+    let flow = createWorkspaceOnboardingFlow();
+    flow = advanceWorkspaceFlow(flow); // completes create-workspace
+    const result = skipOptionalStep(flow, 'create-workspace');
+    expect(result).toEqual(flow);
+  });
+
+  it('returns flow unchanged if step is already skipped', () => {
+    let flow = createWorkspaceOnboardingFlow();
+    flow = advanceWorkspaceFlow(flow);
+    flow = skipOptionalStep(flow, 'invite-members');
+    const result = skipOptionalStep(flow, 'invite-members');
+    expect(result).toEqual(flow);
+  });
+
+  it('returns flow unchanged if step id does not exist', () => {
+    const flow = createWorkspaceOnboardingFlow();
+    const result = skipOptionalStep(flow, 'nonexistent-step');
+    expect(result).toEqual(flow);
   });
 });

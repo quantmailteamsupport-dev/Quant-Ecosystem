@@ -84,4 +84,51 @@ describe('request-id plugin', () => {
 
     expect(response.headers['x-trace-id']).toBe(customTraceId);
   });
+
+  it('rejects malicious X-Request-ID containing control characters and replaces with UUID', async () => {
+    const maliciousId = 'evil\n{"injected":"json"}\r\x00';
+    const response = await app.inject({
+      method: 'GET',
+      url: '/healthz',
+      headers: {
+        'x-request-id': maliciousId,
+      },
+    });
+
+    const requestId = response.headers['x-request-id'] as string;
+    // Should NOT echo back the malicious value
+    expect(requestId).not.toBe(maliciousId);
+    // Should be a valid UUID (fallback)
+    expect(requestId).toMatch(UUID_REGEX);
+  });
+
+  it('rejects X-Request-ID exceeding 128 characters', async () => {
+    const longId = 'a'.repeat(200);
+    const response = await app.inject({
+      method: 'GET',
+      url: '/healthz',
+      headers: {
+        'x-request-id': longId,
+      },
+    });
+
+    const requestId = response.headers['x-request-id'] as string;
+    expect(requestId).not.toBe(longId);
+    expect(requestId).toMatch(UUID_REGEX);
+  });
+
+  it('rejects malicious X-Trace-ID and replaces with UUID', async () => {
+    const maliciousTraceId = 'trace\ninjection\tattack';
+    const response = await app.inject({
+      method: 'GET',
+      url: '/healthz',
+      headers: {
+        'x-trace-id': maliciousTraceId,
+      },
+    });
+
+    const traceId = response.headers['x-trace-id'] as string;
+    expect(traceId).not.toBe(maliciousTraceId);
+    expect(traceId).toMatch(UUID_REGEX);
+  });
 });
