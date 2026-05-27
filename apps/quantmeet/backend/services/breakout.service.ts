@@ -1,10 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { createAppError } from '@quant/server-core';
+import type { LiveKitGateway } from './livekit-gateway.service';
 
 export interface BreakoutRoom {
   id: string;
   parentRoomId: string;
   name: string;
+  livekitRoomName: string;
   participants: string[];
   createdAt: Date;
   closedAt: Date | null;
@@ -13,17 +15,25 @@ export interface BreakoutRoom {
 export class BreakoutService {
   private readonly breakoutRooms = new Map<string, BreakoutRoom>();
 
-  createBreakoutRoom(
+  constructor(private readonly livekitGateway?: LiveKitGateway) {}
+
+  async createBreakoutRoom(
     parentRoomId: string,
     name: string,
     assignedParticipantIds: string[],
-  ): BreakoutRoom {
+  ): Promise<BreakoutRoom> {
     const id = randomUUID();
+    const livekitRoomName = `${parentRoomId}:breakout:${name}`;
+
+    if (this.livekitGateway) {
+      await this.livekitGateway.createRoom(livekitRoomName, 50);
+    }
 
     const breakoutRoom: BreakoutRoom = {
       id,
       parentRoomId,
       name,
+      livekitRoomName,
       participants: [...assignedParticipantIds],
       createdAt: new Date(),
       closedAt: null,
@@ -51,7 +61,7 @@ export class BreakoutService {
     return room;
   }
 
-  closeBreakoutRoom(breakoutRoomId: string): void {
+  async closeBreakoutRoom(breakoutRoomId: string): Promise<void> {
     const room = this.breakoutRooms.get(breakoutRoomId);
     if (!room) {
       throw createAppError('Breakout room not found', 404, 'BREAKOUT_ROOM_NOT_FOUND');
@@ -59,6 +69,10 @@ export class BreakoutService {
 
     if (room.closedAt) {
       throw createAppError('Breakout room already closed', 400, 'BREAKOUT_ROOM_ALREADY_CLOSED');
+    }
+
+    if (this.livekitGateway) {
+      await this.livekitGateway.deleteRoom(room.livekitRoomName);
     }
 
     room.closedAt = new Date();

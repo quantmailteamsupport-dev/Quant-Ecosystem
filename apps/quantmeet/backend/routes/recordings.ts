@@ -38,7 +38,7 @@ export default async function recordingsRoutes(fastify: FastifyInstance) {
       throw createAppError('Invalid recording data', 400, 'VALIDATION_ERROR');
     }
 
-    const recording = recordingService.startRecording(
+    const recording = await recordingService.startRecording(
       paramResult.data.roomId,
       bodyResult.data.userId,
     );
@@ -51,7 +51,7 @@ export default async function recordingsRoutes(fastify: FastifyInstance) {
       throw createAppError('Invalid recording ID', 400, 'VALIDATION_ERROR');
     }
 
-    const recording = recordingService.stopRecording(paramResult.data.id);
+    const recording = await recordingService.stopRecording(paramResult.data.id);
     return reply.send({ success: true, data: recording });
   });
 
