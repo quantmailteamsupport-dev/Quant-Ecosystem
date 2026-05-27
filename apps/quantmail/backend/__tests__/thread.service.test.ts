@@ -134,15 +134,17 @@ describe('ThreadService', () => {
       prisma.emailThread.update.mockResolvedValue({
         id: 'thread-1',
         userId: 'user-1',
-        isMuted: true,
+        metadata: { isMuted: true },
       });
 
       const result = await service.muteThread('thread-1', 'user-1');
 
-      expect((result as unknown as { isMuted: boolean }).isMuted).toBe(true);
+      expect((result as unknown as { metadata: Record<string, unknown> }).metadata.isMuted).toBe(
+        true,
+      );
       expect(prisma.emailThread.update).toHaveBeenCalledWith({
         where: { id: 'thread-1' },
-        data: { isMuted: true },
+        data: { metadata: { isMuted: true } },
       });
     });
 
@@ -172,15 +174,17 @@ describe('ThreadService', () => {
       prisma.emailThread.update.mockResolvedValue({
         id: 'thread-1',
         userId: 'user-1',
-        snoozedUntil: snoozeDate,
+        metadata: { snoozedUntil: snoozeDate.toISOString() },
       });
 
       const result = await service.snoozeThread('thread-1', 'user-1', snoozeDate);
 
-      expect((result as unknown as { snoozedUntil: Date }).snoozedUntil).toEqual(snoozeDate);
+      expect(
+        (result as unknown as { metadata: Record<string, unknown> }).metadata.snoozedUntil,
+      ).toEqual(snoozeDate.toISOString());
       expect(prisma.emailThread.update).toHaveBeenCalledWith({
         where: { id: 'thread-1' },
-        data: { snoozedUntil: snoozeDate },
+        data: { metadata: { snoozedUntil: snoozeDate.toISOString() } },
       });
     });
 

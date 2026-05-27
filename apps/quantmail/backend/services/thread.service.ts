@@ -117,6 +117,13 @@ export class ThreadService {
       .filter((id: string | null): id is string => id !== null);
   }
 
+  /**
+   * Mute a thread for the user.
+   *
+   * Workaround: The Prisma schema does not yet have isMuted/snoozedUntil columns.
+   * We store mute state in the thread's metadata JSON field until a schema migration
+   * adds dedicated columns.
+   */
   async muteThread(threadId: string, userId: string): Promise<EmailThread> {
     const thread = await this.prisma.emailThread.findUnique({
       where: { id: threadId },
@@ -130,12 +137,21 @@ export class ThreadService {
       throw createAppError('Not authorized', 403, 'FORBIDDEN');
     }
 
+    const currentMetadata =
+      (thread as unknown as { metadata?: Record<string, unknown> }).metadata ?? {};
     return this.prisma.emailThread.update({
       where: { id: threadId },
-      data: { isMuted: true } as never,
+      data: { metadata: { ...currentMetadata, isMuted: true } } as never,
     });
   }
 
+  /**
+   * Snooze a thread until a specified date.
+   *
+   * Workaround: The Prisma schema does not yet have isMuted/snoozedUntil columns.
+   * We store snooze state in the thread's metadata JSON field until a schema migration
+   * adds dedicated columns.
+   */
   async snoozeThread(threadId: string, userId: string, until: Date): Promise<EmailThread> {
     const thread = await this.prisma.emailThread.findUnique({
       where: { id: threadId },
@@ -149,9 +165,11 @@ export class ThreadService {
       throw createAppError('Not authorized', 403, 'FORBIDDEN');
     }
 
+    const currentMetadata =
+      (thread as unknown as { metadata?: Record<string, unknown> }).metadata ?? {};
     return this.prisma.emailThread.update({
       where: { id: threadId },
-      data: { snoozedUntil: until } as never,
+      data: { metadata: { ...currentMetadata, snoozedUntil: until.toISOString() } } as never,
     });
   }
 }

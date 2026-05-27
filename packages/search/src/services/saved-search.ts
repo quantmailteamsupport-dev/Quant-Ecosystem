@@ -49,6 +49,11 @@ export interface SavedSearchMatch {
  *
  * Provides CRUD operations for saved searches, document matching for alert triggering,
  * and scheduled alert retrieval.
+ *
+ * NOTE (v1 - demo/development scope): This service uses an in-memory Map as its backing
+ * store. All saved searches and alert state are lost on process restart. This is intentional
+ * for the current phase. Production deployment requires a persistence adapter (e.g., database-
+ * backed store) to retain saved searches across restarts.
  */
 export class SavedSearchService {
   private readonly store = new Map<string, SavedSearch>();
@@ -104,6 +109,7 @@ export class SavedSearchService {
   /**
    * Check if a new document matches any saved searches.
    * Returns matches for saved searches that have alerting enabled.
+   * Uses word boundary matching to reduce false positives (e.g., "art" won't match "started").
    */
   matchNewDocument(document: DocumentToMatch): SavedSearchMatch[] {
     const matches: SavedSearchMatch[] = [];
@@ -113,7 +119,12 @@ export class SavedSearchService {
       if (saved.alertFrequency === 'never') continue;
 
       const queryTerms = saved.query.toLowerCase().split(/\s+/).filter(Boolean);
-      const allTermsMatch = queryTerms.every((term) => contentLower.includes(term));
+      // Use word boundary regex for each term to avoid partial word matches
+      const allTermsMatch = queryTerms.every((term) => {
+        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`\\b${escaped}\\b`);
+        return regex.test(contentLower);
+      });
 
       if (!allTermsMatch) continue;
 

@@ -185,22 +185,24 @@ export class FeedService {
     const pageSize = options.pageSize ?? 20;
     const skip = (page - 1) * pageSize;
 
+    // Query posts where metadata.bookmarkedBy contains the userId
+    // (matching how PostService.bookmark stores bookmarks in the metadata JSON)
+    const where = {
+      deletedAt: null,
+      metadata: {
+        path: ['bookmarkedBy'],
+        array_contains: [userId],
+      },
+    };
+
     const [data, total] = await Promise.all([
       this.prisma.post.findMany({
-        where: {
-          userId,
-          deletedAt: null,
-        },
+        where,
         skip,
         take: pageSize,
         orderBy: { createdAt: 'desc' },
       }),
-      this.prisma.post.count({
-        where: {
-          userId,
-          deletedAt: null,
-        },
-      }),
+      this.prisma.post.count({ where }),
     ]);
 
     const totalPages = Math.ceil(total / pageSize);

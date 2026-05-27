@@ -23,6 +23,7 @@ export interface Post {
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
+  metadata?: Record<string, unknown>;
 }
 
 export interface PaginationOptions {
@@ -257,7 +258,7 @@ export class PostService {
     });
   }
 
-  async bookmark(postId: string, _userId: string): Promise<Post> {
+  async bookmark(postId: string, userId: string): Promise<Post> {
     const post = await this.prisma.post.findUnique({
       where: { id: postId },
     });
@@ -266,6 +267,16 @@ export class PostService {
       throw createAppError('Post not found', 404, 'POST_NOT_FOUND');
     }
 
-    return post;
+    const metadata = (post.metadata ?? {}) as Record<string, unknown>;
+    const bookmarkedBy = (metadata['bookmarkedBy'] as string[]) ?? [];
+
+    if (!bookmarkedBy.includes(userId)) {
+      bookmarkedBy.push(userId);
+    }
+
+    return this.prisma.post.update({
+      where: { id: postId },
+      data: { metadata: { ...metadata, bookmarkedBy } },
+    });
   }
 }

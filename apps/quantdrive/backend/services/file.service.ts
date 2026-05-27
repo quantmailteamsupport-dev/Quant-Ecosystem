@@ -164,15 +164,33 @@ export class FileService {
 
   async copyFile(fileId: string, userId: string, targetFolderId: string): Promise<FileRecord> {
     const original = await this.getFileMetadata(fileId, userId);
+
+    // Decrypt the original content
+    const key = Buffer.from(original.encryptionKey, 'hex');
+    const iv = Buffer.from(original.encryptionIV, 'hex');
+    const authTag = Buffer.from(original.encryptionAuthTag, 'hex');
+    const encryptedContent = Buffer.from(original.encryptedContent, 'base64');
+
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAuthTag(authTag);
+    const decrypted = Buffer.concat([decipher.update(encryptedContent), decipher.final()]);
+
+    // Re-encrypt with a fresh key, IV, and auth tag for the copy
+    const newKey = crypto.randomBytes(32);
+    const newIv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv('aes-256-gcm', newKey, newIv);
+    const newEncrypted = Buffer.concat([cipher.update(decrypted), cipher.final()]);
+    const newAuthTag = cipher.getAuthTag();
+
     const copy = await this.prisma.file.create({
       data: {
         name: `${original.name} (copy)`,
         mimeType: original.mimeType,
         size: original.size,
-        encryptedContent: original.encryptedContent,
-        encryptionIV: original.encryptionIV,
-        encryptionAuthTag: original.encryptionAuthTag,
-        encryptionKey: original.encryptionKey,
+        encryptedContent: newEncrypted.toString('base64'),
+        encryptionIV: newIv.toString('hex'),
+        encryptionAuthTag: newAuthTag.toString('hex'),
+        encryptionKey: newKey.toString('hex'),
         contentHash: original.contentHash,
         userId,
         folderId: targetFolderId,

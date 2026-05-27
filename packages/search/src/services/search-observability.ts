@@ -47,9 +47,19 @@ export interface ZeroResultQuery {
  *
  * Records query executions and provides aggregated metrics including
  * percentile latencies, popular queries, slow queries, and zero-result queries.
+ *
+ * NOTE (v1 - demo/development scope): This service uses an in-memory array as its backing
+ * store. All metrics data is lost on process restart. This is intentional for the current
+ * phase. Production deployment requires a persistence adapter (e.g., time-series database)
+ * to retain metrics history across restarts.
  */
 export class SearchObservabilityService {
   private readonly records: QueryRecord[] = [];
+  private readonly maxRecords: number;
+
+  constructor(options?: { maxRecords?: number }) {
+    this.maxRecords = options?.maxRecords ?? 10000;
+  }
 
   recordQuery(query: string, latencyMs: number, resultCount: number, userId: string): void {
     this.records.push({
@@ -59,6 +69,12 @@ export class SearchObservabilityService {
       userId,
       timestamp: new Date(),
     });
+
+    // Evict oldest records when exceeding the cap
+    if (this.records.length > this.maxRecords) {
+      const excess = this.records.length - this.maxRecords;
+      this.records.splice(0, excess);
+    }
   }
 
   getMetrics(timeRange?: TimeRange): SearchMetrics {

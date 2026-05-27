@@ -15,9 +15,32 @@ const JobIdParamsSchema = z.object({
 });
 
 /**
+ * Admin API key authentication hook.
+ * Checks for X-Admin-Key header matching the ADMIN_API_KEY env var.
+ * In development (ADMIN_API_KEY not set), access is allowed with a warning log.
+ */
+async function adminAuthHook(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+  const expectedKey = process.env['ADMIN_API_KEY'];
+
+  if (!expectedKey) {
+    // Development mode: allow access but warn
+    request.log.warn('ADMIN_API_KEY is not set - reindex API is unprotected (development mode)');
+    return;
+  }
+
+  const providedKey = request.headers['x-admin-key'];
+
+  if (!providedKey || providedKey !== expectedKey) {
+    return reply.status(401).send({ error: 'Unauthorized: invalid or missing X-Admin-Key header' });
+  }
+}
+
+/**
  * Register reindex routes on a Fastify instance.
  */
 export function registerReindexRoutes(app: FastifyInstance, jobManager: ReindexJobManager): void {
+  // Apply admin auth to all reindex routes
+  app.addHook('onRequest', adminAuthHook);
   // POST /api/v1/reindex/:indexName - Start a new reindex job
   app.post(
     '/api/v1/reindex/:indexName',

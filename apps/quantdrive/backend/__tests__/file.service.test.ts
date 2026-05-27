@@ -321,16 +321,23 @@ describe('FileService', () => {
   });
 
   describe('copyFile', () => {
-    it('creates a copy of the file in the target folder', async () => {
+    it('creates a copy with fresh encryption key, IV, and auth tag', async () => {
+      // Build a real encrypted file to test the decrypt-reencrypt path
+      let capturedUploadData: Record<string, unknown> = {};
+      prisma.file.create.mockImplementation(async (args: { data: Record<string, unknown> }) => {
+        capturedUploadData = { id: 'file-2', ...args.data };
+        return capturedUploadData;
+      });
+
       const existingFile = {
         id: 'file-1',
         name: 'test.txt',
         mimeType: 'text/plain',
         size: 100,
         encryptedContent: 'encrypted-data',
-        encryptionIV: 'iv-hex',
-        encryptionAuthTag: 'tag-hex',
-        encryptionKey: 'key-hex',
+        encryptionIV: 'aabbccdd00112233aabbccdd',
+        encryptionAuthTag: 'aabbccdd00112233aabbccdd00112233',
+        encryptionKey: 'a'.repeat(64),
         contentHash: 'hash-abc',
         userId: 'user-1',
         folderId: 'folder-1',
@@ -340,22 +347,50 @@ describe('FileService', () => {
         updatedAt: new Date(),
       };
       prisma.file.findUnique.mockResolvedValue(existingFile);
-      prisma.file.create.mockImplementation(async (args: { data: Record<string, unknown> }) => ({
-        id: 'file-2',
-        ...args.data,
-      }));
+
+      // The copy operation will attempt to decrypt, which will fail with the mock data.
+      // Instead, let's test with real encryption data from uploadFile.
+      // We need a properly encrypted file for the round-trip test.
+      // Use a simpler approach: verify the method is called with different keys.
+      const crypto = await import('node:crypto');
+      const key = crypto.randomBytes(32);
+      const iv = crypto.randomBytes(12);
+      const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+      const plaintext = Buffer.from('test content for copy');
+      const encrypted = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+      const authTag = cipher.getAuthTag();
+
+      const realFile = {
+        id: 'file-1',
+        name: 'test.txt',
+        mimeType: 'text/plain',
+        size: plaintext.length,
+        encryptedContent: encrypted.toString('base64'),
+        encryptionIV: iv.toString('hex'),
+        encryptionAuthTag: authTag.toString('hex'),
+        encryptionKey: key.toString('hex'),
+        contentHash: 'hash-abc',
+        userId: 'user-1',
+        folderId: 'folder-1',
+        isDeleted: false,
+        deletedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      prisma.file.findUnique.mockResolvedValue(realFile);
 
       const result = await service.copyFile('file-1', 'user-1', 'folder-2');
 
       expect(result.name).toBe('test.txt (copy)');
       expect(result.folderId).toBe('folder-2');
-      expect(prisma.file.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          name: 'test.txt (copy)',
-          folderId: 'folder-2',
-          encryptedContent: 'encrypted-data',
-        }),
-      });
+
+      // Verify the copy was created with DIFFERENT encryption material
+      const createCall = prisma.file.create.mock.calls[0]![0] as { data: Record<string, unknown> };
+      expect(createCall.data['encryptionKey']).not.toBe(realFile.encryptionKey);
+      expect(createCall.data['encryptionIV']).not.toBe(realFile.encryptionIV);
+      expect(createCall.data['encryptionAuthTag']).not.toBe(realFile.encryptionAuthTag);
+      // Content hash should remain the same (same plaintext)
+      expect(createCall.data['contentHash']).toBe(realFile.contentHash);
     });
   });
 });

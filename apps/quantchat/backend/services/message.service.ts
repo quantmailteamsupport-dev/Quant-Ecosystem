@@ -317,10 +317,15 @@ export class MessageService {
 
     const conversationIds = memberships.map((m: { conversationId: string }) => m.conversationId);
 
+    // NOTE: Messages with E2E encryption store ciphertext in the content field and cannot
+    // be searched server-side. A separate metadata index is needed for searching encrypted
+    // messages (e.g., client-side search or a dedicated encrypted search index).
+    // For now, we exclude messages whose content looks like E2E encrypted payloads.
     const where = {
       conversationId: { in: conversationIds },
       isDeleted: false,
       content: { contains: query, mode: 'insensitive' as const },
+      NOT: { content: { startsWith: '{"ciphertext"' } },
     };
 
     const [data, total] = await Promise.all([

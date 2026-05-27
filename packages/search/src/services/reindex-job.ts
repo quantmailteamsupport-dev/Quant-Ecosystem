@@ -31,6 +31,11 @@ export type ReindexJob = z.infer<typeof ReindexJobSchema>;
  *
  * Provides methods to start, track, list, and cancel reindex jobs.
  * Uses an in-memory store for job state.
+ *
+ * NOTE (v1 - demo/development scope): This service uses an in-memory Map as its backing
+ * store. All job state is lost on process restart. This is intentional for the current phase.
+ * Production deployment requires a persistence adapter (e.g., database-backed store with a
+ * worker queue) to retain job state across restarts.
  */
 export class ReindexJobManager {
   private readonly jobs = new Map<string, ReindexJob>();

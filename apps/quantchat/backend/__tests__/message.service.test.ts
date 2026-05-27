@@ -385,6 +385,7 @@ describe('MessageService', () => {
           conversationId: { in: ['conv-1', 'conv-2'] },
           isDeleted: false,
           content: { contains: 'Hello', mode: 'insensitive' },
+          NOT: { content: { startsWith: '{"ciphertext"' } },
         },
         skip: 0,
         take: 20,

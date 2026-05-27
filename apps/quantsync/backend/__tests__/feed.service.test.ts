@@ -55,7 +55,9 @@ describe('FeedService', () => {
 
   describe('getBookmarks', () => {
     it('returns paginated bookmarks for a user', async () => {
-      prisma.post.findMany.mockResolvedValue([{ id: 'post-1', userId: 'user-1' }]);
+      prisma.post.findMany.mockResolvedValue([
+        { id: 'post-1', userId: 'user-2', metadata: { bookmarkedBy: ['user-1'] } },
+      ]);
       prisma.post.count.mockResolvedValue(1);
 
       const result = await service.getBookmarks('user-1', { page: 1, pageSize: 20 });
@@ -63,6 +65,15 @@ describe('FeedService', () => {
       expect(result.data).toHaveLength(1);
       expect(result.total).toBe(1);
       expect(result.page).toBe(1);
+      // Verify the query uses metadata path filter, not userId filter
+      expect(prisma.post.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            deletedAt: null,
+            metadata: { path: ['bookmarkedBy'], array_contains: ['user-1'] },
+          }),
+        }),
+      );
     });
 
     it('handles empty bookmarks', async () => {

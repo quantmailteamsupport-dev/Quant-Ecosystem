@@ -23,19 +23,35 @@ const chatFollowupSchema = z.object({
 });
 
 export default async function orchestrationRoutes(fastify: FastifyInstance) {
+  const isDemoMode = process.env['DEMO_MODE'] === 'true';
   const connectors = new DemoModeConnector();
-  const permissions: Record<string, string[]> = {
-    '*': ['mail', 'chat', 'docs', 'calendar', 'drive'],
-  };
+
+  // Only use wildcard permissions when DEMO_MODE=true.
+  // In production mode, users must have explicit permission entries.
+  const permissions: Record<string, string[]> = isDemoMode
+    ? { '*': ['mail', 'chat', 'docs', 'calendar', 'drive'] }
+    : {};
   const orchestrator = new CrossAppOrchestrator(connectors, permissions);
 
   function getUserId(request: unknown): string {
     const req = request as { auth?: { userId?: string } };
-    const userId = req.auth?.userId ?? 'demo-user';
+    const userId = req.auth?.userId ?? (isDemoMode ? 'demo-user' : '');
     return userId;
   }
 
   function ensurePermissions(userId: string): void {
+    if (!isDemoMode) {
+      // Production mode: require explicit permissions for the user
+      if (!permissions[userId]) {
+        throw createAppError(
+          'Permission denied: no explicit permissions for user',
+          403,
+          'FORBIDDEN',
+        );
+      }
+      return;
+    }
+    // Demo mode: fall back to wildcard if user has no explicit entry
     if (!permissions[userId] && !permissions['*']) {
       throw createAppError('Permission denied', 403, 'FORBIDDEN');
     }
