@@ -6,6 +6,7 @@ import toolsRoutes from './routes/tools';
 import agentsRoutes from './routes/agents';
 import usageRoutes from './routes/usage';
 import orchestrationRoutes from './routes/orchestration';
+import memoryRoutes from './routes/memory';
 
 export function getConfig(): AppConfig {
   const env = (process.env['NODE_ENV'] as AppConfig['env']) ?? 'development';
@@ -39,6 +40,7 @@ export async function buildApp(config?: AppConfig) {
   await app.register(agentsRoutes, { prefix: '/agents' });
   await app.register(usageRoutes, { prefix: '/usage' });
   await app.register(orchestrationRoutes, { prefix: '/api/v1/orchestrate' });
+  await app.register(memoryRoutes, { prefix: '/memory' });
 
   return app;
 }

@@ -22,6 +22,10 @@ export class AIMemoryStore {
   }
 
   create(entry: Omit<MemoryEntry, 'id' | 'createdAt' | 'updatedAt' | 'accessLog'>): MemoryEntry {
+    if (entry.writeSignal !== 'explicit') {
+      throw new Error('writeSignal must be "explicit" for direct memory creation (anti-creep)');
+    }
+
     const id = `mem_${Date.now()}_${++this.counter}`;
     const now = Date.now();
     const full: MemoryEntry = {
@@ -35,6 +39,70 @@ export class AIMemoryStore {
     this.insertionOrder.push(id);
     this.evictIfNeeded();
     return full;
+  }
+
+  createCandidate(
+    entry: Omit<
+      MemoryEntry,
+      'id' | 'createdAt' | 'updatedAt' | 'accessLog' | 'writeSignal' | 'status'
+    >,
+  ): MemoryEntry {
+    const id = `mem_${Date.now()}_${++this.counter}`;
+    const now = Date.now();
+    const full: MemoryEntry = {
+      ...entry,
+      id,
+      createdAt: now,
+      updatedAt: now,
+      accessLog: [],
+      writeSignal: 'pending-review',
+      status: 'pending',
+    };
+    this.memories.set(id, full);
+    this.insertionOrder.push(id);
+    this.evictIfNeeded();
+    return full;
+  }
+
+  approveCandidate(id: string): MemoryEntry | undefined {
+    const entry = this.memories.get(id);
+    if (!entry || entry.status !== 'pending') return undefined;
+
+    const updated: MemoryEntry = {
+      ...entry,
+      status: 'active',
+      writeSignal: 'digest-approved',
+      updatedAt: Date.now(),
+    };
+    this.memories.set(id, updated);
+    return updated;
+  }
+
+  rejectCandidate(id: string): boolean {
+    const entry = this.memories.get(id);
+    if (!entry || entry.status !== 'pending') return false;
+    return this.delete(id);
+  }
+
+  getPendingCandidates(userId: string): MemoryEntry[] {
+    return Array.from(this.memories.values()).filter(
+      (m) => m.userId === userId && m.status === 'pending',
+    );
+  }
+
+  purgeByTag(userId: string, tag: string): number {
+    let count = 0;
+    for (const [id, entry] of this.memories) {
+      if (entry.userId === userId && entry.tags.includes(tag)) {
+        this.memories.delete(id);
+        const idx = this.insertionOrder.indexOf(id);
+        if (idx >= 0) {
+          this.insertionOrder.splice(idx, 1);
+        }
+        count++;
+      }
+    }
+    return count;
   }
 
   private evictIfNeeded(): void {
@@ -103,10 +171,15 @@ export class AIMemoryStore {
     return true;
   }
 
+  // TODO: Access scope enforcement at query time is planned for a future phase.
+  // Currently getUserMemories returns all active, non-expired entries for a user
+  // regardless of the requesting app's identity. Scope filtering will be added
+  // when app-level identity is passed through the API layer.
   getUserMemories(userId: string): MemoryEntry[] {
     const now = Date.now();
     return Array.from(this.memories.values()).filter(
-      (m) => m.userId === userId && (m.expiresAt == null || m.expiresAt > now),
+      (m) =>
+        m.userId === userId && m.status === 'active' && (m.expiresAt == null || m.expiresAt > now),
     );
   }
 
