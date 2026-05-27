@@ -475,33 +475,331 @@ export interface CSPPolicy {
 }
 
 // ============================================================================
+// Threat Modeling Types
+// ============================================================================
+
+/** STRIDE threat category */
+export type ThreatCategory =
+  | 'Spoofing'
+  | 'Tampering'
+  | 'Repudiation'
+  | 'InformationDisclosure'
+  | 'DenialOfService'
+  | 'ElevationOfPrivilege';
+
+/** A single identified threat */
+export interface Threat {
+  id: string;
+  category: ThreatCategory;
+  title: string;
+  description: string;
+  affectedAsset: string;
+  affectedInterface: string;
+  riskAssessment?: RiskAssessment;
+  mitigations?: string[];
+}
+
+/** Risk assessment for a threat */
+export interface RiskAssessment {
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  likelihood: number;
+  impact: number;
+  score: number;
+}
+
+/** Service model for threat analysis */
+export interface ServiceModel {
+  name: string;
+  assets: string[];
+  interfaces: ServiceInterface[];
+}
+
+/** Service interface for threat modeling */
+export interface ServiceInterface {
+  name: string;
+  type: 'api' | 'event' | 'database' | 'external' | 'internal';
+  protocol: string;
+  authenticated: boolean;
+  encrypted: boolean;
+}
+
+// ============================================================================
+// Pen Test Scanner Types
+// ============================================================================
+
+/** Pen test finding */
+export interface PenTestFinding {
+  id: string;
+  category: string;
+  severity: 'info' | 'low' | 'medium' | 'high' | 'critical';
+  title: string;
+  description: string;
+  endpoint: string;
+  evidence: string;
+  remediation: string;
+  owaspCategory: string;
+}
+
+/** Pen test report */
+export interface PenTestReport {
+  scanId: string;
+  timestamp: number;
+  target: string;
+  findings: PenTestFinding[];
+  summary: {
+    total: number;
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+    info: number;
+  };
+}
+
+// ============================================================================
+// API Fuzzer Types
+// ============================================================================
+
+/** Fuzz result */
+export interface FuzzResult {
+  endpoint: string;
+  iteration: number;
+  payload: unknown;
+  statusCode: number;
+  responseTime: number;
+  anomaly: boolean;
+  anomalyReason?: string;
+}
+
+/** Fuzz mutation type */
+export type FuzzMutation =
+  | 'sql_injection'
+  | 'xss'
+  | 'boundary'
+  | 'null_bytes'
+  | 'unicode'
+  | 'overflow'
+  | 'format_string';
+
+// ============================================================================
+// Secret Manager Types
+// ============================================================================
+
+/** Secret vault adapter interface */
+export interface SecretVaultAdapter {
+  get(key: string): Promise<string | null>;
+  set(key: string, value: string): Promise<void>;
+  delete(key: string): Promise<void>;
+  list(): Promise<string[]>;
+}
+
+/** Secret access log entry */
+export interface SecretAccessLog {
+  key: string;
+  action: 'read' | 'write' | 'rotate' | 'delete';
+  actor: string;
+  timestamp: number;
+  ip?: string;
+}
+
+// ============================================================================
+// Container Security Types
+// ============================================================================
+
+/** Container validation result */
+export interface ContainerValidation {
+  valid: boolean;
+  issues: ContainerIssue[];
+  score: number;
+}
+
+/** Container security issue */
+export interface ContainerIssue {
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  rule: string;
+  description: string;
+  line?: number;
+  remediation: string;
+}
+
+/** Trivy scan result (simplified) */
+export interface TrivyScanResult {
+  imageRef: string;
+  vulnerabilities: TrivyVulnerability[];
+  scanTime: number;
+}
+
+/** Trivy vulnerability */
+export interface TrivyVulnerability {
+  id: string;
+  package: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  installedVersion: string;
+  fixedVersion?: string;
+  title: string;
+}
+
+// ============================================================================
+// mTLS Types
+// ============================================================================
+
+/** Certificate configuration */
+export interface CertificateConfig {
+  service: string;
+  commonName: string;
+  sans: string[];
+  ca: string;
+  validityDays: number;
+  keySize: number;
+  algorithm: string;
+}
+
+/** Cert chain validation result */
+export interface CertChainValidation {
+  valid: boolean;
+  chain: string[];
+  expiry: number;
+  issuer: string;
+  errors: string[];
+}
+
+// ============================================================================
+// WAF Types
+// ============================================================================
+
+/** WAF decision */
+export interface WAFDecision {
+  action: 'allow' | 'block' | 'challenge';
+  ruleId?: string;
+  reason?: string;
+  timestamp: number;
+}
+
+/** WAF rule */
+export interface WAFRule {
+  id: string;
+  name: string;
+  pattern: string;
+  target: 'uri' | 'body' | 'headers' | 'query' | 'cookies';
+  action: 'block' | 'challenge' | 'log';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  enabled: boolean;
+}
+
+/** WAF request representation */
+export interface WAFRequest {
+  uri: string;
+  method: string;
+  headers: Record<string, string>;
+  body?: string;
+  query?: Record<string, string>;
+  cookies?: Record<string, string>;
+  ip: string;
+}
+
+/** Blocked request stats */
+export interface BlockedRequestStats {
+  total: number;
+  byRule: Record<string, number>;
+  byIP: Record<string, number>;
+  timeRange: { start: number; end: number };
+}
+
+// ============================================================================
+// Compliance Framework Types
+// ============================================================================
+
+/** Compliance control */
+export interface ComplianceControl {
+  id: string;
+  framework: string;
+  category: string;
+  title: string;
+  description: string;
+  status: 'pass' | 'fail' | 'partial' | 'not_applicable';
+  evidence?: string;
+  remediation?: string;
+}
+
+/** Compliance audit result */
+export interface ComplianceAuditResult {
+  framework: string;
+  auditDate: number;
+  controls: ComplianceControl[];
+  summary: {
+    total: number;
+    pass: number;
+    fail: number;
+    partial: number;
+    notApplicable: number;
+  };
+  score: number;
+}
+
+/** Supported compliance framework type */
+export type ComplianceFrameworkType = 'GDPR' | 'CCPA' | 'PCI-DSS' | 'SOC2' | 'DPDP' | 'COPPA';
+
+/** Data Protection Impact Assessment */
+export interface DPIAReport {
+  service: string;
+  dataFlows: DataFlow[];
+  risks: DPIARisk[];
+  mitigations: string[];
+  necessity: string;
+  proportionality: string;
+  generatedAt: number;
+}
+
+/** Data flow for DPIA */
+export interface DataFlow {
+  source: string;
+  destination: string;
+  dataType: string;
+  purpose: string;
+  legalBasis: string;
+  retention: string;
+}
+
+/** DPIA risk */
+export interface DPIARisk {
+  description: string;
+  likelihood: 'low' | 'medium' | 'high';
+  impact: 'low' | 'medium' | 'high';
+  residualRisk: 'low' | 'medium' | 'high';
+}
+
+/** SBOM entry (CycloneDX) */
+export interface SBOMEntry {
+  type: 'library' | 'framework' | 'application' | 'container';
+  name: string;
+  version: string;
+  purl?: string;
+  license?: string;
+  hashes?: { algorithm: string; value: string }[];
+}
+
+/** SBOM output */
+export interface SBOMOutput {
+  bomFormat: 'CycloneDX';
+  specVersion: string;
+  serialNumber: string;
+  version: number;
+  components: SBOMEntry[];
+  generatedAt: number;
+}
+
+// ============================================================================
 // Trust & Safety Types
 // ============================================================================
 
-export type {
-  SybilCluster,
-  AbuseReport,
-} from './core/abuse-graph';
+export type { SybilCluster, AbuseReport } from './core/abuse-graph';
 
-export type {
-  ReputationFactors,
-  ReputationScore,
-} from './core/reputation';
+export type { ReputationFactors, ReputationScore } from './core/reputation';
 
-export type {
-  SpamInput,
-  SpamResult,
-  SpamFeature,
-  TrainingSample,
-} from './core/anti-spam';
+export type { SpamInput, SpamResult, SpamFeature, TrainingSample } from './core/anti-spam';
 
-export type {
-  RateLimitRule,
-  RateLimitCheckResult,
-} from './core/configurable-rate-limiter';
+export type { RateLimitRule, RateLimitCheckResult } from './core/configurable-rate-limiter';
 
 export type { RateLimitStore } from './core/configurable-rate-limiter';
 
-export type {
-  ChallengeDecision,
-} from './core/captcha-challenger';
+export type { ChallengeDecision } from './core/captcha-challenger';
