@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Phase 9 Part 1: Add core data models, service logic, and tests for QuantMail (email CRUD, thread management, labels, search, undo-send flow), QuantChat (conversations, messages, presence, typing indicators, reactions), and QuantDocs (document CRUD, version history, comments, collaboration presence, export). These apps already have route files and some services. This feature fills in missing core service methods to meet launch gates. Focus on the service layer with comprehensive tests.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "In apps/quantmail/backend/services/email.service.ts: ensure methods exist for sendEmail, getInbox, getThread, archiveEmail, trashEmail, starEmail, searchEmails, getLabels, applyLabel. If missing, add them following the DocService pattern (constructor takes Prisma, methods return typed results).",
     "In apps/quantmail/backend/services/thread.service.ts: ensure getThread, listThreads, muteThread, snoozeThread exist with proper typing.",

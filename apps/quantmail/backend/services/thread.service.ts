@@ -116,4 +116,42 @@ export class ThreadService {
       .map((e: { threadId: string | null }) => e.threadId)
       .filter((id: string | null): id is string => id !== null);
   }
+
+  async muteThread(threadId: string, userId: string): Promise<EmailThread> {
+    const thread = await this.prisma.emailThread.findUnique({
+      where: { id: threadId },
+    });
+
+    if (!thread) {
+      throw createAppError('Thread not found', 404, 'THREAD_NOT_FOUND');
+    }
+
+    if (thread.userId !== userId) {
+      throw createAppError('Not authorized', 403, 'FORBIDDEN');
+    }
+
+    return this.prisma.emailThread.update({
+      where: { id: threadId },
+      data: { isMuted: true } as never,
+    });
+  }
+
+  async snoozeThread(threadId: string, userId: string, until: Date): Promise<EmailThread> {
+    const thread = await this.prisma.emailThread.findUnique({
+      where: { id: threadId },
+    });
+
+    if (!thread) {
+      throw createAppError('Thread not found', 404, 'THREAD_NOT_FOUND');
+    }
+
+    if (thread.userId !== userId) {
+      throw createAppError('Not authorized', 403, 'FORBIDDEN');
+    }
+
+    return this.prisma.emailThread.update({
+      where: { id: threadId },
+      data: { snoozedUntil: until } as never,
+    });
+  }
 }
