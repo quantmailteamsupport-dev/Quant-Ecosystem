@@ -49,8 +49,18 @@ export type {
 } from './pipeline';
 
 // On-device ranker
-export { OnDeviceRanker } from './on-device-ranker';
-export type { UserPrefs, RankedCandidate, OnnxRuntime } from './on-device-ranker';
+export { OnDeviceRanker, MAX_MODEL_SIZE_BYTES, MAX_INFERENCE_LATENCY_MS } from './on-device-ranker';
+export type {
+  UserPrefs,
+  RankedCandidate,
+  OnnxRuntime,
+  BenchmarkResult,
+  PerformanceBudgetResult,
+} from './on-device-ranker';
+
+// On-device ranker model spec
+export { OnDeviceModelSpec } from './on-device-ranker-model';
+export type { ModelSpec } from './on-device-ranker-model';
 
 // Experiment
 export { ExperimentService, InMemoryBucketStore } from './experiment/experiment-service';
