@@ -25,6 +25,16 @@ export { AntiSpamFilter } from './core/anti-spam';
 export { ConfigurableRateLimiter, InMemoryRateLimitStore } from './core/configurable-rate-limiter';
 export { CaptchaChallengerService } from './core/captcha-challenger';
 
+// Phase 34: Security Hardening + Compliance
+export { ThreatModeler } from './core/threat-model';
+export { PenTestScanner } from './core/pen-test-scanner';
+export { APIFuzzer } from './core/api-fuzzer';
+export { SecretManager, InMemoryVaultAdapter } from './core/secret-manager';
+export { ContainerSecurityScanner } from './core/container-security';
+export { MTLSConfigurator } from './core/mtls-config';
+export { WAFRuleEngine } from './core/waf-rules';
+export { ComplianceFramework } from './core/compliance-framework';
+
 export type {
   RateLimitConfig,
   SlidingWindowEntry,
@@ -84,4 +94,34 @@ export type {
   RateLimitCheckResult,
   RateLimitStore,
   ChallengeDecision,
+  // Phase 34 types
+  ThreatCategory,
+  Threat,
+  RiskAssessment,
+  ServiceModel,
+  ServiceInterface,
+  PenTestFinding,
+  PenTestReport,
+  FuzzResult,
+  FuzzMutation,
+  SecretVaultAdapter,
+  SecretAccessLog,
+  ContainerValidation,
+  ContainerIssue,
+  TrivyScanResult,
+  TrivyVulnerability,
+  CertificateConfig,
+  CertChainValidation,
+  WAFDecision,
+  WAFRule,
+  WAFRequest,
+  BlockedRequestStats,
+  ComplianceControl,
+  ComplianceAuditResult,
+  ComplianceFrameworkType,
+  DPIAReport,
+  DataFlow,
+  DPIARisk,
+  SBOMEntry,
+  SBOMOutput,
 } from './types';

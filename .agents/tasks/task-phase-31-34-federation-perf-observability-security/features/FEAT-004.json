@@ -2,7 +2,7 @@
   "id": "FEAT-004",
   "type": "feat",
   "description": "Phase 34: Security Hardening + Compliance - Add threat model (STRIDE), pen test utilities (OWASP Top 10 scanner, API fuzzer), secret management, container security (distroless Dockerfile, Trivy config), mTLS configuration, WAF rules, multi-layer rate limiting, and comprehensive compliance framework (GDPR, DPDP 2023, CCPA, COPPA, PCI-DSS, SOC 2) to @quant/security and infra/.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "1. Add packages/security/src/core/threat-model.ts: Implement ThreatModeler class using STRIDE methodology. Methods: modelService(service, assets, interfaces) returns threats per category (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege), assessRisk(threat) returns severity+likelihood+impact, generateMitigations(threats).",
     "2. Add packages/security/src/core/pen-test-scanner.ts: Implement PenTestScanner class that checks for OWASP Top 10 vulnerabilities programmatically. Methods: scanEndpoint(url, method, headers) for injection, broken auth, sensitive data exposure, XXE, broken access control, misconfiguration, XSS, insecure deserialization, known vulns, insufficient logging. Returns findings with severity and remediation.",
