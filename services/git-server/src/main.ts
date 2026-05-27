@@ -2,7 +2,7 @@ import Fastify from 'fastify';
 import gitHttpRoutes from './routes/git-http.js';
 import apiRoutes from './routes/api.js';
 
-export async function buildGitServer(options?: { port?: number; host?: string }) {
+export async function buildGitServer(_options?: { port?: number; host?: string }) {
   const app = Fastify({ logger: process.env['NODE_ENV'] !== 'test' });
 
   await app.register(gitHttpRoutes, { prefix: '/git' });

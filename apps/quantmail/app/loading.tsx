@@ -1,3 +1,5 @@
+'use client';
+
 import { Skeleton } from '@quant/shared-ui';
 
 export default function Loading() {

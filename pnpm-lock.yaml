@@ -80,9 +80,22 @@ importers:
       ioredis:
         specifier: ^5.6.1
         version: 5.10.1
+      react:
+        specifier: ^18.3.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.0
+        version: 18.3.1(react@18.3.1)
       zod:
         specifier: ^3.25.23
         version: 3.25.76
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.15
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.15)
 
   apps/quantai:
     dependencies:
@@ -367,9 +380,22 @@ importers:
       ioredis:
         specifier: ^5.6.1
         version: 5.10.1
+      react:
+        specifier: ^18.3.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.0
+        version: 18.3.1(react@18.3.1)
       zod:
         specifier: ^3.25.23
         version: 3.25.76
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.15
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.15)
 
   apps/quantmail:
     dependencies:
@@ -464,9 +490,22 @@ importers:
       ioredis:
         specifier: ^5.6.1
         version: 5.10.1
+      react:
+        specifier: ^18.3.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.0
+        version: 18.3.1(react@18.3.1)
       zod:
         specifier: ^3.25.23
         version: 3.25.76
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.15
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.15)
 
   apps/quantmeet:
     dependencies:
@@ -537,9 +576,22 @@ importers:
       ioredis:
         specifier: ^5.6.1
         version: 5.10.1
+      react:
+        specifier: ^18.3.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.0
+        version: 18.3.1(react@18.3.1)
       zod:
         specifier: ^3.25.23
         version: 3.25.76
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.15
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.15)
 
   apps/quantsync:
     dependencies:
@@ -570,9 +622,22 @@ importers:
       ioredis:
         specifier: ^5.6.1
         version: 5.10.1
+      react:
+        specifier: ^18.3.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.0
+        version: 18.3.1(react@18.3.1)
       zod:
         specifier: ^3.25.23
         version: 3.25.76
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.15
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.15)
 
   apps/quantube:
     dependencies:
@@ -603,9 +668,22 @@ importers:
       ioredis:
         specifier: ^5.6.1
         version: 5.10.1
+      react:
+        specifier: ^18.3.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.0
+        version: 18.3.1(react@18.3.1)
       zod:
         specifier: ^3.25.23
         version: 3.25.76
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.15
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.15)
 
   packages/agent-runtime:
     dependencies:

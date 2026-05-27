@@ -2,7 +2,7 @@
   "id": "FEAT-007",
   "type": "fix",
   "description": "Phase 1F: Fix build failures. After typecheck passes, ensure 'pnpm build' passes for all packages that have a build script. Currently build fails on @quant/social-graph and @quant/search (which cascade to downstream packages). These build scripts use 'tsc' (not --noEmit) so they produce dist/ output. The same TS errors from typecheck apply plus test files get compiled.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "After FEAT-002 through FEAT-006 are complete, run 'pnpm build' to see remaining failures.",
     "For packages that build with 'tsc' but include test files in compilation: either exclude test files from the build tsconfig (add 'exclude': ['src/**/*.test.ts', 'src/__tests__/**'] to their tsconfig.json), or fix any remaining test file errors.",
