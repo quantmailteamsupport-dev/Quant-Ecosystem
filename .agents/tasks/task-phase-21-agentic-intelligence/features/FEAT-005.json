@@ -2,7 +2,7 @@
   "id": "FEAT-005",
   "type": "feat",
   "description": "Enhance spending caps, trust score, undo engine, and marketplace for Phase 21 requirements. Add per-task and tokens-per-hour limits. Extend trust score with auto-pause. Extend undo to 24h TTL with cross-app mutation recording. Marketplace gets VM2-style sandbox isolation with signature verification.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Enhance packages/agent-runtime/src/spending-limit.ts: Add perTaskCap and tokensPerHourCap to SpendingLimitConfig schema. Add recordTokenUsage(tokens: number) method. Add canSpendTokens(tokens: number) check. Add hard kill on breach: when any cap is exceeded, throw SpendingCapBreachedError and emit a kill-switch activation for that agent. Update SpendingLimitConfigSchema with new zod fields.",
     "Enhance packages/agent-runtime/src/trust-score.ts: Add AUTO_PAUSE_THRESHOLD constant (score <= 15). Add isPaused() method that returns true when score drops below threshold. Add getPauseReason() returning why agent was paused. Add requiresReview() returning true when score is between 15-25 (review zone). Integrate with KillSwitch: when score drops below threshold, call KillSwitch to halt the agent.",
