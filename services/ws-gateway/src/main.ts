@@ -2,8 +2,11 @@
 // WS Gateway - WebSocket Gateway Service
 // ============================================================================
 
+import pino from 'pino';
 import { startHealthServer } from '@quant/health-server';
 import { WebSocketServer, ConnectionAuth } from '@quant/realtime';
+
+const logger = pino({ name: 'ws-gateway' });
 
 const healthPort = Number(process.env['HEALTH_PORT'] ?? '3040');
 const wsPort = Number(process.env['WS_PORT'] ?? '3041');
@@ -21,7 +24,7 @@ const jwtAudience = process.env['JWT_AUDIENCE'] ?? 'quant-realtime';
 async function main(): Promise<void> {
   // Always start health server
   await startHealthServer(healthPort);
-  console.log(`ws-gateway health server listening on port ${healthPort}`);
+  logger.info({ port: healthPort }, 'Health server listening');
 
   // Only start WS server if JWT secret is configured
   if (jwtSecret.length >= 32) {
@@ -39,7 +42,7 @@ async function main(): Promise<void> {
     });
 
     await server.start();
-    console.log(`ws-gateway WebSocket server listening on port ${wsPort}`);
+    logger.info({ port: wsPort }, 'WebSocket server listening');
 
     // Sub-managers available for custom routing
     // presenceManager: tracks user online/away/offline status
@@ -51,7 +54,7 @@ async function main(): Promise<void> {
 
     // Graceful shutdown
     const shutdown = async (): Promise<void> => {
-      console.log('ws-gateway shutting down...');
+      logger.info('Shutting down ws-gateway');
       await server.shutdown();
       process.exit(0);
     };
@@ -59,7 +62,14 @@ async function main(): Promise<void> {
     process.on('SIGTERM', () => void shutdown());
     process.on('SIGINT', () => void shutdown());
   } else {
-    console.log('ws-gateway: JWT_SECRET not configured, running health-only mode');
+    logger.warn(
+      {
+        mode: 'health-only',
+        reason: 'JWT_SECRET not configured or too short (minimum 32 characters)',
+        secretLength: jwtSecret.length,
+      },
+      'WebSocket server disabled - running in degraded health-only mode',
+    );
   }
 }
 

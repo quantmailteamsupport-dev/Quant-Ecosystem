@@ -32,9 +32,44 @@ describe('IdempotencyKeyStore', () => {
 
     it('should store null values as a result', () => {
       store.set('key-null', null);
-      // null is a valid stored result, but get() returns null for "not found" too
-      // so has() should differentiate
+      // has() differentiates stored null from not-found
       expect(store.has('key-null')).toBe(true);
+    });
+  });
+
+  describe('lookup', () => {
+    it('should return found:true with result for existing key', () => {
+      store.set('key-1', { status: 'ok' });
+      const lookup = store.lookup('key-1');
+      expect(lookup.found).toBe(true);
+      expect(lookup.result).toEqual({ status: 'ok' });
+    });
+
+    it('should return found:false for non-existent key', () => {
+      const lookup = store.lookup('nonexistent');
+      expect(lookup.found).toBe(false);
+      expect(lookup.result).toBeUndefined();
+    });
+
+    it('should return found:true for stored null (no ambiguity)', () => {
+      store.set('key-null', null);
+      const lookup = store.lookup('key-null');
+      expect(lookup.found).toBe(true);
+      expect(lookup.result).toBeNull();
+    });
+
+    it('should return found:true for stored undefined', () => {
+      store.set('key-undef', undefined);
+      const lookup = store.lookup('key-undef');
+      expect(lookup.found).toBe(true);
+      expect(lookup.result).toBeUndefined();
+    });
+
+    it('should return found:false for expired key', () => {
+      store.set('key-1', 'value', 5000);
+      vi.advanceTimersByTime(5001);
+      const lookup = store.lookup('key-1');
+      expect(lookup.found).toBe(false);
     });
   });
 
@@ -168,5 +203,71 @@ describe('withIdempotency', () => {
     expect(result2).toBe('result-b');
     expect(op1).toHaveBeenCalledTimes(1);
     expect(op2).toHaveBeenCalledTimes(1);
+  });
+
+  it('should deduplicate concurrent calls with the same key', async () => {
+    let resolveOp: (value: string) => void;
+    const operationPromise = new Promise<string>((resolve) => {
+      resolveOp = resolve;
+    });
+    const operation = vi.fn().mockReturnValue(operationPromise);
+
+    // Start two concurrent calls with the same key
+    const promise1 = withIdempotency(store, 'concurrent-key', 5000, operation);
+    const promise2 = withIdempotency(store, 'concurrent-key', 5000, operation);
+
+    // Resolve the operation
+    resolveOp!('shared-result');
+
+    const [result1, result2] = await Promise.all([promise1, promise2]);
+
+    // Both calls should get the same result
+    expect(result1).toBe('shared-result');
+    expect(result2).toBe('shared-result');
+    // But the operation should only have been called once
+    expect(operation).toHaveBeenCalledTimes(1);
+  });
+
+  it('should handle null result without ambiguity', async () => {
+    const operation = vi.fn().mockResolvedValue(null);
+
+    const result1 = await withIdempotency(store, 'null-key', 5000, operation);
+    const result2 = await withIdempotency(store, 'null-key', 5000, operation);
+
+    expect(result1).toBeNull();
+    expect(result2).toBeNull();
+    // Operation should only execute once even though result is null
+    expect(operation).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not cache failed operations', async () => {
+    const operation = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('fail'))
+      .mockResolvedValueOnce('success');
+
+    await expect(withIdempotency(store, 'fail-key', 5000, operation)).rejects.toThrow('fail');
+
+    // Second call should retry since first failed
+    const result = await withIdempotency(store, 'fail-key', 5000, operation);
+    expect(result).toBe('success');
+    expect(operation).toHaveBeenCalledTimes(2);
+  });
+
+  it('should propagate error to all concurrent waiters on failure', async () => {
+    let rejectOp: (error: Error) => void;
+    const operationPromise = new Promise<string>((_, reject) => {
+      rejectOp = reject;
+    });
+    const operation = vi.fn().mockReturnValue(operationPromise);
+
+    const promise1 = withIdempotency(store, 'error-key', 5000, operation);
+    const promise2 = withIdempotency(store, 'error-key', 5000, operation);
+
+    rejectOp!(new Error('shared failure'));
+
+    await expect(promise1).rejects.toThrow('shared failure');
+    await expect(promise2).rejects.toThrow('shared failure');
+    expect(operation).toHaveBeenCalledTimes(1);
   });
 });

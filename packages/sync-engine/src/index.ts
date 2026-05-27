@@ -45,7 +45,11 @@ export { OptimisticUpdateManager } from './optimistic-updates.js';
 export type { PendingMutation } from './optimistic-updates.js';
 
 export { OfflineOperationQueue } from './offline-queue.js';
-export type { OfflineOperation, ReplayResult as OfflineReplayResult } from './offline-queue.js';
+export type {
+  OfflineOperation,
+  OfflineQueueConfig,
+  ReplayResult as OfflineReplayResult,
+} from './offline-queue.js';
 
 export { RetryWithBackoff } from './retry-backoff.js';
 export type { RetryConfig } from './retry-backoff.js';

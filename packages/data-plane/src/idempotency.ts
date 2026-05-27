@@ -11,8 +11,14 @@ const SWEEP_INTERVAL_MS = 60_000;
 
 /** Stored entry with expiry */
 interface IdempotencyEntry {
-  result: unknown;
+  value: { result: unknown };
   expiresAt: number;
+}
+
+/** Result of a get() call that distinguishes found from not-found */
+export interface IdempotencyLookup {
+  found: boolean;
+  result: unknown;
 }
 
 /**
@@ -40,13 +46,14 @@ export class IdempotencyKeyStore {
   set(key: string, result: unknown, ttlMs?: number): void {
     const ttl = ttlMs ?? this.defaultTtlMs;
     this.store.set(key, {
-      result,
+      value: { result },
       expiresAt: Date.now() + ttl,
     });
   }
 
   /**
    * Get the stored result for a key, or null if not found/expired.
+   * @deprecated Use lookup() for unambiguous null handling
    */
   get(key: string): unknown | null {
     const entry = this.store.get(key);
@@ -57,7 +64,22 @@ export class IdempotencyKeyStore {
       return null;
     }
 
-    return entry.result;
+    return entry.value.result;
+  }
+
+  /**
+   * Unambiguous lookup that distinguishes stored null/undefined from "key not found".
+   */
+  lookup(key: string): IdempotencyLookup {
+    const entry = this.store.get(key);
+    if (!entry) return { found: false, result: undefined };
+
+    if (Date.now() >= entry.expiresAt) {
+      this.store.delete(key);
+      return { found: false, result: undefined };
+    }
+
+    return { found: true, result: entry.value.result };
   }
 
   /**
@@ -128,9 +150,26 @@ export class IdempotencyKeyStore {
 }
 
 /**
+ * In-flight promise map for concurrent deduplication.
+ * When the first call for a key starts executing, its promise is stored here.
+ * Concurrent callers await that same promise instead of re-executing.
+ */
+const inflightMap = new WeakMap<IdempotencyKeyStore, Map<string, Promise<unknown>>>();
+
+function getInflightMap(store: IdempotencyKeyStore): Map<string, Promise<unknown>> {
+  let map = inflightMap.get(store);
+  if (!map) {
+    map = new Map();
+    inflightMap.set(store, map);
+  }
+  return map;
+}
+
+/**
  * Helper function that wraps an async operation with idempotency.
  *
  * If the key already has a stored result, returns it immediately.
+ * If another call with the same key is already in-flight, awaits that result.
  * Otherwise, executes the operation, stores the result, and returns it.
  */
 export async function withIdempotency<T>(
@@ -139,12 +178,32 @@ export async function withIdempotency<T>(
   ttlMs: number,
   operation: () => Promise<T>,
 ): Promise<T> {
-  const cached = store.get(key);
-  if (cached !== null) {
-    return cached as T;
+  // Check the cache first using unambiguous lookup
+  const cached = store.lookup(key);
+  if (cached.found) {
+    return cached.result as T;
   }
 
-  const result = await operation();
-  store.set(key, result, ttlMs);
-  return result;
+  // Check if there is already an in-flight operation for this key
+  const inflight = getInflightMap(store);
+  const pending = inflight.get(key);
+  if (pending) {
+    return pending as Promise<T>;
+  }
+
+  // Execute the operation and store the promise for concurrent callers
+  const promise = operation().then(
+    (result) => {
+      store.set(key, result, ttlMs);
+      inflight.delete(key);
+      return result;
+    },
+    (error: unknown) => {
+      inflight.delete(key);
+      throw error;
+    },
+  );
+
+  inflight.set(key, promise);
+  return promise as Promise<T>;
 }

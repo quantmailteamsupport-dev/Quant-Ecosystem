@@ -31,6 +31,7 @@ describe('DataRetentionPolicy', () => {
     expect(result.toDelete[0]!.id).toBe('1');
     expect(result.toArchive).toHaveLength(1);
     expect(result.toArchive[0]!.id).toBe('3');
+    expect(result.toSoftDelete).toHaveLength(0);
     expect(result.retained).toBe(3);
   });
 
@@ -43,10 +44,11 @@ describe('DataRetentionPolicy', () => {
     const result = policy.evaluate(records);
     expect(result.toArchive).toHaveLength(0);
     expect(result.toDelete).toHaveLength(0);
+    expect(result.toSoftDelete).toHaveLength(0);
     expect(result.retained).toBe(1);
   });
 
-  it('should handle soft-delete strategy as delete', () => {
+  it('should route soft-delete strategy to toSoftDelete (not toDelete)', () => {
     const now = Date.now();
     const policy = new DataRetentionPolicy([
       { entityType: 'temp', retentionDays: 1, strategy: 'soft-delete' },
@@ -55,8 +57,35 @@ describe('DataRetentionPolicy', () => {
     const records = [{ id: '1', entityType: 'temp', createdAt: now - 2 * 24 * 60 * 60 * 1000 }];
 
     const result = policy.evaluate(records);
-    expect(result.toDelete).toHaveLength(1);
+    expect(result.toSoftDelete).toHaveLength(1);
+    expect(result.toSoftDelete[0]!.id).toBe('1');
+    expect(result.toDelete).toHaveLength(0);
     expect(result.toArchive).toHaveLength(0);
+  });
+
+  it('should distinguish soft-delete, hard-delete, and archive in same evaluation', () => {
+    const now = Date.now();
+    const policy = new DataRetentionPolicy([
+      { entityType: 'session', retentionDays: 7, strategy: 'hard-delete' },
+      { entityType: 'comment', retentionDays: 30, strategy: 'soft-delete' },
+      { entityType: 'audit', retentionDays: 90, strategy: 'archive' },
+    ]);
+
+    const records = [
+      { id: '1', entityType: 'session', createdAt: now - 10 * 24 * 60 * 60 * 1000 },
+      { id: '2', entityType: 'comment', createdAt: now - 60 * 24 * 60 * 60 * 1000 },
+      { id: '3', entityType: 'audit', createdAt: now - 120 * 24 * 60 * 60 * 1000 },
+      { id: '4', entityType: 'session', createdAt: now - 3 * 24 * 60 * 60 * 1000 }, // retained
+    ];
+
+    const result = policy.evaluate(records);
+    expect(result.toDelete).toHaveLength(1);
+    expect(result.toDelete[0]!.id).toBe('1');
+    expect(result.toSoftDelete).toHaveLength(1);
+    expect(result.toSoftDelete[0]!.id).toBe('2');
+    expect(result.toArchive).toHaveLength(1);
+    expect(result.toArchive[0]!.id).toBe('3');
+    expect(result.retained).toBe(1);
   });
 
   it('should add a rule dynamically', () => {

@@ -1888,6 +1888,9 @@ importers:
       '@quant/realtime':
         specifier: workspace:*
         version: link:../../packages/realtime
+      pino:
+        specifier: ^9.6.0
+        version: 9.14.0
       ws:
         specifier: ^8.18.0
         version: 8.21.0

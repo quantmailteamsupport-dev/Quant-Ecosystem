@@ -94,6 +94,7 @@ describe('OfflineOperationQueue', () => {
 
     expect(result.successful).toBe(3);
     expect(result.failed).toBe(0);
+    expect(result.deadLettered).toBe(0);
     expect(queue.size()).toBe(0);
     expect(sender).toHaveBeenCalledTimes(3);
   });
@@ -132,5 +133,113 @@ describe('OfflineOperationQueue', () => {
 
     queue.clear();
     expect(queue.size()).toBe(0);
+  });
+
+  it('should initialize operations with retryCount of 0', () => {
+    const queue = new OfflineOperationQueue();
+    queue.enqueue({ id: 'op-1', key: 'k1', payload: 'a' });
+
+    const op = queue.dequeue();
+    expect(op!.retryCount).toBe(0);
+  });
+
+  describe('circuit-breaking with maxRetries', () => {
+    it('should increment retryCount on replay failure', async () => {
+      const queue = new OfflineOperationQueue({ maxRetries: 5 });
+      queue.enqueue({ id: 'op-1', key: 'k1', payload: 'a' });
+
+      const sender = vi.fn().mockResolvedValue(false);
+      await queue.replayAll(sender);
+
+      const ops = queue.peek();
+      expect(ops[0]!.retryCount).toBe(1);
+    });
+
+    it('should move operation to dead letter after maxRetries exhausted', async () => {
+      const queue = new OfflineOperationQueue({ maxRetries: 3 });
+      queue.enqueue({ id: 'op-1', key: 'k1', payload: 'poison' });
+
+      const sender = vi.fn().mockResolvedValue(false);
+
+      // Replay 3 times to exhaust retries
+      await queue.replayAll(sender);
+      expect(queue.size()).toBe(1); // still in queue (retryCount: 1)
+
+      await queue.replayAll(sender);
+      expect(queue.size()).toBe(1); // still in queue (retryCount: 2)
+
+      const result = await queue.replayAll(sender);
+      expect(queue.size()).toBe(0); // moved to dead letter (retryCount: 3)
+      expect(result.deadLettered).toBe(1);
+      expect(result.failed).toBe(0);
+    });
+
+    it('should accumulate dead-lettered operations', async () => {
+      const queue = new OfflineOperationQueue({ maxRetries: 1 });
+      queue.enqueue({ id: 'op-1', key: 'k1', payload: 'bad1' });
+      queue.enqueue({ id: 'op-2', key: 'k2', payload: 'bad2' });
+
+      const sender = vi.fn().mockResolvedValue(false);
+
+      await queue.replayAll(sender);
+
+      expect(queue.size()).toBe(0);
+      expect(queue.getDeadLetterQueue()).toHaveLength(2);
+      const dlqIds = queue.getDeadLetterQueue().map((op) => op.id);
+      expect(dlqIds).toContain('op-1');
+      expect(dlqIds).toContain('op-2');
+    });
+
+    it('should use default maxRetries of 5', async () => {
+      const queue = new OfflineOperationQueue();
+      queue.enqueue({ id: 'op-1', key: 'k1', payload: 'a' });
+
+      const sender = vi.fn().mockResolvedValue(false);
+
+      for (let i = 0; i < 4; i++) {
+        await queue.replayAll(sender);
+        expect(queue.size()).toBe(1);
+      }
+
+      // 5th failure should dead-letter it
+      const result = await queue.replayAll(sender);
+      expect(queue.size()).toBe(0);
+      expect(result.deadLettered).toBe(1);
+      expect(queue.getDeadLetterQueue()).toHaveLength(1);
+    });
+
+    it('should allow clearing the dead letter queue', async () => {
+      const queue = new OfflineOperationQueue({ maxRetries: 1 });
+      queue.enqueue({ id: 'op-1', key: 'k1', payload: 'bad' });
+
+      const sender = vi.fn().mockResolvedValue(false);
+      await queue.replayAll(sender);
+
+      expect(queue.getDeadLetterQueue()).toHaveLength(1);
+      queue.clearDeadLetter();
+      expect(queue.getDeadLetterQueue()).toHaveLength(0);
+    });
+
+    it('should not dead-letter successful operations after previous failures', async () => {
+      const queue = new OfflineOperationQueue({ maxRetries: 3 });
+      queue.enqueue({ id: 'op-1', key: 'k1', payload: 'flaky' });
+
+      const sender = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+
+      await queue.replayAll(sender); // fails, retryCount -> 1
+      expect(queue.size()).toBe(1);
+
+      await queue.replayAll(sender); // succeeds
+      expect(queue.size()).toBe(0);
+      expect(queue.getDeadLetterQueue()).toHaveLength(0);
+    });
+
+    it('should preserve retryCount when enqueuing with explicit value', () => {
+      const queue = new OfflineOperationQueue();
+      queue.enqueue({ id: 'op-1', key: 'k1', payload: 'a', retryCount: 3 });
+
+      const op = queue.dequeue();
+      expect(op!.retryCount).toBe(3);
+    });
   });
 });

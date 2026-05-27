@@ -8,9 +8,16 @@ export interface RetentionRule {
   strategy: 'archive' | 'hard-delete' | 'soft-delete';
 }
 
+export interface RetentionRecord {
+  id: string;
+  entityType: string;
+  createdAt: number;
+}
+
 export interface RetentionEvaluation {
-  toArchive: Array<{ id: string; entityType: string; createdAt: number }>;
-  toDelete: Array<{ id: string; entityType: string; createdAt: number }>;
+  toArchive: RetentionRecord[];
+  toDelete: RetentionRecord[];
+  toSoftDelete: RetentionRecord[];
   retained: number;
 }
 
@@ -30,11 +37,10 @@ export class DataRetentionPolicy {
     }
   }
 
-  evaluate(
-    records: Array<{ id: string; entityType: string; createdAt: number }>,
-  ): RetentionEvaluation {
-    const toArchive: RetentionEvaluation['toArchive'] = [];
-    const toDelete: RetentionEvaluation['toDelete'] = [];
+  evaluate(records: RetentionRecord[]): RetentionEvaluation {
+    const toArchive: RetentionRecord[] = [];
+    const toDelete: RetentionRecord[] = [];
+    const toSoftDelete: RetentionRecord[] = [];
     let retained = 0;
     const now = Date.now();
 
@@ -51,6 +57,8 @@ export class DataRetentionPolicy {
       if (ageMs > retentionMs) {
         if (rule.strategy === 'archive') {
           toArchive.push(record);
+        } else if (rule.strategy === 'soft-delete') {
+          toSoftDelete.push(record);
         } else {
           toDelete.push(record);
         }
@@ -59,7 +67,7 @@ export class DataRetentionPolicy {
       }
     }
 
-    return { toArchive, toDelete, retained };
+    return { toArchive, toDelete, toSoftDelete, retained };
   }
 
   addRule(rule: RetentionRule): void {
