@@ -1,0 +1,250 @@
+// ============================================================================
+// QuantAI - Memory API Routes
+// CRUD, candidates, export/import, full disclosure
+// ============================================================================
+
+import type { FastifyInstance } from 'fastify';
+import { z } from 'zod';
+import { createAppError } from '@quant/server-core';
+import { MemoryService } from '../services/memory.service';
+
+const categoryEnum = z.enum([
+  'people',
+  'places',
+  'projects',
+  'preferences',
+  'skills',
+  'goals',
+  'schedules',
+  'routines',
+]);
+
+const createMemorySchema = z.object({
+  category: categoryEnum,
+  content: z.string().min(1),
+  source: z.string().min(1),
+  sourceApp: z.string().min(1),
+  explanation: z.string().min(1),
+  writeSignal: z.literal('explicit'),
+  accessScopes: z.array(z.string()),
+  tags: z.array(z.string()),
+  expiresAt: z.number().optional(),
+});
+
+const updateMemorySchema = z.object({
+  content: z.string().min(1).optional(),
+  category: categoryEnum.optional(),
+  tags: z.array(z.string()).optional(),
+  explanation: z.string().min(1).optional(),
+});
+
+const listQuerySchema = z.object({
+  category: categoryEnum.optional(),
+  search: z.string().optional(),
+  tag: z.string().optional(),
+});
+
+const exportQuerySchema = z.object({
+  format: z.enum(['json', 'markdown', 'csv']).optional(),
+});
+
+const importBodySchema = z.object({
+  version: z.string(),
+  exportedAt: z.number(),
+  userId: z.string(),
+  entries: z.array(
+    z.object({
+      id: z.string(),
+      userId: z.string(),
+      category: categoryEnum,
+      content: z.string(),
+      source: z.string(),
+      sourceApp: z.string(),
+      createdAt: z.number(),
+      updatedAt: z.number(),
+      expiresAt: z.number().optional(),
+      accessLog: z.array(
+        z.object({
+          accessedAt: z.number(),
+          reason: z.string(),
+          requestingApp: z.string(),
+        }),
+      ),
+      explanation: z.string(),
+      accessScopes: z.array(z.string()),
+      writeSignal: z.enum(['explicit', 'digest-approved']),
+      status: z.enum(['active', 'pending']),
+      tags: z.array(z.string()),
+    }),
+  ),
+});
+
+export default async function memoryRoutes(fastify: FastifyInstance) {
+  const service = new MemoryService();
+
+  // GET / - list memories with optional filters
+  fastify.get('/', async (request, reply) => {
+    const userId = (request as unknown as { auth: { userId: string } }).auth?.userId;
+    if (!userId) {
+      throw createAppError('Authentication required', 401, 'UNAUTHORIZED');
+    }
+
+    const queryResult = listQuerySchema.safeParse(request.query);
+    if (!queryResult.success) {
+      throw queryResult.error;
+    }
+
+    const memories = service.listMemories(userId, queryResult.data);
+    return reply.send({ success: true, data: memories });
+  });
+
+  // POST / - create memory (requires writeSignal: 'explicit')
+  fastify.post('/', async (request, reply) => {
+    const userId = (request as unknown as { auth: { userId: string } }).auth?.userId;
+    if (!userId) {
+      throw createAppError('Authentication required', 401, 'UNAUTHORIZED');
+    }
+
+    const parseResult = createMemorySchema.safeParse(request.body);
+    if (!parseResult.success) {
+      throw parseResult.error;
+    }
+
+    const memory = service.createMemory(userId, parseResult.data);
+    return reply.status(201).send({ success: true, data: memory });
+  });
+
+  // PUT /:id - update memory
+  fastify.put<{ Params: { id: string } }>('/:id', async (request, reply) => {
+    const userId = (request as unknown as { auth: { userId: string } }).auth?.userId;
+    if (!userId) {
+      throw createAppError('Authentication required', 401, 'UNAUTHORIZED');
+    }
+
+    const parseResult = updateMemorySchema.safeParse(request.body);
+    if (!parseResult.success) {
+      throw parseResult.error;
+    }
+
+    const memory = service.updateMemory(request.params.id, parseResult.data);
+    if (!memory) {
+      throw createAppError('Memory not found', 404, 'NOT_FOUND');
+    }
+
+    return reply.send({ success: true, data: memory });
+  });
+
+  // DELETE /:id - delete single memory
+  fastify.delete<{ Params: { id: string } }>('/:id', async (request, reply) => {
+    const userId = (request as unknown as { auth: { userId: string } }).auth?.userId;
+    if (!userId) {
+      throw createAppError('Authentication required', 401, 'UNAUTHORIZED');
+    }
+
+    const deleted = service.deleteMemory(request.params.id);
+    if (!deleted) {
+      throw createAppError('Memory not found', 404, 'NOT_FOUND');
+    }
+
+    return reply.send({ success: true, data: { message: 'Memory deleted' } });
+  });
+
+  // DELETE /purge/:tag - purge all memories with tag
+  fastify.delete<{ Params: { tag: string } }>('/purge/:tag', async (request, reply) => {
+    const userId = (request as unknown as { auth: { userId: string } }).auth?.userId;
+    if (!userId) {
+      throw createAppError('Authentication required', 401, 'UNAUTHORIZED');
+    }
+
+    const count = service.purgeByTag(userId, request.params.tag);
+    return reply.send({ success: true, data: { purged: count } });
+  });
+
+  // GET /candidates - list pending candidates
+  fastify.get('/candidates', async (request, reply) => {
+    const userId = (request as unknown as { auth: { userId: string } }).auth?.userId;
+    if (!userId) {
+      throw createAppError('Authentication required', 401, 'UNAUTHORIZED');
+    }
+
+    const candidates = service.getPendingCandidates(userId);
+    return reply.send({ success: true, data: candidates });
+  });
+
+  // POST /candidates/:id/approve - approve a candidate
+  fastify.post<{ Params: { id: string } }>('/candidates/:id/approve', async (request, reply) => {
+    const userId = (request as unknown as { auth: { userId: string } }).auth?.userId;
+    if (!userId) {
+      throw createAppError('Authentication required', 401, 'UNAUTHORIZED');
+    }
+
+    const memory = service.approveCandidate(request.params.id);
+    if (!memory) {
+      throw createAppError('Candidate not found or not pending', 404, 'NOT_FOUND');
+    }
+
+    return reply.send({ success: true, data: memory });
+  });
+
+  // POST /candidates/:id/reject - reject a candidate
+  fastify.post<{ Params: { id: string } }>('/candidates/:id/reject', async (request, reply) => {
+    const userId = (request as unknown as { auth: { userId: string } }).auth?.userId;
+    if (!userId) {
+      throw createAppError('Authentication required', 401, 'UNAUTHORIZED');
+    }
+
+    const rejected = service.rejectCandidate(request.params.id);
+    if (!rejected) {
+      throw createAppError('Candidate not found or not pending', 404, 'NOT_FOUND');
+    }
+
+    return reply.send({
+      success: true,
+      data: { message: 'Candidate rejected' },
+    });
+  });
+
+  // GET /export - export memories
+  fastify.get('/export', async (request, reply) => {
+    const userId = (request as unknown as { auth: { userId: string } }).auth?.userId;
+    if (!userId) {
+      throw createAppError('Authentication required', 401, 'UNAUTHORIZED');
+    }
+
+    const queryResult = exportQuerySchema.safeParse(request.query);
+    if (!queryResult.success) {
+      throw queryResult.error;
+    }
+
+    const format = queryResult.data.format ?? 'json';
+    const exported = service.exportMemories(userId, format);
+    return reply.send({ success: true, data: exported });
+  });
+
+  // POST /import - import memories from JSON
+  fastify.post('/import', async (request, reply) => {
+    const userId = (request as unknown as { auth: { userId: string } }).auth?.userId;
+    if (!userId) {
+      throw createAppError('Authentication required', 401, 'UNAUTHORIZED');
+    }
+
+    const parseResult = importBodySchema.safeParse(request.body);
+    if (!parseResult.success) {
+      throw parseResult.error;
+    }
+
+    const imported = service.importMemories(userId, JSON.stringify(parseResult.data));
+    return reply.status(201).send({ success: true, data: imported });
+  });
+
+  // GET /disclosure - full disclosure view
+  fastify.get('/disclosure', async (request, reply) => {
+    const userId = (request as unknown as { auth: { userId: string } }).auth?.userId;
+    if (!userId) {
+      throw createAppError('Authentication required', 401, 'UNAUTHORIZED');
+    }
+
+    const disclosure = service.getFullDisclosure(userId);
+    return reply.send({ success: true, data: disclosure });
+  });
+}
