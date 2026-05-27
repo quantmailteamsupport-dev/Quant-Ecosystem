@@ -1,3 +1,10 @@
+/**
+ * Dev-time Prisma stub for QuantChat backend.
+ * This file provides type definitions for @prisma/client when no real Prisma
+ * generation has been run. It is scoped to the quantchat tsconfig.backend.json
+ * compilation unit only. Once a real Prisma schema is generated, remove this
+ * file and use the generated client types instead.
+ */
 declare module '@prisma/client' {
   export interface Conversation {
     id: string;

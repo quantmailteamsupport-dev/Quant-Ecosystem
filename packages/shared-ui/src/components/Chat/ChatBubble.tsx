@@ -36,6 +36,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   className = '',
   onReact,
   onReply,
+  onDelete,
 }) => {
   const isSelf = sender === 'self';
 
@@ -97,6 +98,14 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
               className="p-1 bg-white rounded-full shadow text-gray-500 hover:text-gray-700 text-xs"
             >
               +
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={onDelete}
+              className="p-1 bg-white rounded-full shadow text-gray-500 hover:text-red-600 text-xs"
+            >
+              \u2715
             </button>
           )}
         </div>

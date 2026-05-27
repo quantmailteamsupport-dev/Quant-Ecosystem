@@ -43,7 +43,7 @@ export class ReadReceiptsService {
   }
 
   markAsSent(messageId: string): ReadReceipt {
-    const state = this.getOrCreateState(messageId);
+    const state = this.getRegisteredState(messageId);
 
     if (state.status === 'failed') {
       // Allow retry from failed
@@ -63,7 +63,7 @@ export class ReadReceiptsService {
   }
 
   markAsDelivered(messageId: string, userId: string): ReadReceipt {
-    const state = this.getOrCreateState(messageId);
+    const state = this.getRegisteredState(messageId);
 
     const receipt: ReadReceipt = {
       messageId,
@@ -84,7 +84,7 @@ export class ReadReceiptsService {
   }
 
   markAsRead(messageId: string, userId: string): ReadReceipt {
-    const state = this.getOrCreateState(messageId);
+    const state = this.getRegisteredState(messageId);
 
     const receipt: ReadReceipt = {
       messageId,
@@ -105,7 +105,7 @@ export class ReadReceiptsService {
   }
 
   markAsFailed(messageId: string): ReadReceipt {
-    const state = this.getOrCreateState(messageId);
+    const state = this.getRegisteredState(messageId);
     state.status = 'failed';
 
     return {
@@ -144,11 +144,12 @@ export class ReadReceiptsService {
     return result;
   }
 
-  private getOrCreateState(messageId: string): MessageState {
-    let state = this.messages.get(messageId);
+  private getRegisteredState(messageId: string): MessageState {
+    const state = this.messages.get(messageId);
     if (!state) {
-      state = { status: 'sending', receipts: new Map(), conversationId: '' };
-      this.messages.set(messageId, state);
+      throw new Error(
+        `Message "${messageId}" has not been registered. Call registerMessage() before tracking delivery status.`,
+      );
     }
     return state;
   }

@@ -1,3 +1,10 @@
+/**
+ * Dev-time Prisma stub for QuantMail backend.
+ * This file provides type definitions for @prisma/client when no real Prisma
+ * generation has been run. It is scoped to the quantmail tsconfig.backend.json
+ * compilation unit only. Once a real Prisma schema is generated, remove this
+ * file and use the generated client types instead.
+ */
 declare module '@prisma/client' {
   export interface Email {
     id: string;

@@ -115,4 +115,30 @@ describe('ReadReceiptsService', () => {
       expect(service.getStatus('unknown')).toBe('sending');
     });
   });
+
+  describe('unregistered message handling', () => {
+    it('should throw when marking unregistered message as sent', () => {
+      expect(() => service.markAsSent('unregistered')).toThrow(
+        'Message "unregistered" has not been registered',
+      );
+    });
+
+    it('should throw when marking unregistered message as delivered', () => {
+      expect(() => service.markAsDelivered('unregistered', 'user-1')).toThrow(
+        'Message "unregistered" has not been registered',
+      );
+    });
+
+    it('should throw when marking unregistered message as read', () => {
+      expect(() => service.markAsRead('unregistered', 'user-1')).toThrow(
+        'Message "unregistered" has not been registered',
+      );
+    });
+
+    it('should throw when marking unregistered message as failed', () => {
+      expect(() => service.markAsFailed('unregistered')).toThrow(
+        'Message "unregistered" has not been registered',
+      );
+    });
+  });
 });

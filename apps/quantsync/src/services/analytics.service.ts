@@ -124,7 +124,7 @@ export class AnalyticsService {
       engagementRate: 0,
     };
 
-    this.postMetrics.set(postId, fresh);
+    this.postMetrics.set(postId, { ...fresh });
     return fresh;
   }
 
