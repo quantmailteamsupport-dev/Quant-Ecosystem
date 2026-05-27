@@ -23,7 +23,22 @@ export {
 } from './services/csam-hash-provider';
 export { PolicyEngine, PolicySchema, PolicyRuleSchema } from './services/policy-engine';
 export { AppealWorkflow } from './services/appeal-workflow';
+export type { Reviewer } from './services/appeal-workflow';
+export { AppealsQueue } from './services/appeals-queue';
+export type { QueueStats, ReviewerWorkload } from './services/appeals-queue';
 export { TransparencyReportGenerator } from './services/transparency-report';
+export { SafetyMicrofeatures } from './services/safety-microfeatures';
+export type {
+  OneTapAction,
+  OneTapActionResult,
+  UsageMetrics,
+  DistressResult,
+  MassUnfollowResult,
+  SelfHarmRedirectResult,
+  CrisisHotline,
+} from './services/safety-microfeatures';
+export { GroomingPatternDetector } from './services/grooming-detector';
+export type { GroomingDetectionResult, ConversationMessage } from './services/grooming-detector';
 export { ContentClassifier } from './services/content-classifier';
 export { TextModerator } from './services/text-moderator';
 export { ImageModerator } from './services/image-moderator';

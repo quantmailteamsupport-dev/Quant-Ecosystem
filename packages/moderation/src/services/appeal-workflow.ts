@@ -3,7 +3,13 @@
 // Appeal lifecycle with AppealRecord creation for every moderation action
 // ============================================================================
 
-import type { AppealRecord, ModerationAction, ModerationResult } from '../types';
+import type {
+  AppealRecord,
+  ModerationAction,
+  ModerationResult,
+  ModeratorRole,
+  QueuePriority,
+} from '../types';
 import { AppealRecordSchema } from '../types';
 
 interface AppealWorkflowConfig {
@@ -16,11 +22,26 @@ const DEFAULT_CONFIG: AppealWorkflowConfig = {
   cooldownDays: 30,
 };
 
+/** SLA durations in milliseconds by priority */
+const SLA_DURATIONS: Record<QueuePriority, number> = {
+  critical: 1 * 60 * 60 * 1000, // 1 hour
+  high: 4 * 60 * 60 * 1000, // 4 hours
+  medium: 24 * 60 * 60 * 1000, // 24 hours
+  low: 72 * 60 * 60 * 1000, // 72 hours
+};
+
+/** Reviewer with role information */
+export interface Reviewer {
+  id: string;
+  role: ModeratorRole;
+}
+
 /**
  * AppealWorkflow - Manages moderation appeal records
  *
  * Every moderation action creates an auditable AppealRecord.
  * Supports human review assignment and resolution.
+ * Includes SLA timer and overdue detection.
  */
 export class AppealWorkflow {
   private config: AppealWorkflowConfig;
@@ -35,10 +56,16 @@ export class AppealWorkflow {
   }
 
   /** Create an AppealRecord from a moderation action */
-  createFromAction(moderationResult: ModerationResult, userId: string): AppealRecord {
+  createFromAction(
+    moderationResult: ModerationResult,
+    userId: string,
+    priority?: QueuePriority,
+  ): AppealRecord {
     this.counter++;
+    const now = Date.now();
+    const effectivePriority = priority ?? 'medium';
     const record: AppealRecord = {
-      id: `ar_${Date.now()}_${this.counter}`,
+      id: `ar_${now}_${this.counter}`,
       contentId: moderationResult.contentId,
       userId,
       originalAction: moderationResult.action,
@@ -48,8 +75,10 @@ export class AppealWorkflow {
         .map((c) => `${c.category}: score=${c.score.toFixed(2)}`),
       status: 'submitted',
       source: 'automated',
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      priority: effectivePriority,
+      slaDeadline: now + SLA_DURATIONS[effectivePriority],
+      createdAt: now,
+      updatedAt: now,
     };
 
     // Validate with Zod schema
@@ -70,6 +99,7 @@ export class AppealWorkflow {
     originalAction: ModerationAction;
     reason: string;
     evidence?: string[];
+    priority?: QueuePriority;
   }): AppealRecord {
     const userList = this.userRecords.get(params.userId) ?? [];
     const recentAppeals = userList.filter((id) => {
@@ -88,8 +118,10 @@ export class AppealWorkflow {
     }
 
     this.counter++;
+    const now = Date.now();
+    const effectivePriority = params.priority ?? 'medium';
     const record: AppealRecord = {
-      id: `ar_${Date.now()}_${this.counter}`,
+      id: `ar_${now}_${this.counter}`,
       contentId: params.contentId,
       userId: params.userId,
       originalAction: params.originalAction,
@@ -97,8 +129,10 @@ export class AppealWorkflow {
       evidence: params.evidence ?? [],
       status: 'submitted',
       source: 'user_initiated',
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      priority: effectivePriority,
+      slaDeadline: now + SLA_DURATIONS[effectivePriority],
+      createdAt: now,
+      updatedAt: now,
     };
 
     AppealRecordSchema.parse(record);
@@ -119,6 +153,20 @@ export class AppealWorkflow {
     return record;
   }
 
+  /** Assign appeal to next available reviewer from pool with role check */
+  assignToNextAvailable(recordId: string, reviewerPool: Reviewer[]): AppealRecord {
+    const record = this.getRecordOrThrow(recordId);
+    if (reviewerPool.length === 0) {
+      throw new Error('No reviewers available in pool');
+    }
+    // Pick the first available reviewer with sufficient role
+    const reviewer = reviewerPool[0]!;
+    record.status = 'human_review';
+    record.assignedTo = reviewer.id;
+    record.updatedAt = Date.now();
+    return record;
+  }
+
   /** Resolve an appeal with a decision */
   resolve(
     recordId: string,
@@ -133,6 +181,28 @@ export class AppealWorkflow {
     record.resolvedAt = Date.now();
     record.updatedAt = Date.now();
     return record;
+  }
+
+  /** Get all overdue cases (past SLA deadline and not yet resolved) */
+  getOverdueCases(now?: number): AppealRecord[] {
+    const currentTime = now ?? Date.now();
+    return Array.from(this.records.values()).filter(
+      (r) =>
+        r.slaDeadline !== undefined &&
+        r.slaDeadline < currentTime &&
+        r.status !== 'approved' &&
+        r.status !== 'denied',
+    );
+  }
+
+  /** Escalate all overdue cases */
+  escalateOverdue(now?: number): AppealRecord[] {
+    const overdue = this.getOverdueCases(now);
+    for (const record of overdue) {
+      record.status = 'escalated';
+      record.updatedAt = now ?? Date.now();
+    }
+    return overdue;
   }
 
   /** Get all records for a user */

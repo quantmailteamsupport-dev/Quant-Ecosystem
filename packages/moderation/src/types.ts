@@ -348,6 +348,9 @@ export interface PolicyDecision {
   confidence: number;
 }
 
+/** Moderator role for appeal handling */
+export type ModeratorRole = 'moderator' | 'senior_moderator' | 'legal';
+
 /** Appeal record - Zod validated */
 export const AppealRecordSchema = z.object({
   id: z.string(),
@@ -377,6 +380,8 @@ export const AppealRecordSchema = z.object({
   source: z.enum(['automated', 'user_initiated']),
   assignedTo: z.string().optional(),
   resolution: z.string().optional(),
+  priority: z.enum(['critical', 'high', 'medium', 'low']).optional(),
+  slaDeadline: z.number().optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
   resolvedAt: z.number().optional(),
