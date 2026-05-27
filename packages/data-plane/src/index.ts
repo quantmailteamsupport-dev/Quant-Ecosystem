@@ -15,3 +15,5 @@ export type {
   FindOptions,
 } from './base-repository.js';
 export { IdempotencyKeyStore, withIdempotency } from './idempotency.js';
+export { DataRetentionPolicy } from './data-retention.js';
+export type { RetentionRule, RetentionEvaluation, ArchiveBatch } from './data-retention.js';
