@@ -14,6 +14,8 @@ import type { SpendingLimit } from './spending-limit.js';
 import type { AgentTask } from './worker-agent.js';
 import { PermissionLevel } from './permissions.js';
 import { ApprovalQueue } from './approval-queue.js';
+import { TrustScore } from './trust-score.js';
+import { KillSwitch } from './kill-switch.js';
 
 // ============================================================================
 // Trace Types
@@ -88,6 +90,27 @@ export abstract class IntelligentAgent extends WorkerAgent {
     this.toolRegistry = config.toolRegistry;
     this.spendingLimit = config.spendingLimit;
     this.approvalQueue = config.approvalQueue ?? new ApprovalQueue();
+
+    // Replace inherited trustScore with one that has onAutoPause wired to KillSwitch
+    (this as { trustScore: TrustScore }).trustScore = new TrustScore(
+      this.trustScore.getScore(),
+      undefined,
+      {
+        agentId: this.id,
+        onAutoPause: (agentId: string) => {
+          const killSwitch = KillSwitch.getInstance();
+          killSwitch.activate().catch(() => {
+            // Best-effort halt
+          });
+          this.logAction(
+            `Agent ${agentId} auto-paused: trust score below threshold`,
+            'failure',
+            false,
+          );
+        },
+      },
+    );
+
     this.registerHandoffTool();
   }
 
@@ -253,7 +276,10 @@ export abstract class IntelligentAgent extends WorkerAgent {
   private async plan(context: string, task: AgentTask): Promise<AgentPlan> {
     const startTime = Date.now();
 
-    this.stateMachine.transition(AgentState.EXECUTING);
+    // Guard: only transition to EXECUTING if the state machine allows it
+    if (this.stateMachine.canTransition(AgentState.EXECUTING)) {
+      this.stateMachine.transition(AgentState.EXECUTING);
+    }
 
     const tools = this.getAllTools();
     const toolNames = tools.map((t) => t.name);
@@ -264,6 +290,19 @@ export abstract class IntelligentAgent extends WorkerAgent {
 
     // Parse AI response into plan steps
     const steps = this.parsePlanSteps(result.content, tools);
+
+    // If no valid steps could be parsed, fail gracefully
+    if (steps.length === 0) {
+      const traceEvent: TraceEvent = {
+        phase: 'plan',
+        input: { context, tools: toolNames },
+        output: { error: 'Failed to parse a valid plan from AI response' },
+        durationMs: Date.now() - startTime,
+        tokenCost: result.usage.cost,
+      };
+      this.reasoningTrace.push(traceEvent);
+      throw new Error('Plan parsing failed: AI response did not contain a valid JSON plan');
+    }
 
     const plan: AgentPlan = {
       id: generateId('plan'),
@@ -385,6 +424,32 @@ export abstract class IntelligentAgent extends WorkerAgent {
     for (const step of plan.steps) {
       if (step.status === 'skipped' || step.status === 'failed') continue;
 
+      // Per-step budget check before execution
+      const stepCost = TIER_COST[step.tier] ?? 0;
+      if (stepCost > 0 && !this.spendingLimit.canSpend(stepCost)) {
+        // Mark this step and all remaining pending steps as skipped
+        step.status = 'skipped';
+        for (const remaining of plan.steps) {
+          if (remaining.status === 'pending') {
+            remaining.status = 'skipped';
+          }
+        }
+        plan.status = 'failed';
+        const traceEvent: TraceEvent = {
+          phase: 'execute',
+          input: { planId: plan.id, stepCount: plan.steps.length },
+          output: {
+            status: plan.status,
+            error: 'Budget exceeded mid-execution',
+            results: plan.steps.map((s) => ({ step: s.id, status: s.status })),
+          },
+          durationMs: Date.now() - startTime,
+          tokenCost: totalTokenCost,
+        };
+        this.reasoningTrace.push(traceEvent);
+        return;
+      }
+
       step.status = 'executing';
 
       const tool = this.toolRegistry.getTool(step.toolName);
@@ -404,7 +469,6 @@ export abstract class IntelligentAgent extends WorkerAgent {
         step.status = result.success ? 'completed' : 'failed';
 
         if (result.success) {
-          const stepCost = TIER_COST[step.tier] ?? 0;
           if (stepCost > 0) {
             this.spendingLimit.recordSpend(stepCost);
           }
@@ -587,22 +651,7 @@ export abstract class IntelligentAgent extends WorkerAgent {
         }
       }
     } catch {
-      // If parsing fails, fall back to using all available tools
-    }
-
-    // Fallback: if no steps parsed, include all tools
-    if (steps.length === 0) {
-      for (const tool of tools) {
-        steps.push({
-          id: generateId('step'),
-          toolName: tool.name,
-          args: {},
-          tier: tool.requiredTier,
-          description: tool.description,
-          requiresApproval: tool.requiredTier >= AgentActionTier.Tier2_LowRisk,
-          status: 'pending',
-        });
-      }
+      // If parsing fails, return empty plan - do not fall back to invoking all tools
     }
 
     return steps;

@@ -510,4 +510,133 @@ describe('IntelligentAgent', () => {
       expect(agent.getReasoningTrace()).toEqual([]);
     });
   });
+
+  describe('plan parsing failure safety', () => {
+    it('transitions to FAILED with empty plan when AI returns non-JSON', async () => {
+      const readTool = createReadOnlyTool();
+      toolRegistry.registerTool(readTool);
+
+      const mockEngine = createMockAIEngine({
+        infer: vi.fn().mockResolvedValue({
+          content: 'Sorry, I cannot help with that request.',
+          usage: { tokens: 20, cost: 0.001 },
+        }),
+      });
+
+      const agent = createTestAgent({
+        aiEngine: mockEngine,
+        toolRegistry,
+        spendingLimit,
+        approvalQueue,
+      });
+      agent.start();
+
+      await agent.execute({ id: 'task-garbled', description: 'Do something' });
+
+      // Agent should be in FAILED state
+      expect(agent.stateMachine.getState()).toBe(AgentState.FAILED);
+
+      // Tool should NOT have been called (no all-tools fallback)
+      expect(readTool.handler).not.toHaveBeenCalled();
+
+      // Trace should contain error info
+      const trace = agent.getReasoningTrace();
+      const planEvent = trace.find((t) => t.phase === 'plan');
+      expect(planEvent).toBeDefined();
+      expect(planEvent!.output).toHaveProperty('error');
+    });
+
+    it('transitions to FAILED when AI returns malformed JSON', async () => {
+      const readTool = createReadOnlyTool();
+      toolRegistry.registerTool(readTool);
+
+      const mockEngine = createMockAIEngine({
+        infer: vi.fn().mockResolvedValue({
+          content: '[{invalid json',
+          usage: { tokens: 20, cost: 0.001 },
+        }),
+      });
+
+      const agent = createTestAgent({
+        aiEngine: mockEngine,
+        toolRegistry,
+        spendingLimit,
+        approvalQueue,
+      });
+      agent.start();
+
+      await agent.execute({ id: 'task-malformed', description: 'Do something' });
+
+      expect(agent.stateMachine.getState()).toBe(AgentState.FAILED);
+      expect(readTool.handler).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('per-step budget enforcement', () => {
+    it('skips remaining steps when budget is exceeded mid-execution', async () => {
+      const tool1: ToolDefinition = {
+        name: 'step1',
+        description: 'First step',
+        parameters: [],
+        requiredTier: AgentActionTier.Tier2_LowRisk,
+        category: 'test',
+        handler: vi.fn().mockResolvedValue({ success: true, data: null, undoable: false }),
+      };
+      const tool2: ToolDefinition = {
+        name: 'step2',
+        description: 'Second step',
+        parameters: [],
+        requiredTier: AgentActionTier.Tier2_LowRisk,
+        category: 'test',
+        handler: vi.fn().mockResolvedValue({ success: true, data: null, undoable: false }),
+      };
+      toolRegistry.registerTool(tool1);
+      toolRegistry.registerTool(tool2);
+
+      // Use spy to simulate budget exhaustion mid-execution
+      const tightLimit = new SpendingLimit({
+        dailyCap: 0.1,
+        weeklyCap: 50,
+        monthlyCap: 200,
+      });
+      const canSpendSpy = vi.spyOn(tightLimit, 'canSpend');
+      canSpendSpy
+        .mockReturnValueOnce(true) // pre-execution aggregate check passes
+        .mockReturnValueOnce(true) // step1 per-step check passes
+        .mockReturnValueOnce(false); // step2 per-step check fails
+
+      const mockEngine = createMockAIEngine({
+        infer: vi.fn().mockResolvedValue({
+          content: JSON.stringify([
+            { toolName: 'step1', args: {}, description: 'First' },
+            { toolName: 'step2', args: {}, description: 'Second' },
+          ]),
+          usage: { tokens: 50, cost: 0.001 },
+        }),
+      });
+
+      // Auto-approve
+      const autoApproveQueue = new ApprovalQueue();
+      const originalSubmit = autoApproveQueue.submit.bind(autoApproveQueue);
+      vi.spyOn(autoApproveQueue, 'submit').mockImplementation((req) => {
+        originalSubmit(req);
+        autoApproveQueue.approve(req.id);
+      });
+
+      const agent = createTestAgent({
+        aiEngine: mockEngine,
+        toolRegistry,
+        spendingLimit: tightLimit,
+        approvalQueue: autoApproveQueue,
+      });
+      agent.start();
+
+      await agent.execute({ id: 'task-budget-mid', description: 'Two steps' });
+
+      // First step should have run
+      expect(tool1.handler).toHaveBeenCalled();
+      // Second step should NOT have run (budget exhausted)
+      expect(tool2.handler).not.toHaveBeenCalled();
+    });
+  });
 });
