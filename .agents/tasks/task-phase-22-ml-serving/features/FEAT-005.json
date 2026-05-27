@@ -2,7 +2,7 @@
   "id": "FEAT-005",
   "type": "feat",
   "description": "On-device ranker upgrade (ONNX WASM/WebGPU), anti-engagement-trap with screen time alerts, and 'Why am I seeing this?' feed explainer. Complete the microfeatures for user agency and transparency.",
-  "status": "pending",
+  "status": "completed",
   "steps": [
     "Enhance packages/recommendations/src/on-device-ranker.ts: add model size validation (reject models > 5MB). Add performance budget enforcement (reject if inference > 50ms on benchmark). Add WebGPU/WASM runtime detection: prefer WebGPU if available, fallback to WASM. Add getModelSizeBytes() method. Add benchmarkInference(samples) method that returns p95 latency.",
     "Create packages/recommendations/src/on-device-ranker-model.ts: OnDeviceModelExporter class. Defines the architecture of the small ranker model (input: 16-dim feature vector, hidden: 32 neurons, output: 1 score). Provides exportToOnnx() method stub that describes model structure. Documents the model contract: input shape [N, 16], output shape [N, 1], model size target < 5MB.",
@@ -29,5 +29,5 @@
     "cd /projects/sandbox/Quant-Ecosystem && pnpm test --filter=@quant/recommendations --filter=@quant/ranking"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Model size estimation: actual math is 16*32+32+32*1+1=577 params (not 545 as described in spec). All tests pass. Pre-commit hooks ran prettier formatting successfully."
 }
