@@ -2,7 +2,7 @@
   "id": "FEAT-005",
   "type": "feat",
   "description": "Phase 39: Launch Mechanics - Create marketing site app, documentation site, status page, help center content, community configuration, and mobile app submission timeline docs.",
-  "status": "pending",
+  "status": "completed",
   "steps": [
     "Create apps/marketing/ directory with package.json (@quant/marketing, React + Vite + Tailwind), tsconfig.json, vitest.config.ts",
     "Create apps/marketing/src/index.ts entry point",
@@ -39,5 +39,5 @@
     "cd /projects/sandbox/Quant-Ecosystem && pnpm build"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Fixed noUnusedLocals error in apps/status/src/status-engine.ts. Added missing docs: community/code-of-conduct.md, community/open-source-policy.md, mobile-submission/ directory with timeline.md, ios-checklist.md, android-checklist.md."
 }
