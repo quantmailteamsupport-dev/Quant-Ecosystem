@@ -2,7 +2,7 @@
   "id": "FEAT-005",
   "type": "feat",
   "description": "Appeals workflow with human queue, SLA timer, moderator roles, and transparency report auto-generation. Also: safety microfeatures (one-tap Hide/Mute/Block/Report, take-a-break surface, mass-unfollow protection, self-harm safe-search redirect, crisis hotline localization, grooming pattern detection). Plus DPIA legal document.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "1. Enhance packages/moderation/src/services/appeal-workflow.ts: Add SLA timer (configurable per priority: critical=1h, high=4h, medium=24h, low=72h). Add slaDeadline field to AppealRecord. Add methods: getOverdueCases(), escalateOverdue(), assignToNextAvailable(reviewerPool). Add moderator role check (role: 'moderator'|'senior_moderator'|'legal').",
     "2. Create packages/moderation/src/services/appeals-queue.ts: AppealsQueue class. Priority queue with SLA-ordered dequeue. Methods: enqueue(appeal, priority), dequeue(reviewerId) -> next case by SLA urgency, getQueueStats() -> {pending, inProgress, overdue, avgResolutionTime}, getReviewerWorkload(reviewerId). Supports filtering by category.",
@@ -30,5 +30,5 @@
     "pnpm turbo build --filter=@quant/moderation"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 350 tests passing (39 new tests added). Typecheck, test, build all pass. DPIA at docs/legal/dpia.md. Prettier auto-formatted on commit via lint-staged."
 }
