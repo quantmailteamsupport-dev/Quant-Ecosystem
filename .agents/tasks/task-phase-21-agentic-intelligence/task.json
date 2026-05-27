@@ -1,0 +1,7 @@
+{
+  "task_id": "task-phase-21-agentic-intelligence",
+  "task_description": "Phase 21: Agentic Intelligence - Replace keyword-matching pilots with real LLM-driven agents that use tools, plan, respect permissions, cost-cap, and explain themselves. All 12 pilots refactored to use IntelligentAgent base class with AI engine DI, typed tool registry, structured planning loop, spending caps, trust score auto-pause, 24h undo, and marketplace sandbox isolation.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004", "FEAT-005"],
+  "blocked_reason": null
+}

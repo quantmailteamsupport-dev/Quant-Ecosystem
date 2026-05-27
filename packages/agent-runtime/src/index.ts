@@ -180,3 +180,19 @@ export { EmailReplyWorkflow } from './workflows/email-reply.js';
 export { MeetingToTasksWorkflow } from './workflows/meeting-to-tasks.js';
 export { CrossAppSearchWorkflow } from './workflows/cross-app-search.js';
 export { ContentLaunchWorkflow } from './workflows/content-launch.js';
+
+// ============================================================================
+// Intelligent Agent (Phase 21)
+// ============================================================================
+
+// AI Engine Port (DI boundary)
+export type {
+  AIEnginePort,
+  AIInferenceOptions,
+  AIInferenceResult,
+  AIClassificationResult,
+} from './ai-engine.interface.js';
+
+// IntelligentAgent base class
+export { IntelligentAgent } from './intelligent-agent.js';
+export type { TraceEvent, IntelligentAgentConfig } from './intelligent-agent.js';
