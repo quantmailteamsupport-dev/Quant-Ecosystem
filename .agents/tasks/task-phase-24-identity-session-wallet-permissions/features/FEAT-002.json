@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Complete Auth Enhancement - WebAuthn passkey enrollment/login E2E, TOTP 2FA with recovery codes + printable backup codes, phone auth hardening, federated identity (Sign in with Quant SDK for third-party developers with OAuth2 client registration), travel mode toggle, and all 13 apps registered in QuantMail OAuth provider.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "1. Update packages/auth/src/types.ts: Add types - RecoveryCode (code, usedAt?), TwoFactorMethod ('totp' | 'webauthn' | 'phone' | 'backup_code'), FederatedClient (for third-party OAuth2 registration - clientId, clientSecret, name, logo, website, redirectUris, allowedScopes, createdBy, createdAt), TravelModeConfig (enabled, restrictedRegions[], allowedDeviceIds[]), AccountDeletionRequest (userId, requestedAt, scheduledPurgeAt, status).",
     "2. Update packages/auth/src/crypto/totp.ts: Add method generatePrintableBackupCodes() that returns 10 formatted codes (XXX-XXX format), and verifyBackupCode(code, storedCodes) that marks used codes.",

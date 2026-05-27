@@ -30,12 +30,13 @@ const FIRST_PARTY_DEFAULT_SCOPES: PermissionScope[] = [
  * QuantMail OAuth2 Provider
  *
  * Implements the OAuth2 Authorization Code flow with PKCE support.
- * QuantMail serves as the central identity provider for all 9 apps
+ * QuantMail serves as the central identity provider for all 13 apps
  * in the Quant Ecosystem, providing SSO across the platform.
  */
 export class QuantMailProvider {
   private clients: Map<string, OAuthClient> = new Map();
   private authorizationCodes: Map<string, AuthorizationCode> = new Map();
+  private thirdPartyOwners: Map<string, string[]> = new Map();
   private tokenService: TokenService;
 
   constructor(config: AuthConfig) {
@@ -63,6 +64,17 @@ export class QuantMailProvider {
         grantTypes: ['authorization_code', 'refresh_token'],
         isFirstParty: true,
         app: 'quantchat',
+      },
+      {
+        clientId: 'quantmail-client',
+        clientSecret: this.generateClientSecret(),
+        name: 'QuantMail',
+        description: 'Email and identity provider',
+        redirectUris: ['https://mail.quant.app/auth/callback', 'quantmail://auth/callback'],
+        allowedScopes: [...FIRST_PARTY_DEFAULT_SCOPES, 'email:send'],
+        grantTypes: ['authorization_code', 'refresh_token'],
+        isFirstParty: true,
+        app: 'quantmail',
       },
       {
         clientId: 'quantsync-client',
@@ -145,6 +157,50 @@ export class QuantMailProvider {
         grantTypes: ['authorization_code', 'refresh_token'],
         isFirstParty: true,
         app: 'quantai',
+      },
+      {
+        clientId: 'quantdocs-client',
+        clientSecret: this.generateClientSecret(),
+        name: 'QuantDocs',
+        description: 'Collaborative document editing',
+        redirectUris: ['https://docs.quant.app/auth/callback', 'quantdocs://auth/callback'],
+        allowedScopes: [...FIRST_PARTY_DEFAULT_SCOPES, 'workspace:read', 'workspace:manage'],
+        grantTypes: ['authorization_code', 'refresh_token'],
+        isFirstParty: true,
+        app: 'quantdocs',
+      },
+      {
+        clientId: 'quantdrive-client',
+        clientSecret: this.generateClientSecret(),
+        name: 'QuantDrive',
+        description: 'Cloud storage and file management',
+        redirectUris: ['https://drive.quant.app/auth/callback', 'quantdrive://auth/callback'],
+        allowedScopes: [...FIRST_PARTY_DEFAULT_SCOPES, 'media:read', 'media:upload'],
+        grantTypes: ['authorization_code', 'refresh_token'],
+        isFirstParty: true,
+        app: 'quantdrive',
+      },
+      {
+        clientId: 'quantcalendar-client',
+        clientSecret: this.generateClientSecret(),
+        name: 'QuantCalendar',
+        description: 'Calendar and scheduling',
+        redirectUris: ['https://calendar.quant.app/auth/callback', 'quantcalendar://auth/callback'],
+        allowedScopes: [...FIRST_PARTY_DEFAULT_SCOPES, 'contacts:read'],
+        grantTypes: ['authorization_code', 'refresh_token'],
+        isFirstParty: true,
+        app: 'quantcalendar',
+      },
+      {
+        clientId: 'quantmeet-client',
+        clientSecret: this.generateClientSecret(),
+        name: 'QuantMeet',
+        description: 'Video conferencing and meetings',
+        redirectUris: ['https://meet.quant.app/auth/callback', 'quantmeet://auth/callback'],
+        allowedScopes: [...FIRST_PARTY_DEFAULT_SCOPES, 'contacts:read', 'media:upload'],
+        grantTypes: ['authorization_code', 'refresh_token'],
+        isFirstParty: true,
+        app: 'quantmeet',
       },
     ];
 
@@ -327,6 +383,68 @@ export class QuantMailProvider {
    */
   registerClient(client: OAuthClient): void {
     this.clients.set(client.clientId, client);
+  }
+
+  /**
+   * Register a third-party client for federated identity (Sign in with Quant)
+   */
+  registerThirdPartyClient(
+    name: string,
+    redirectUris: string[],
+    allowedScopes: PermissionScope[],
+    createdBy: string,
+  ): OAuthClient {
+    const clientId = `tp_${generateSecureToken(16)}`;
+    const clientSecret = this.generateClientSecret();
+    const client: OAuthClient = {
+      clientId,
+      clientSecret,
+      name,
+      description: `Third-party app: ${name}`,
+      redirectUris,
+      allowedScopes,
+      grantTypes: ['authorization_code', 'refresh_token'],
+      isFirstParty: false,
+      app: 'quantmail',
+    };
+    this.clients.set(clientId, client);
+    // Track ownership
+    if (!this.thirdPartyOwners.has(createdBy)) {
+      this.thirdPartyOwners.set(createdBy, []);
+    }
+    this.thirdPartyOwners.get(createdBy)!.push(clientId);
+    return client;
+  }
+
+  /**
+   * List third-party clients owned by a user
+   */
+  listThirdPartyClients(userId: string): OAuthClient[] {
+    const clientIds = this.thirdPartyOwners.get(userId) ?? [];
+    return clientIds
+      .map((id) => this.clients.get(id))
+      .filter((c): c is OAuthClient => c !== undefined);
+  }
+
+  /**
+   * Revoke a third-party client
+   */
+  revokeThirdPartyClient(clientId: string): boolean {
+    const client = this.clients.get(clientId);
+    if (!client || client.isFirstParty) return false;
+    this.clients.delete(clientId);
+    // Remove from owner tracking
+    for (const [userId, ids] of this.thirdPartyOwners) {
+      const index = ids.indexOf(clientId);
+      if (index !== -1) {
+        ids.splice(index, 1);
+        if (ids.length === 0) {
+          this.thirdPartyOwners.delete(userId);
+        }
+        break;
+      }
+    }
+    return true;
   }
 
   /**

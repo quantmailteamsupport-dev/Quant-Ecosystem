@@ -33,6 +33,12 @@ export type {
   WebAuthnRegistrationOptions,
   WebAuthnAuthenticationOptions,
 } from './services/webauthn-service';
+export { FederatedIdentityService } from './services/federated-identity-service';
+export type { FederatedClientConfig } from './services/federated-identity-service';
+export { TravelModeService } from './services/travel-mode-service';
+export type { AccessRequestContext } from './services/travel-mode-service';
+export { AccountLifecycleService } from './services/account-lifecycle-service';
+export type { VacationResponder, AccountExportData } from './services/account-lifecycle-service';
 
 // Middleware
 export { AuthMiddleware, createAuthMiddleware } from './middleware/auth-middleware';
