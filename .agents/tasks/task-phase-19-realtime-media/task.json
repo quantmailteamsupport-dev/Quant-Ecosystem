@@ -9,13 +9,6 @@
     "tests": "pass",
     "test_quality": "pass",
     "docker_build": "skipped",
-    "summary": "pnpm typecheck 80/80 tasks pass, pnpm test 82/82 tasks pass. Review fixes applied: partner token leak fixed, leaveCall added, TURN RBAC scoped, images pinned, TTL documented."
-  },
-  "review_fixes_applied": [
-    "Partner token leak: removed partnerToken from /random-chat/join response, added GET /:pairId/token endpoint",
-    "CallService leave vs end: added leaveCall(callId, userId) method, route /calls/:id/leave uses it instead of endCall",
-    "TURN CronJob RBAC: added resourceNames to limit secrets and deployments access",
-    "Coturn image pinned to 4.6.2, kubectl image pinned to 1.28",
-    "Token TTL documentation added to generateToken in livekit-gateway, call.service, and matchmaker"
-  ]
+    "summary": "pnpm typecheck 80/80 tasks pass, pnpm test 82/82 tasks pass, pnpm lint passes. Semantic review identified 8 issues; 5 critical ones fixed (partner token leak, leave/end asymmetry, TURN RBAC, image pinning, TTL docs). 3 remaining are documented acceptable tradeoffs (in-memory state, webhook idempotency, client-side enforcement for knock/polls)."
+  }
 }

@@ -62,7 +62,6 @@ export class PerceptualHasher {
    */
   async computeImageHashAsync(buffer: Buffer): Promise<string> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const sharpModule = await import('sharp');
       const sharpFn = (sharpModule.default ?? sharpModule) as (input: Buffer) => {
         resize(
