@@ -2,7 +2,7 @@
   "id": "FEAT-005",
   "type": "feat",
   "description": "Phase 9 Part 4: QuantAI multi-app orchestration - make QuantAI safely operate across at least 5 apps in demo mode. Add a CrossAppOrchestrator service that uses the agent-runtime ExecutionEngine and typed tools to invoke actions across QuantMail, QuantChat, QuantDocs, QuantCalendar, and QuantDrive. Include demo scenarios: summarize-day (reads calendar + emails), draft-reply (reads email, composes reply), schedule-meeting (checks calendar, creates event), search-and-summarize (searches drive, summarizes file), chat-followup (reads chat, creates doc). All actions go through permission checks and approval queue. Add tests verifying the orchestration pipeline.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create apps/quantai/backend/services/cross-app-orchestrator.service.ts with CrossAppOrchestrator class that registers typed tools for 5 apps (mail.search, mail.draft, chat.getMessages, docs.create, calendar.getEvents, calendar.createEvent, drive.search, drive.summarize).",
     "Implement 5 demo scenarios as methods: summarizeDay(), draftReply(emailId), scheduleMeeting(params), searchAndSummarize(query), chatFollowup(conversationId).",
