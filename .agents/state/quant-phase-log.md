@@ -131,3 +131,61 @@
 ### Next action
 
 - Phase 4: Runtime Integration and Local Developer Experience
+
+## 2025-01-20 13:00 - Phase 4: Runtime Integration and Local Developer Experience
+
+### What changed
+
+- Added root dev scripts: `dev:infra`, `dev:core`, `dev:apps`, `dev:all`
+- Added developer tooling scripts: `doctor`, `env:check`, `db:reset`, `smoke` (all using tsx)
+- Created comprehensive `.env.local.example` at root
+- Added `.env.example` to all 11 apps (quantai, quantchat, quantcalendar, quantdocs, quantdrive, quantedits, quantmax, quantmeet, quantneon, quantsync, quantube)
+- Created `packages/health-server/` - Fastify-based health HTTP server with /healthz and /readyz
+- Added health server to non-HTTP services: search-indexer, moderation-worker, cdc-relay, ci-runner
+- Created minimal package.json + src/main.ts with health endpoints for all 11 stub services (ads-api, ai-api, chat-api, edits-api, identity, mail-api, max-api, neon-api, sync-api, tube-api, ws-gateway)
+- Created `packages/service-discovery/` - typed service registry with getServiceUrl() and env overrides
+- Enhanced `packages/database/src/seed.ts` with 6 deterministic demo users (personal, admin, creator, advertiser, moderator, developer) plus demo data
+- Created scripts/doctor.ts, scripts/env-check.ts, scripts/db-reset.ts, scripts/smoke.ts
+- Added tsx to root devDependencies
+
+### Commands run
+
+- `pnpm typecheck` - PASS (71/71 tasks)
+- `pnpm build` - PASS (50/50 tasks)
+- `pnpm test` - PASS (74/74 tasks)
+- `pnpm lint` - PASS (60/60 tasks)
+
+### Remaining blockers
+
+- None for Phase 4
+
+### Next action
+
+- Phase 5: Unified Product Shell and Design System
+
+## 2025-01-20 14:00 - Phase 5: Unified Product Shell and Design System
+
+### What changed
+
+- Expanded design tokens with density (compact/normal/comfortable), elevation (0-5), responsive breakpoints (sm-2xl), accessibility states (focus/hover/active/disabled), motion (default/reduced)
+- Created Shell components: GlobalNav, AppSwitcher, NotificationCenter, WorkspaceSwitcher, UserMenu, AIDock, CommandMenu (Cmd+K), AppLauncher, RecentItems, StarredItems, SharingModal, ProfileCard, AISidePanel
+- Created State components: EmptyState, LoadingState, ErrorState, SuccessState
+- Created Guards: AuthGuard, RouteGuard, OnboardingGuard
+- Created Onboarding components: OnboardingFlow, OnboardingStep, WelcomeStep, WorkspaceSetupStep, ConnectAppsStep, AIPreferencesStep
+- All new components exported from packages/shared-ui/src/index.ts
+- Added 32 tests in shell-components.test.tsx covering rendering, interactions, and conditional logic
+
+### Commands run
+
+- `pnpm typecheck` - PASS (71/71 tasks)
+- `pnpm build` - PASS (50/50 tasks)
+- `pnpm test` - PASS (74/74 tasks)
+- `pnpm lint` - PASS (60/60 tasks)
+
+### Remaining blockers
+
+- None for Phase 5
+
+### Next action
+
+- Phase 6: Identity, Permissions, Workspaces, and Context Graph
