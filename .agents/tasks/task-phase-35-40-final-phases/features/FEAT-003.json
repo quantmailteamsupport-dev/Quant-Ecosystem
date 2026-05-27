@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "feat",
   "description": "Phase 37: Real End-to-End Testing - Create Playwright test suite under e2e/, docker-compose.test.yml for test environment, visual regression tests, API contract tests, performance regression tests, and cross-app E2E scenarios.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create e2e/ directory at repo root with package.json (dependencies: @playwright/test, @backstopjs/core or pixelmatch for visual regression)",
     "Create e2e/tsconfig.json for the e2e test project",
