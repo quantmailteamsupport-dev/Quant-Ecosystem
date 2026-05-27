@@ -1,7 +1,13 @@
 import { WorkerAgent } from './worker-agent.js';
 import { AgentState } from './state-machine.js';
 import { AgentActionTier } from './types.js';
-import type { AgentPlan, CostEstimate, PlanStep, ToolDefinition } from './types.js';
+import type {
+  AgentPlan,
+  CostEstimate,
+  PlanStep,
+  ToolDefinition,
+  ToolExecutionResult,
+} from './types.js';
 import type { AIEnginePort } from './ai-engine.interface.js';
 import type { TypedToolRegistry } from './typed-tool-registry.js';
 import type { SpendingLimit } from './spending-limit.js';
@@ -82,6 +88,16 @@ export abstract class IntelligentAgent extends WorkerAgent {
     this.toolRegistry = config.toolRegistry;
     this.spendingLimit = config.spendingLimit;
     this.approvalQueue = config.approvalQueue ?? new ApprovalQueue();
+    this.registerHandoffTool();
+  }
+
+  private registerHandoffTool(): void {
+    const handoffTools = this.getHandoffTools();
+    for (const tool of handoffTools) {
+      if (!this.toolRegistry.hasTool(tool.name)) {
+        this.toolRegistry.registerTool(tool);
+      }
+    }
   }
 
   // ============================================================================
@@ -97,6 +113,60 @@ export abstract class IntelligentAgent extends WorkerAgent {
    * Subclasses override to provide domain-specific system prompt.
    */
   protected abstract getSystemPrompt(): string;
+
+  // ============================================================================
+  // Agent Handoff
+  // ============================================================================
+
+  /**
+   * Returns all tools available to this agent: domain tools + meta tools (handoff).
+   */
+  protected getAllTools(): ToolDefinition[] {
+    return [...this.getAgentTools(), ...this.getHandoffTools()];
+  }
+
+  private getHandoffTools(): ToolDefinition[] {
+    const handoffTool: ToolDefinition = {
+      name: 'agent.handoff',
+      description: 'Hand off a task to another agent by invoking one of its tools',
+      parameters: [
+        {
+          name: 'targetAgentId',
+          type: 'string',
+          description: 'ID of the agent to delegate to',
+          required: true,
+        },
+        {
+          name: 'toolName',
+          type: 'string',
+          description: 'Tool name to invoke on the target agent',
+          required: true,
+        },
+        {
+          name: 'args',
+          type: 'object',
+          description: 'Arguments to pass to the target tool',
+          required: true,
+        },
+      ],
+      requiredTier: AgentActionTier.Tier2_LowRisk,
+      category: 'meta',
+      handler: async (args: Record<string, unknown>): Promise<ToolExecutionResult> => {
+        // Placeholder: log the handoff request. Actual delegation handled at orchestrator level.
+        return {
+          success: true,
+          data: {
+            handoff: true,
+            targetAgentId: args['targetAgentId'],
+            toolName: args['toolName'],
+            args: args['args'],
+          },
+          undoable: false,
+        };
+      },
+    };
+    return [handoffTool];
+  }
 
   // ============================================================================
   // Main execution loop
@@ -161,7 +231,7 @@ export abstract class IntelligentAgent extends WorkerAgent {
   private async observe(task: AgentTask): Promise<string> {
     const startTime = Date.now();
 
-    const tools = this.getAgentTools();
+    const tools = this.getAllTools();
     const toolDescriptions = tools
       .map((t) => `- ${t.name}: ${t.description} (tier: ${t.requiredTier})`)
       .join('\n');
@@ -185,7 +255,7 @@ export abstract class IntelligentAgent extends WorkerAgent {
 
     this.stateMachine.transition(AgentState.EXECUTING);
 
-    const tools = this.getAgentTools();
+    const tools = this.getAllTools();
     const toolNames = tools.map((t) => t.name);
 
     const prompt = `Given the following context, create an execution plan.\n\nContext:\n${context}\n\nAvailable tools: ${toolNames.join(', ')}\n\nRespond with a JSON array of steps. Each step has: toolName, args (object), description.`;
@@ -413,7 +483,7 @@ export abstract class IntelligentAgent extends WorkerAgent {
 
     const result = await this.aiEngine.infer(reflectPrompt, this.getSystemPrompt());
 
-    const tools = this.getAgentTools();
+    const tools = this.getAllTools();
     const newSteps = this.parsePlanSteps(result.content, tools);
 
     this.currentPlan = {

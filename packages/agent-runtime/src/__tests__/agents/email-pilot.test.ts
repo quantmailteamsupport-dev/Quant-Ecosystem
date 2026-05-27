@@ -278,4 +278,15 @@ describe('EmailPilot', () => {
     expect(deps.toolRegistry.hasTool('email.flag')).toBe(true);
     expect(deps.toolRegistry.hasTool('email.schedule_send')).toBe(true);
   });
+
+  it('has agent.handoff meta-tool available for cross-agent delegation', () => {
+    const deps = createDeps();
+    new EmailPilot(deps);
+
+    expect(deps.toolRegistry.hasTool('agent.handoff')).toBe(true);
+
+    const handoffTool = deps.toolRegistry.getTool('agent.handoff');
+    expect(handoffTool).toBeDefined();
+    expect(handoffTool!.category).toBe('meta');
+  });
 });
