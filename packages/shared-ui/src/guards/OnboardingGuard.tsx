@@ -10,6 +10,14 @@ export interface OnboardingGuardProps {
   children: React.ReactNode;
 }
 
+/**
+ * OnboardingGuard provides UI-level access control only. It conditionally
+ * renders children or a fallback onboarding prompt based on the `isOnboarded` prop.
+ *
+ * IMPORTANT: This component does NOT enforce security. Server-side checks are
+ * required to ensure users have completed onboarding before accessing protected
+ * resources. Treat this guard as a UX convenience, not a security boundary.
+ */
 export const OnboardingGuard: React.FC<OnboardingGuardProps> = ({
   isOnboarded,
   onboardingPath = '/onboarding',

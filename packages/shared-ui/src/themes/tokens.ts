@@ -69,6 +69,8 @@ export const breakpoints: BreakpointTokens = {
   '2xl': '1536px',
 };
 
+// Accessibility tokens use Tailwind CSS utility classes by design since the entire
+// UI layer is built on Tailwind. These values are not raw CSS properties.
 export const accessibility: AccessibilityTokens = {
   focus: 'ring-2 ring-blue-500 ring-offset-2',
   hover: 'brightness-95',

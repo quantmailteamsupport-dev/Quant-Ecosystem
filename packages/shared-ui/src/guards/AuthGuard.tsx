@@ -10,6 +10,14 @@ export interface AuthGuardProps {
   children: React.ReactNode;
 }
 
+/**
+ * AuthGuard provides UI-level access control only. It conditionally renders
+ * children or a fallback sign-in prompt based on the `isAuthenticated` prop.
+ *
+ * IMPORTANT: This component does NOT enforce security. Server-side authentication
+ * and authorization checks are required to protect sensitive data and endpoints.
+ * Treat this guard as a UX convenience, not a security boundary.
+ */
 export const AuthGuard: React.FC<AuthGuardProps> = ({
   isAuthenticated,
   loginPath = '/login',

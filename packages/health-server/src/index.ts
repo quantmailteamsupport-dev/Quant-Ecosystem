@@ -28,15 +28,19 @@ export async function startHealthServer(
       return reply.status(200).send({ status: 'ready' });
     }
 
+    const entries = Object.entries(checks);
+    const settled = await Promise.allSettled(entries.map(([, check]) => check()));
+
     const results: Record<string, boolean> = {};
     let allReady = true;
 
-    for (const [name, check] of Object.entries(checks)) {
-      try {
-        const result = await check();
-        results[name] = result;
-        if (!result) allReady = false;
-      } catch {
+    for (let i = 0; i < entries.length; i++) {
+      const name = entries[i]![0];
+      const outcome = settled[i]!;
+      if (outcome.status === 'fulfilled') {
+        results[name] = outcome.value;
+        if (!outcome.value) allReady = false;
+      } else {
         results[name] = false;
         allReady = false;
       }

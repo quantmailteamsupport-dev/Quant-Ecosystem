@@ -11,6 +11,14 @@ export interface RouteGuardProps {
   children: React.ReactNode;
 }
 
+/**
+ * RouteGuard provides UI-level access control only. It conditionally renders
+ * children or a fallback "Access Denied" view based on the user's role.
+ *
+ * IMPORTANT: This component does NOT enforce security. Server-side role checks
+ * are required to protect sensitive routes and data. Treat this guard as a UX
+ * convenience, not a security boundary.
+ */
 export const RouteGuard: React.FC<RouteGuardProps> = ({
   userRole,
   requiredRoles,

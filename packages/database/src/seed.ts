@@ -1,6 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 import { faker } from '@faker-js/faker';
 
+if (process.env['NODE_ENV'] === 'production') {
+  throw new Error('Refusing to seed in production. This script is for local development only.');
+}
+
 const prisma = new PrismaClient();
 
 // Deterministic demo users for local development
