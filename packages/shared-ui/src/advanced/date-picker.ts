@@ -3,8 +3,15 @@
 // ============================================================================
 
 import {
-  DatePickerState, DateValue, TimeValue, CalendarMonth, CalendarWeek,
-  CalendarDay, TimeSlot, DateRange, TimezoneInfo, DatePickerConfig
+  DatePickerState,
+  DateValue,
+  TimeValue,
+  CalendarMonth,
+  CalendarWeek,
+  CalendarDay,
+  TimeSlot,
+  TimezoneInfo,
+  DatePickerConfig,
 } from './types';
 
 type DatePickerListener = (state: DatePickerState) => void;
@@ -14,8 +21,18 @@ export class DatePicker {
   private config: DatePickerConfig;
   private listeners: Set<DatePickerListener> = new Set();
   private monthNames: string[] = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
   private dayNames: string[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   private timezones: TimezoneInfo[] = [
@@ -102,7 +119,12 @@ export class DatePicker {
   }
 
   // Resolve a day number to a proper DateValue (handling overflow into adjacent months)
-  private resolveDayInGrid(year: number, month: number, day: number, daysInMonth: number): DateValue {
+  private resolveDayInGrid(
+    year: number,
+    month: number,
+    day: number,
+    daysInMonth: number,
+  ): DateValue {
     if (day < 1) {
       // Previous month
       const prevMonth = month === 1 ? 12 : month - 1;
@@ -207,7 +229,7 @@ export class DatePicker {
     startHour: number,
     endHour: number,
     intervalMinutes: number,
-    bookedSlots: TimeSlot[] = []
+    bookedSlots: TimeSlot[] = [],
   ): TimeSlot[] {
     const slots: TimeSlot[] = [];
     let currentMinutes = startHour * 60;
@@ -223,9 +245,10 @@ export class DatePicker {
         minutes: (currentMinutes + intervalMinutes) % 60,
       };
 
-      const isBooked = bookedSlots.some(booked =>
-        this.timeToMinutes(booked.start) <= currentMinutes &&
-        this.timeToMinutes(booked.end) > currentMinutes
+      const isBooked = bookedSlots.some(
+        (booked) =>
+          this.timeToMinutes(booked.start) <= currentMinutes &&
+          this.timeToMinutes(booked.end) > currentMinutes,
       );
 
       slots.push({
@@ -242,9 +265,14 @@ export class DatePicker {
   }
 
   // Convert timezone
-  convertTimezone(date: DateValue, time: TimeValue, fromTz: string, toTz: string): { date: DateValue; time: TimeValue } {
-    const fromInfo = this.timezones.find(tz => tz.name === fromTz);
-    const toInfo = this.timezones.find(tz => tz.name === toTz);
+  convertTimezone(
+    date: DateValue,
+    time: TimeValue,
+    fromTz: string,
+    toTz: string,
+  ): { date: DateValue; time: TimeValue } {
+    const fromInfo = this.timezones.find((tz) => tz.name === fromTz);
+    const toInfo = this.timezones.find((tz) => tz.name === toTz);
     if (!fromInfo || !toInfo) return { date, time };
 
     const offsetDiff = toInfo.offset - fromInfo.offset;
@@ -252,8 +280,14 @@ export class DatePicker {
 
     let days = 0;
     let minutes = totalMinutes;
-    if (minutes < 0) { minutes += 1440; days = -1; }
-    if (minutes >= 1440) { minutes -= 1440; days = 1; }
+    if (minutes < 0) {
+      minutes += 1440;
+      days = -1;
+    }
+    if (minutes >= 1440) {
+      minutes -= 1440;
+      days = 1;
+    }
 
     const newTime: TimeValue = {
       hours: Math.floor(minutes / 60),
@@ -274,7 +308,7 @@ export class DatePicker {
     const y = String(date.year);
     const m = String(date.month).padStart(2, '0');
     const d = String(date.day).padStart(2, '0');
-    const monthName = this.monthNames[date.month - 1];
+    const monthName = this.monthNames[date.month - 1] ?? '';
     const shortMonth = monthName.slice(0, 3);
 
     return pattern
@@ -344,7 +378,7 @@ export class DatePicker {
     if (this.config.maxDate && this.compareDates(date, this.config.maxDate) > 0) return true;
     // Check specific disabled dates
     if (this.config.disabledDates) {
-      if (this.config.disabledDates.some(d => this.datesEqual(d, date))) return true;
+      if (this.config.disabledDates.some((d) => this.datesEqual(d, date))) return true;
     }
     return false;
   }
@@ -353,8 +387,10 @@ export class DatePicker {
   private isDateSelected(date: DateValue): boolean {
     if (this.state.selectedDate && this.datesEqual(date, this.state.selectedDate)) return true;
     if (this.state.selectedRange) {
-      return this.datesEqual(date, this.state.selectedRange.start) ||
-             this.datesEqual(date, this.state.selectedRange.end);
+      return (
+        this.datesEqual(date, this.state.selectedRange.start) ||
+        this.datesEqual(date, this.state.selectedRange.end)
+      );
     }
     return false;
   }
@@ -396,7 +432,7 @@ export class DatePicker {
 
   // Get month name
   getMonthName(month?: number): string {
-    return this.monthNames[(month || this.state.viewDate.month) - 1];
+    return this.monthNames[(month || this.state.viewDate.month) - 1] ?? '';
   }
 
   // Get day names (adjusted for first day of week)
@@ -411,12 +447,23 @@ export class DatePicker {
   }
 
   // Open/close
-  open(): void { this.state.isOpen = true; this.notifyListeners(); }
-  close(): void { this.state.isOpen = false; this.notifyListeners(); }
-  toggle(): void { this.state.isOpen = !this.state.isOpen; this.notifyListeners(); }
+  open(): void {
+    this.state.isOpen = true;
+    this.notifyListeners();
+  }
+  close(): void {
+    this.state.isOpen = false;
+    this.notifyListeners();
+  }
+  toggle(): void {
+    this.state.isOpen = !this.state.isOpen;
+    this.notifyListeners();
+  }
 
   // Get state
-  getState(): DatePickerState { return { ...this.state }; }
+  getState(): DatePickerState {
+    return { ...this.state };
+  }
 
   // Subscribe
   subscribe(listener: DatePickerListener): () => void {
@@ -425,7 +472,7 @@ export class DatePicker {
   }
 
   private notifyListeners(): void {
-    this.listeners.forEach(listener => listener(this.state));
+    this.listeners.forEach((listener) => listener(this.state));
   }
 
   destroy(): void {

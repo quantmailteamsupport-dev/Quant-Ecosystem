@@ -34,7 +34,6 @@ export class ImageGallery {
   private preloadedImages: Set<string> = new Set();
   private swipeState: SwipeState;
   private listeners: Set<GalleryListener> = new Set();
-  private lazyLoadObserved: Set<string> = new Set();
 
   constructor(items: GalleryItem[] = [], config: GalleryConfig = {}) {
     this.items = items;
@@ -57,7 +56,11 @@ export class ImageGallery {
       isTransitioning: false,
     };
     this.swipeState = {
-      startX: 0, startY: 0, currentX: 0, deltaX: 0, isSwiping: false,
+      startX: 0,
+      startY: 0,
+      currentX: 0,
+      deltaX: 0,
+      isSwiping: false,
     };
     this.calculateGrid();
   }
@@ -110,14 +113,14 @@ export class ImageGallery {
       const gridItem: GridItem = {
         id: item.id,
         x: shortestCol * (columnWidth + gap),
-        y: columnHeights[shortestCol],
+        y: columnHeights[shortestCol]!,
         width: columnWidth,
         height: cellHeight,
         src: item.thumbnail || item.src,
         loaded: this.loadedImages.has(item.id),
       };
 
-      columnHeights[shortestCol] += cellHeight + gap;
+      columnHeights[shortestCol] = (columnHeights[shortestCol] ?? 0) + cellHeight + gap;
       return gridItem;
     });
   }
@@ -139,7 +142,7 @@ export class ImageGallery {
   // Mark image as loaded
   imageLoaded(id: string): void {
     this.loadedImages.add(id);
-    const gridItem = this.gridItems.find(g => g.id === id);
+    const gridItem = this.gridItems.find((g) => g.id === id);
     if (gridItem) gridItem.loaded = true;
     this.notifyListeners();
   }
@@ -227,7 +230,7 @@ export class ImageGallery {
     for (let offset = -count; offset <= count; offset++) {
       const idx = (currentIndex + offset + this.items.length) % this.items.length;
       if (idx >= 0 && idx < this.items.length) {
-        this.preloadedImages.add(this.items[idx].id);
+        this.preloadedImages.add(this.items[idx]!.id);
       }
     }
   }
@@ -235,7 +238,7 @@ export class ImageGallery {
   // Get preloaded image sources
   getPreloadSources(): string[] {
     return Array.from(this.preloadedImages)
-      .map(id => this.items.find(item => item.id === id)?.src)
+      .map((id) => this.items.find((item) => item.id === id)?.src)
       .filter((src): src is string => !!src);
   }
 
@@ -321,23 +324,38 @@ export class ImageGallery {
   handleKeyboard(key: string): void {
     if (!this.lightbox.isOpen) return;
     switch (key) {
-      case 'ArrowRight': this.next(); break;
-      case 'ArrowLeft': this.previous(); break;
-      case 'Escape': this.closeLightbox(); break;
-      case '+': case '=': this.zoomIn(); break;
-      case '-': this.zoomOut(); break;
-      case '0': this.resetZoom(); break;
+      case 'ArrowRight':
+        this.next();
+        break;
+      case 'ArrowLeft':
+        this.previous();
+        break;
+      case 'Escape':
+        this.closeLightbox();
+        break;
+      case '+':
+      case '=':
+        this.zoomIn();
+        break;
+      case '-':
+        this.zoomOut();
+        break;
+      case '0':
+        this.resetZoom();
+        break;
     }
   }
 
   // Get current lightbox image
   getCurrentItem(): GalleryItem | null {
     if (!this.lightbox.isOpen) return null;
-    return this.items[this.lightbox.currentIndex] || null;
+    return this.items[this.lightbox.currentIndex] ?? null;
   }
 
   // Get thumbnail strip items
-  getThumbnailStrip(visibleCount: number = 7): Array<{ item: GalleryItem; isCurrent: boolean; index: number }> {
+  getThumbnailStrip(
+    visibleCount: number = 7,
+  ): Array<{ item: GalleryItem; isCurrent: boolean; index: number }> {
     const { currentIndex } = this.lightbox;
     const half = Math.floor(visibleCount / 2);
     const start = Math.max(0, currentIndex - half);
@@ -345,21 +363,25 @@ export class ImageGallery {
 
     const result: Array<{ item: GalleryItem; isCurrent: boolean; index: number }> = [];
     for (let i = start; i < end; i++) {
-      result.push({ item: this.items[i], isCurrent: i === currentIndex, index: i });
+      result.push({ item: this.items[i]!, isCurrent: i === currentIndex, index: i });
     }
     return result;
   }
 
   // Get grid items
-  getGridItems(): GridItem[] { return [...this.gridItems]; }
+  getGridItems(): GridItem[] {
+    return [...this.gridItems];
+  }
 
   // Get lightbox state
-  getLightboxState(): LightboxState { return { ...this.lightbox }; }
+  getLightboxState(): LightboxState {
+    return { ...this.lightbox };
+  }
 
   // Get total grid height
   getGridHeight(): number {
     if (this.gridItems.length === 0) return 0;
-    return Math.max(...this.gridItems.map(item => item.y + item.height));
+    return Math.max(...this.gridItems.map((item) => item.y + item.height));
   }
 
   // Subscribe
@@ -370,7 +392,7 @@ export class ImageGallery {
 
   private notifyListeners(): void {
     const state = { grid: this.gridItems, lightbox: { ...this.lightbox } };
-    this.listeners.forEach(listener => listener(state));
+    this.listeners.forEach((listener) => listener(state));
   }
 
   destroy(): void {

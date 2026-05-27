@@ -15,6 +15,15 @@ export { EmailDigestService } from './services/email-digest-service';
 export { SchedulerService } from './services/scheduler-service';
 export { PreferenceService } from './services/preference-service';
 
+export { UniversalNotificationCenter } from './universal-notification-center';
+export type {
+  NotificationApp,
+  UniversalNotification,
+  UniversalNotificationPriority,
+  UniversalNotificationPreferences,
+  NotificationFilters,
+} from './universal-notification-center';
+
 export type {
   NotificationType,
   NotificationPriority,

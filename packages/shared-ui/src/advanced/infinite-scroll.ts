@@ -2,11 +2,12 @@
 // @quant/shared-ui - Advanced Infinite Scroll System
 // ============================================================================
 
-import {
-  InfiniteScrollState, IntersectionEntry, InfiniteScrollConfig, DOMRectLike
-} from './types';
+import { InfiniteScrollState, IntersectionEntry, InfiniteScrollConfig, DOMRectLike } from './types';
 
-type LoadMoreHandler = (page: number, direction: 'forward' | 'backward') => Promise<{ items: any[]; hasMore: boolean }>;
+type LoadMoreHandler = (
+  page: number,
+  direction: 'forward' | 'backward',
+) => Promise<{ items: any[]; hasMore: boolean }>;
 type StateListener = (state: InfiniteScrollState) => void;
 
 interface ScrollAnchor {
@@ -25,7 +26,6 @@ export class InfiniteScroll {
   private maxRetries: number = 3;
   private retryDelay: number = 1000;
   private scrollAnchor: ScrollAnchor | null = null;
-  private containerHeight: number = 0;
   private scrollTop: number = 0;
   private itemHeights: number[] = [];
   private totalPages: number = Infinity;
@@ -148,14 +148,13 @@ export class InfiniteScroll {
   }
 
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   // Handle scroll event for anchoring
   onScroll(scrollTop: number, containerHeight: number): void {
     const previousScrollTop = this.scrollTop;
     this.scrollTop = scrollTop;
-    this.containerHeight = containerHeight;
 
     // Determine scroll direction
     const direction = scrollTop > previousScrollTop ? 'forward' : 'backward';
@@ -223,7 +222,10 @@ export class InfiniteScroll {
     let measured = 0;
     let measuredCount = 0;
     for (const h of this.itemHeights) {
-      if (h) { measured += h; measuredCount++; }
+      if (h) {
+        measured += h;
+        measuredCount++;
+      }
     }
     const avgHeight = measuredCount > 0 ? measured / measuredCount : 50;
     const unmeasuredCount = this.state.itemCount - measuredCount;
@@ -268,7 +270,12 @@ export class InfiniteScroll {
   }
 
   // Get pagination info
-  getPaginationInfo(): { currentPage: number; totalPages: number; hasMore: boolean; loadedItems: number } {
+  getPaginationInfo(): {
+    currentPage: number;
+    totalPages: number;
+    hasMore: boolean;
+    loadedItems: number;
+  } {
     return {
       currentPage: this.state.page,
       totalPages: this.totalPages,
@@ -285,7 +292,7 @@ export class InfiniteScroll {
 
   private notifyListeners(): void {
     const state = { ...this.state };
-    this.listeners.forEach(listener => listener(state));
+    this.listeners.forEach((listener) => listener(state));
   }
 
   destroy(): void {

@@ -57,7 +57,9 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
         <span className="text-xs text-gray-500 mb-1 ml-1">{senderName}</span>
       )}
       {replyTo && (
-        <div className={`text-xs px-3 py-1 mb-1 rounded border-l-2 ${isSelf ? 'border-blue-300 bg-blue-500/20 text-blue-100' : 'border-gray-400 bg-gray-200 text-gray-600'} max-w-xs`}>
+        <div
+          className={`text-xs px-3 py-1 mb-1 rounded border-l-2 ${isSelf ? 'border-blue-300 bg-blue-500/20 text-blue-100' : 'border-gray-400 bg-gray-200 text-gray-600'} max-w-xs`}
+        >
           <span className="font-medium">{replyTo.sender}</span>
           <p className="truncate">{replyTo.message}</p>
         </div>
@@ -71,7 +73,9 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
           <span className={`text-xs ${isSelf ? 'text-blue-200' : 'text-gray-400'}`}>
             {timestamp}
           </span>
-          {isEdited && <span className={`text-xs ${isSelf ? 'text-blue-200' : 'text-gray-400'}`}>edited</span>}
+          {isEdited && (
+            <span className={`text-xs ${isSelf ? 'text-blue-200' : 'text-gray-400'}`}>edited</span>
+          )}
           {isSelf && status && (
             <span className={`text-xs ${status === 'read' ? 'text-blue-200' : 'text-blue-300'}`}>
               {statusIcons[status]}
@@ -81,13 +85,27 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
         {/* Action buttons on hover */}
         <div className="absolute top-0 right-0 -mt-2 -mr-2 hidden group-hover:flex gap-1">
           {onReply && (
-            <button onClick={onReply} className="p-1 bg-white rounded-full shadow text-gray-500 hover:text-gray-700 text-xs">
+            <button
+              onClick={onReply}
+              className="p-1 bg-white rounded-full shadow text-gray-500 hover:text-gray-700 text-xs"
+            >
               \u21A9
             </button>
           )}
           {onReact && (
-            <button onClick={() => onReact('\u2764\uFE0F')} className="p-1 bg-white rounded-full shadow text-gray-500 hover:text-gray-700 text-xs">
+            <button
+              onClick={() => onReact('\u2764\uFE0F')}
+              className="p-1 bg-white rounded-full shadow text-gray-500 hover:text-gray-700 text-xs"
+            >
               +
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={onDelete}
+              className="p-1 bg-white rounded-full shadow text-gray-500 hover:text-red-600 text-xs"
+            >
+              \u2715
             </button>
           )}
         </div>

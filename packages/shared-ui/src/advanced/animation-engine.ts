@@ -2,28 +2,26 @@
 // @quant/shared-ui - Advanced Animation Engine with Spring Physics
 // ============================================================================
 
-import {
-  AnimationConfig, Spring, SpringConfig, Keyframe, Timeline,
-  TimelineEntry, EasingFunction, GestureAnimation
-} from './types';
+import { AnimationConfig, Spring, SpringConfig, Timeline, EasingFunction } from './types';
 
 // Easing functions library
 const easingFunctions: Record<string, (t: number) => number> = {
   linear: (t: number) => t,
   easeInQuad: (t: number) => t * t,
   easeOutQuad: (t: number) => t * (2 - t),
-  easeInOutQuad: (t: number) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
+  easeInOutQuad: (t: number) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
   easeInCubic: (t: number) => t * t * t,
-  easeOutCubic: (t: number) => (--t) * t * t + 1,
-  easeInOutCubic: (t: number) => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1,
+  easeOutCubic: (t: number) => --t * t * t + 1,
+  easeInOutCubic: (t: number) =>
+    t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1,
   easeInQuart: (t: number) => t * t * t * t,
-  easeOutQuart: (t: number) => 1 - (--t) * t * t * t,
-  easeInOutQuart: (t: number) => t < 0.5 ? 8 * t * t * t * t : 1 - 8 * (--t) * t * t * t,
+  easeOutQuart: (t: number) => 1 - --t * t * t * t,
+  easeInOutQuart: (t: number) => (t < 0.5 ? 8 * t * t * t * t : 1 - 8 * --t * t * t * t),
   easeInQuint: (t: number) => t * t * t * t * t,
-  easeOutQuint: (t: number) => 1 + (--t) * t * t * t * t,
-  easeInOutQuint: (t: number) => t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * (--t) * t * t * t * t,
-  easeInExpo: (t: number) => t === 0 ? 0 : Math.pow(2, 10 * (t - 1)),
-  easeOutExpo: (t: number) => t === 1 ? 1 : 1 - Math.pow(2, -10 * t),
+  easeOutQuint: (t: number) => 1 + --t * t * t * t * t,
+  easeInOutQuint: (t: number) => (t < 0.5 ? 16 * t * t * t * t * t : 1 + 16 * --t * t * t * t * t),
+  easeInExpo: (t: number) => (t === 0 ? 0 : Math.pow(2, 10 * (t - 1))),
+  easeOutExpo: (t: number) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t)),
   easeInOutExpo: (t: number) => {
     if (t === 0 || t === 1) return t;
     if (t < 0.5) return Math.pow(2, 20 * t - 10) / 2;
@@ -33,10 +31,11 @@ const easingFunctions: Record<string, (t: number) => number> = {
   easeOutSine: (t: number) => Math.sin((t * Math.PI) / 2),
   easeInOutSine: (t: number) => -(Math.cos(Math.PI * t) - 1) / 2,
   easeInCirc: (t: number) => 1 - Math.sqrt(1 - t * t),
-  easeOutCirc: (t: number) => Math.sqrt(1 - (--t) * t),
-  easeInOutCirc: (t: number) => t < 0.5
-    ? (1 - Math.sqrt(1 - Math.pow(2 * t, 2))) / 2
-    : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2,
+  easeOutCirc: (t: number) => Math.sqrt(1 - --t * t),
+  easeInOutCirc: (t: number) =>
+    t < 0.5
+      ? (1 - Math.sqrt(1 - Math.pow(2 * t, 2))) / 2
+      : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2,
   easeInElastic: (t: number) => {
     if (t === 0 || t === 1) return t;
     return -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * ((2 * Math.PI) / 3));
@@ -50,9 +49,11 @@ const easingFunctions: Record<string, (t: number) => number> = {
     if (t < 0.5) {
       return -(Math.pow(2, 20 * t - 10) * Math.sin((20 * t - 11.125) * ((2 * Math.PI) / 4.5))) / 2;
     }
-    return (Math.pow(2, -20 * t + 10) * Math.sin((20 * t - 11.125) * ((2 * Math.PI) / 4.5))) / 2 + 1;
+    return (
+      (Math.pow(2, -20 * t + 10) * Math.sin((20 * t - 11.125) * ((2 * Math.PI) / 4.5))) / 2 + 1
+    );
   },
-  easeInBounce: (t: number) => 1 - easingFunctions.easeOutBounce(1 - t),
+  easeInBounce: (t: number) => 1 - easingFunctions.easeOutBounce!(1 - t),
   easeOutBounce: (t: number) => {
     const n1 = 7.5625;
     const d1 = 2.75;
@@ -61,9 +62,10 @@ const easingFunctions: Record<string, (t: number) => number> = {
     if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375;
     return n1 * (t -= 2.625 / d1) * t + 0.984375;
   },
-  easeInOutBounce: (t: number) => t < 0.5
-    ? (1 - easingFunctions.easeOutBounce(1 - 2 * t)) / 2
-    : (1 + easingFunctions.easeOutBounce(2 * t - 1)) / 2,
+  easeInOutBounce: (t: number) =>
+    t < 0.5
+      ? (1 - easingFunctions.easeOutBounce!(1 - 2 * t)) / 2
+      : (1 + easingFunctions.easeOutBounce!(2 * t - 1)) / 2,
   easeInBack: (t: number) => {
     const c1 = 1.70158;
     return (c1 + 1) * t * t * t - c1 * t * t;
@@ -119,13 +121,16 @@ export class AnimationEngine {
 
   // Get easing function by name
   getEasing(name: EasingFunction | string): (t: number) => number {
-    return easingFunctions[name] || easingFunctions.linear;
+    return easingFunctions[name] ?? easingFunctions.linear!;
   }
 
   // Create and start a keyframe animation
   animate(
     properties: Record<string, [number, number]>,
-    config: AnimationConfig & { onUpdate: (values: Record<string, number>) => void; onComplete?: () => void }
+    config: AnimationConfig & {
+      onUpdate: (values: Record<string, number>) => void;
+      onComplete?: () => void;
+    },
   ): string {
     const id = `anim_${++this.animationIdCounter}`;
     const animation: ActiveAnimation = {
@@ -149,10 +154,7 @@ export class AnimationEngine {
   }
 
   // Create a spring animation
-  createSpring(
-    id: string,
-    config: SpringConfig & { from?: number; to?: number } = {}
-  ): Spring {
+  createSpring(id: string, config: SpringConfig & { from?: number; to?: number } = {}): Spring {
     const spring: Spring = {
       mass: config.mass || 1,
       tension: config.tension || 170,
@@ -228,7 +230,7 @@ export class AnimationEngine {
     id: string,
     target: number,
     onUpdate: (value: number) => void,
-    onComplete?: () => void
+    onComplete?: () => void,
   ): void {
     const spring = this.springs.get(id);
     if (!spring) return;
@@ -247,13 +249,12 @@ export class AnimationEngine {
       currentIteration: 0,
       direction: 'normal',
       fill: 'forwards',
-      onUpdate: (values) => onUpdate(values.value),
+      onUpdate: (values) => onUpdate(values.value!),
       onComplete,
       state: 'running',
     };
 
-    // Override tick behavior for springs
-    const originalTick = this.tickAnimation.bind(this);
+    // Set up spring animation
     this.animations.set(animId, animation);
     this.startLoop();
   }
@@ -263,7 +264,10 @@ export class AnimationEngine {
     count: number,
     staggerDelay: number,
     properties: Record<string, [number, number]>,
-    config: AnimationConfig & { onUpdate: (index: number, values: Record<string, number>) => void; onComplete?: () => void }
+    config: AnimationConfig & {
+      onUpdate: (index: number, values: Record<string, number>) => void;
+      onComplete?: () => void;
+    },
   ): string[] {
     const ids: string[] = [];
     let completed = 0;
@@ -290,7 +294,7 @@ export class AnimationEngine {
       properties: Record<string, [number, number]>;
       config: AnimationConfig & { onUpdate: (values: Record<string, number>) => void };
     }>,
-    onComplete?: () => void
+    onComplete?: () => void,
   ): void {
     let currentIndex = 0;
     const runNext = () => {
@@ -298,7 +302,7 @@ export class AnimationEngine {
         onComplete?.();
         return;
       }
-      const { properties, config } = animations[currentIndex];
+      const { properties, config } = animations[currentIndex]!;
       currentIndex++;
       this.animate(properties, { ...config, onComplete: runNext });
     };
@@ -309,9 +313,12 @@ export class AnimationEngine {
   parallel(
     animations: Array<{
       properties: Record<string, [number, number]>;
-      config: AnimationConfig & { onUpdate: (values: Record<string, number>) => void };
+      config: AnimationConfig & {
+        onUpdate: (values: Record<string, number>) => void;
+        onComplete?: () => void;
+      };
     }>,
-    onComplete?: () => void
+    onComplete?: () => void,
   ): string[] {
     let completed = 0;
     const ids: string[] = [];
@@ -349,7 +356,7 @@ export class AnimationEngine {
     startTime: number,
     target: string,
     properties: Record<string, [number, number]>,
-    config: AnimationConfig
+    config: AnimationConfig,
   ): void {
     const timeline = this.timelines.get(timelineId);
     if (!timeline) return;
@@ -362,7 +369,10 @@ export class AnimationEngine {
   }
 
   // Play timeline
-  playTimeline(id: string, onUpdate: (time: number, values: Map<string, Record<string, number>>) => void): void {
+  playTimeline(
+    id: string,
+    onUpdate: (time: number, values: Map<string, Record<string, number>>) => void,
+  ): void {
     const timeline = this.timelines.get(id);
     if (!timeline) return;
     timeline.state = 'running';
@@ -429,15 +439,15 @@ export class AnimationEngine {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     if (!result) return null;
     return {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16),
+      r: parseInt(result[1]!, 16),
+      g: parseInt(result[2]!, 16),
+      b: parseInt(result[3]!, 16),
     };
   }
 
   // Interpolate arrays element-wise
   interpolateArray(from: number[], to: number[], t: number): number[] {
-    return from.map((val, i) => val + (to[i] - val) * t);
+    return from.map((val, i) => val + ((to[i] ?? 0) - val) * t);
   }
 
   // RAF-based animation loop
@@ -449,9 +459,10 @@ export class AnimationEngine {
   }
 
   private scheduleFrame(): void {
-    this.rafId = (typeof requestAnimationFrame !== 'undefined'
-      ? requestAnimationFrame(this.tick)
-      : setTimeout(this.tick, 16) as any);
+    this.rafId =
+      typeof requestAnimationFrame !== 'undefined'
+        ? requestAnimationFrame(this.tick)
+        : (setTimeout(this.tick, 16) as any);
   }
 
   private tick(): void {
@@ -464,7 +475,7 @@ export class AnimationEngine {
 
     let hasActive = false;
 
-    this.animations.forEach((animation, id) => {
+    this.animations.forEach((animation) => {
       if (animation.state !== 'running') return;
       hasActive = true;
 
@@ -493,7 +504,7 @@ export class AnimationEngine {
     }
   }
 
-  private tickAnimation(animation: ActiveAnimation, elapsed: number, now: number): void {
+  private tickAnimation(animation: ActiveAnimation, elapsed: number, _now: number): void {
     const { duration, easing, properties, iterations, direction } = animation;
 
     if (duration === Infinity) {
@@ -584,7 +595,7 @@ export class AnimationEngine {
     initialVelocity: number,
     target: number,
     onUpdate: (value: number) => void,
-    onComplete?: () => void
+    onComplete?: () => void,
   ): void {
     const spring = this.springs.get(id) || this.createSpring(id);
     spring.velocity = initialVelocity;

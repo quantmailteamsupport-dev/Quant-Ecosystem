@@ -3,8 +3,12 @@
 // ============================================================================
 
 import {
-  ThemeConfig, ThemeToken, ColorPalette, ColorScale,
-  ContrastMode, SpacingScale, TypographyScale, ThemeTransition
+  ThemeConfig,
+  ThemeToken,
+  ColorPalette,
+  ColorScale,
+  ContrastMode,
+  ThemeTransition,
 } from './types';
 
 interface HSL {
@@ -19,7 +23,6 @@ export class ThemeEngine {
   private themes: Map<string, ThemeConfig> = new Map();
   private activeTheme: ThemeConfig;
   private listeners: Set<ThemeListener> = new Set();
-  private persistKey: string = 'quant-theme-preference';
   private transitionConfig: ThemeTransition = {
     property: 'all',
     duration: 200,
@@ -43,7 +46,10 @@ export class ThemeEngine {
       mode: overrides?.mode || 'light',
       tokens: overrides?.tokens || [],
       colorPalette: overrides?.colorPalette || this.generatePalette('#3b82f6'),
-      spacing: overrides?.spacing || { base: 4, scale: [0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 64] },
+      spacing: overrides?.spacing || {
+        base: 4,
+        scale: [0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 64],
+      },
       typography: overrides?.typography || {
         baseFontSize: 16,
         scaleRatio: 1.25,
@@ -52,7 +58,15 @@ export class ThemeEngine {
           mono: '"Fira Code", "JetBrains Mono", Consolas, monospace',
           serif: 'Georgia, "Times New Roman", serif',
         },
-        weights: { thin: 100, light: 300, normal: 400, medium: 500, semibold: 600, bold: 700, extrabold: 800 },
+        weights: {
+          thin: 100,
+          light: 300,
+          normal: 400,
+          medium: 500,
+          semibold: 600,
+          bold: 700,
+          extrabold: 800,
+        },
         lineHeights: { tight: 1.25, normal: 1.5, relaxed: 1.75, loose: 2 },
       },
       components: overrides?.components,
@@ -67,9 +81,17 @@ export class ThemeEngine {
     const palette = this.generatePalette('#60a5fa');
     // Invert neutrals for dark mode
     const darkNeutral: ColorScale = {
-      50: '#0a0a0a', 100: '#171717', 200: '#262626', 300: '#404040',
-      400: '#525252', 500: '#737373', 600: '#a3a3a3', 700: '#d4d4d4',
-      800: '#e5e5e5', 900: '#f5f5f5', 950: '#fafafa',
+      50: '#0a0a0a',
+      100: '#171717',
+      200: '#262626',
+      300: '#404040',
+      400: '#525252',
+      500: '#737373',
+      600: '#a3a3a3',
+      700: '#d4d4d4',
+      800: '#e5e5e5',
+      900: '#f5f5f5',
+      950: '#fafafa',
     };
     palette.neutral = darkNeutral;
     return { ...this.createDefaultTheme({ name: 'dark', mode: 'dark', colorPalette: palette }) };
@@ -78,11 +100,23 @@ export class ThemeEngine {
   private createHighContrastTheme(): ThemeConfig {
     const palette = this.generatePalette('#0000ff');
     palette.neutral = {
-      50: '#000000', 100: '#111111', 200: '#222222', 300: '#333333',
-      400: '#444444', 500: '#666666', 600: '#999999', 700: '#cccccc',
-      800: '#eeeeee', 900: '#ffffff', 950: '#ffffff',
+      50: '#000000',
+      100: '#111111',
+      200: '#222222',
+      300: '#333333',
+      400: '#444444',
+      500: '#666666',
+      600: '#999999',
+      700: '#cccccc',
+      800: '#eeeeee',
+      900: '#ffffff',
+      950: '#ffffff',
     };
-    return this.createDefaultTheme({ name: 'high-contrast', mode: 'high-contrast', colorPalette: palette });
+    return this.createDefaultTheme({
+      name: 'high-contrast',
+      mode: 'high-contrast',
+      colorPalette: palette,
+    });
   }
 
   // Generate full color palette from a seed color
@@ -90,7 +124,11 @@ export class ThemeEngine {
     const seedHSL = this.hexToHSL(seedColor);
     return {
       primary: this.generateColorScale(seedHSL),
-      secondary: this.generateColorScale({ h: (seedHSL.h + 30) % 360, s: seedHSL.s * 0.8, l: seedHSL.l }),
+      secondary: this.generateColorScale({
+        h: (seedHSL.h + 30) % 360,
+        s: seedHSL.s * 0.8,
+        l: seedHSL.l,
+      }),
       neutral: this.generateColorScale({ h: seedHSL.h, s: 5, l: 50 }),
       success: this.generateColorScale({ h: 142, s: 71, l: 45 }),
       warning: this.generateColorScale({ h: 38, s: 92, l: 50 }),
@@ -103,8 +141,17 @@ export class ThemeEngine {
   private generateColorScale(base: HSL): ColorScale {
     const lightnesses = [97, 93, 86, 76, 64, 50, 40, 32, 24, 14, 9];
     const saturations = [
-      base.s * 0.3, base.s * 0.5, base.s * 0.7, base.s * 0.8, base.s * 0.9,
-      base.s, base.s * 0.95, base.s * 0.9, base.s * 0.85, base.s * 0.8, base.s * 0.75,
+      base.s * 0.3,
+      base.s * 0.5,
+      base.s * 0.7,
+      base.s * 0.8,
+      base.s * 0.9,
+      base.s,
+      base.s * 0.95,
+      base.s * 0.9,
+      base.s * 0.85,
+      base.s * 0.8,
+      base.s * 0.75,
     ];
 
     const scale: Record<string, string> = {};
@@ -112,8 +159,8 @@ export class ThemeEngine {
 
     keys.forEach((key, i) => {
       const h = base.h;
-      const s = Math.min(100, Math.max(0, saturations[i]));
-      const l = lightnesses[i];
+      const s = Math.min(100, Math.max(0, saturations[i] ?? 0));
+      const l = lightnesses[i] ?? 50;
       scale[key] = this.hslToHex({ h, s, l });
     });
 
@@ -126,7 +173,15 @@ export class ThemeEngine {
     const theme = this.activeTheme;
 
     // Color palette variables
-    const paletteKeys: (keyof ColorPalette)[] = ['primary', 'secondary', 'neutral', 'success', 'warning', 'error', 'info'];
+    const paletteKeys: (keyof ColorPalette)[] = [
+      'primary',
+      'secondary',
+      'neutral',
+      'success',
+      'warning',
+      'error',
+      'info',
+    ];
     const shadeKeys = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'];
 
     for (const colorName of paletteKeys) {
@@ -191,15 +246,27 @@ export class ThemeEngine {
   }
 
   // Create custom theme from user colors
-  createCustomTheme(name: string, primaryColor: string, options?: { mode?: 'light' | 'dark' }): ThemeConfig {
+  createCustomTheme(
+    name: string,
+    primaryColor: string,
+    options?: { mode?: 'light' | 'dark' },
+  ): ThemeConfig {
     const mode = options?.mode || 'light';
     const palette = this.generatePalette(primaryColor);
 
     if (mode === 'dark') {
       const darkNeutral: ColorScale = {
-        50: '#0a0a0a', 100: '#171717', 200: '#262626', 300: '#404040',
-        400: '#525252', 500: '#737373', 600: '#a3a3a3', 700: '#d4d4d4',
-        800: '#e5e5e5', 900: '#f5f5f5', 950: '#fafafa',
+        50: '#0a0a0a',
+        100: '#171717',
+        200: '#262626',
+        300: '#404040',
+        400: '#525252',
+        500: '#737373',
+        600: '#a3a3a3',
+        700: '#d4d4d4',
+        800: '#e5e5e5',
+        900: '#f5f5f5',
+        950: '#fafafa',
       };
       palette.neutral = darkNeutral;
     }
@@ -210,7 +277,10 @@ export class ThemeEngine {
   }
 
   // WCAG contrast checking
-  checkContrast(foreground: string, background: string): { ratio: number; passesAA: boolean; passesAAA: boolean } {
+  checkContrast(
+    foreground: string,
+    background: string,
+  ): { ratio: number; passesAA: boolean; passesAAA: boolean } {
     const fgLum = this.relativeLuminance(foreground);
     const bgLum = this.relativeLuminance(background);
     const lighter = Math.max(fgLum, bgLum);
@@ -227,11 +297,11 @@ export class ThemeEngine {
   // Calculate relative luminance
   private relativeLuminance(hex: string): number {
     const rgb = this.hexToRGB(hex);
-    const [r, g, b] = [rgb.r, rgb.g, rgb.b].map(c => {
+    const channels = [rgb.r, rgb.g, rgb.b].map((c) => {
       c = c / 255;
       return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
     });
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return 0.2126 * channels[0]! + 0.7152 * channels[1]! + 0.0722 * channels[2]!;
   }
 
   // Ensure text color has sufficient contrast
@@ -247,7 +317,7 @@ export class ThemeEngine {
 
   // Add/update a token
   setToken(name: string, value: string, category: ThemeToken['category'] = 'color'): void {
-    const existingIdx = this.activeTheme.tokens.findIndex(t => t.name === name);
+    const existingIdx = this.activeTheme.tokens.findIndex((t) => t.name === name);
     const token: ThemeToken = { name, value, category };
     if (existingIdx >= 0) {
       this.activeTheme.tokens[existingIdx] = token;
@@ -270,8 +340,8 @@ export class ThemeEngine {
   // Theme persistence
   savePreference(): void {
     try {
-      const data = JSON.stringify({ theme: this.activeTheme.name, timestamp: Date.now() });
       // In browser environment would use localStorage
+      JSON.stringify({ theme: this.activeTheme.name, timestamp: Date.now() });
       // Here we just maintain internal state
     } catch (e) {
       // Silently fail
@@ -297,9 +367,15 @@ export class ThemeEngine {
   }
 
   // Get active theme
-  getActiveTheme(): ThemeConfig { return this.activeTheme; }
-  getTheme(name: string): ThemeConfig | undefined { return this.themes.get(name); }
-  getThemeNames(): string[] { return Array.from(this.themes.keys()); }
+  getActiveTheme(): ThemeConfig {
+    return this.activeTheme;
+  }
+  getTheme(name: string): ThemeConfig | undefined {
+    return this.themes.get(name);
+  }
+  getThemeNames(): string[] {
+    return Array.from(this.themes.keys());
+  }
 
   // Color conversion utilities
   private hexToHSL(hex: string): HSL {
@@ -311,15 +387,22 @@ export class ThemeEngine {
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
     const l = (max + min) / 2;
-    let h = 0, s = 0;
+    let h = 0,
+      s = 0;
 
     if (max !== min) {
       const d = max - min;
       s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
       switch (max) {
-        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-        case g: h = ((b - r) / d + 2) / 6; break;
-        case b: h = ((r - g) / d + 4) / 6; break;
+        case r:
+          h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+          break;
+        case g:
+          h = ((b - r) / d + 2) / 6;
+          break;
+        case b:
+          h = ((r - g) / d + 4) / 6;
+          break;
       }
     }
 
@@ -335,15 +418,33 @@ export class ThemeEngine {
     const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
     const m = lNorm - c / 2;
 
-    let r = 0, g = 0, b = 0;
-    if (h < 60) { r = c; g = x; }
-    else if (h < 120) { r = x; g = c; }
-    else if (h < 180) { g = c; b = x; }
-    else if (h < 240) { g = x; b = c; }
-    else if (h < 300) { r = x; b = c; }
-    else { r = c; b = x; }
+    let r = 0,
+      g = 0,
+      b = 0;
+    if (h < 60) {
+      r = c;
+      g = x;
+    } else if (h < 120) {
+      r = x;
+      g = c;
+    } else if (h < 180) {
+      g = c;
+      b = x;
+    } else if (h < 240) {
+      g = x;
+      b = c;
+    } else if (h < 300) {
+      r = x;
+      b = c;
+    } else {
+      r = c;
+      b = x;
+    }
 
-    const toHex = (n: number) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
+    const toHex = (n: number) =>
+      Math.round((n + m) * 255)
+        .toString(16)
+        .padStart(2, '0');
     return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
   }
 
@@ -351,9 +452,9 @@ export class ThemeEngine {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     if (!result) return { r: 0, g: 0, b: 0 };
     return {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16),
+      r: parseInt(result[1]!, 16),
+      g: parseInt(result[2]!, 16),
+      b: parseInt(result[3]!, 16),
     };
   }
 
@@ -364,7 +465,7 @@ export class ThemeEngine {
   }
 
   private notifyListeners(): void {
-    this.listeners.forEach(listener => listener(this.activeTheme));
+    this.listeners.forEach((listener) => listener(this.activeTheme));
   }
 
   destroy(): void {

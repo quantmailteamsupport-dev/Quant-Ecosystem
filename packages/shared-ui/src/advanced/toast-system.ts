@@ -2,9 +2,7 @@
 // @quant/shared-ui - Advanced Toast Notification System
 // ============================================================================
 
-import {
-  ToastMessage, ToastPosition, ToastConfig, ToastAction, ToastState
-} from './types';
+import { ToastMessage, ToastConfig, ToastAction, ToastState } from './types';
 
 interface ActiveToast extends ToastMessage {
   state: ToastState;
@@ -43,7 +41,7 @@ export class ToastManager {
       action?: ToastAction;
       persistent?: boolean;
       priority?: number;
-    } = {}
+    } = {},
   ): string {
     // Deduplication check
     const dedupeKey = `${options.type || 'info'}:${message}`;
@@ -62,7 +60,9 @@ export class ToastManager {
       type: options.type || 'info',
       title: options.title,
       message,
-      duration: options.persistent ? undefined : (options.duration ?? this.getDefaultDuration(options.type || 'info')),
+      duration: options.persistent
+        ? undefined
+        : (options.duration ?? this.getDefaultDuration(options.type || 'info')),
       action: options.action,
       persistent: options.persistent,
       priority: options.priority ?? this.getDefaultPriority(options.type || 'info'),
@@ -92,19 +92,31 @@ export class ToastManager {
   }
 
   // Convenience methods
-  info(message: string, options: Partial<Omit<Parameters<typeof this.show>[1], 'type'>> = {}): string {
+  info(
+    message: string,
+    options: Partial<Omit<Parameters<typeof this.show>[1], 'type'>> = {},
+  ): string {
     return this.show(message, { ...options, type: 'info' });
   }
 
-  success(message: string, options: Partial<Omit<Parameters<typeof this.show>[1], 'type'>> = {}): string {
+  success(
+    message: string,
+    options: Partial<Omit<Parameters<typeof this.show>[1], 'type'>> = {},
+  ): string {
     return this.show(message, { ...options, type: 'success' });
   }
 
-  warning(message: string, options: Partial<Omit<Parameters<typeof this.show>[1], 'type'>> = {}): string {
+  warning(
+    message: string,
+    options: Partial<Omit<Parameters<typeof this.show>[1], 'type'>> = {},
+  ): string {
     return this.show(message, { ...options, type: 'warning' });
   }
 
-  error(message: string, options: Partial<Omit<Parameters<typeof this.show>[1], 'type'>> = {}): string {
+  error(
+    message: string,
+    options: Partial<Omit<Parameters<typeof this.show>[1], 'type'>> = {},
+  ): string {
     return this.show(message, { ...options, type: 'error' });
   }
 
@@ -170,7 +182,7 @@ export class ToastManager {
   // Dismiss all toasts
   dismissAll(): void {
     const ids = Array.from(this.activeToasts.keys());
-    ids.forEach(id => this.dismiss(id));
+    ids.forEach((id) => this.dismiss(id));
     this.queue = [];
   }
 
@@ -200,27 +212,35 @@ export class ToastManager {
   // Get default duration based on type
   private getDefaultDuration(type: string): number {
     switch (type) {
-      case 'error': return (this.config.defaultDuration || 5000) * 1.5;
-      case 'warning': return (this.config.defaultDuration || 5000) * 1.2;
-      case 'success': return this.config.defaultDuration || 5000;
-      default: return this.config.defaultDuration || 5000;
+      case 'error':
+        return (this.config.defaultDuration || 5000) * 1.5;
+      case 'warning':
+        return (this.config.defaultDuration || 5000) * 1.2;
+      case 'success':
+        return this.config.defaultDuration || 5000;
+      default:
+        return this.config.defaultDuration || 5000;
     }
   }
 
   // Get default priority based on type
   private getDefaultPriority(type: string): number {
     switch (type) {
-      case 'error': return 4;
-      case 'warning': return 3;
-      case 'success': return 2;
-      default: return 1;
+      case 'error':
+        return 4;
+      case 'warning':
+        return 3;
+      case 'success':
+        return 2;
+      default:
+        return 1;
     }
   }
 
   // Get lowest priority visible toast
   private getLowestPriorityToast(): ActiveToast | null {
     let lowest: ActiveToast | null = null;
-    this.activeToasts.forEach(toast => {
+    this.activeToasts.forEach((toast) => {
       if (!lowest || (toast.priority || 0) < (lowest.priority || 0)) {
         lowest = toast;
       }
@@ -249,7 +269,7 @@ export class ToastManager {
     const gap = this.config.gap || 12;
     const toastHeight = 60;
 
-    this.activeToasts.forEach(toast => {
+    this.activeToasts.forEach((toast) => {
       if (toast.state.phase !== 'exiting') {
         toast.state.offset = offset;
         offset += toastHeight + gap;
@@ -263,13 +283,20 @@ export class ToastManager {
     const base: Record<string, string> = { position: 'fixed', zIndex: '9999' };
 
     switch (position) {
-      case 'top-right': return { ...base, top: '16px', right: '16px' };
-      case 'top-left': return { ...base, top: '16px', left: '16px' };
-      case 'bottom-right': return { ...base, bottom: '16px', right: '16px' };
-      case 'bottom-left': return { ...base, bottom: '16px', left: '16px' };
-      case 'top-center': return { ...base, top: '16px', left: '50%', transform: 'translateX(-50%)' };
-      case 'bottom-center': return { ...base, bottom: '16px', left: '50%', transform: 'translateX(-50%)' };
-      default: return { ...base, top: '16px', right: '16px' };
+      case 'top-right':
+        return { ...base, top: '16px', right: '16px' };
+      case 'top-left':
+        return { ...base, top: '16px', left: '16px' };
+      case 'bottom-right':
+        return { ...base, bottom: '16px', right: '16px' };
+      case 'bottom-left':
+        return { ...base, bottom: '16px', left: '16px' };
+      case 'top-center':
+        return { ...base, top: '16px', left: '50%', transform: 'translateX(-50%)' };
+      case 'bottom-center':
+        return { ...base, bottom: '16px', left: '50%', transform: 'translateX(-50%)' };
+      default:
+        return { ...base, top: '16px', right: '16px' };
     }
   }
 
@@ -291,7 +318,7 @@ export class ToastManager {
 
   private notifyListeners(): void {
     const toasts = this.getToasts();
-    this.listeners.forEach(listener => listener(toasts));
+    this.listeners.forEach((listener) => listener(toasts));
   }
 
   // Pause auto-dismiss (e.g., on hover)
@@ -312,7 +339,7 @@ export class ToastManager {
   }
 
   destroy(): void {
-    this.activeToasts.forEach(toast => {
+    this.activeToasts.forEach((toast) => {
       if (toast.timer) clearTimeout(toast.timer);
     });
     this.activeToasts.clear();

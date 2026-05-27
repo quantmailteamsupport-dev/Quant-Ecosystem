@@ -2,10 +2,7 @@
 // @quant/shared-ui - Advanced Client-Side Router
 // ============================================================================
 
-import {
-  Route, RouteMatch, RouteParams, RouteGuard, NavigationEvent,
-  RouterConfig, RouteMeta
-} from './types';
+import { Route, RouteMatch, RouteParams, NavigationEvent, RouterConfig, RouteMeta } from './types';
 
 interface CompiledRoute {
   route: Route;
@@ -33,14 +30,12 @@ export class Router {
   private navigationEvents: NavigationEvent[] = [];
   private listeners: Set<(match: RouteMatch | null) => void> = new Set();
   private base: string;
-  private mode: 'history' | 'hash';
   private scrollBehavior: 'top' | 'restore' | 'none';
   private scrollPositions: Map<string, { x: number; y: number }> = new Map();
 
   constructor(config: RouterConfig) {
     this.routes = config.routes || [];
     this.base = config.base || '';
-    this.mode = config.mode || 'history';
     this.scrollBehavior = config.scrollBehavior || 'top';
     this.compileRoutes(this.routes, null);
   }
@@ -71,7 +66,7 @@ export class Router {
         return '([^/]+)';
       })
       .replace(/\\\*$/g, '(.*)') // wildcard at end
-      .replace(/\*/, '(.*)');    // wildcard anywhere
+      .replace(/\*/, '(.*)'); // wildcard anywhere
 
     const regex = new RegExp(`^${regexStr}$`);
     return { route: { ...route, path: fullPath }, regex, paramNames, parent };
@@ -80,7 +75,7 @@ export class Router {
   // Register new routes dynamically
   addRoute(route: Route, parentPath?: string): void {
     if (parentPath) {
-      const parent = this.compiledRoutes.find(cr => cr.route.path === parentPath);
+      const parent = this.compiledRoutes.find((cr) => cr.route.path === parentPath);
       if (parent) {
         if (!parent.route.children) parent.route.children = [];
         parent.route.children.push(route);
@@ -95,22 +90,24 @@ export class Router {
 
   // Remove a route by path
   removeRoute(path: string): void {
-    this.compiledRoutes = this.compiledRoutes.filter(cr => cr.route.path !== path);
-    this.routes = this.routes.filter(r => r.path !== path);
+    this.compiledRoutes = this.compiledRoutes.filter((cr) => cr.route.path !== path);
+    this.routes = this.routes.filter((r) => r.path !== path);
   }
 
   // Match a path against registered routes
   match(path: string): RouteMatch | null {
-    const [pathname, queryString] = path.split('?');
+    const parts = path.split('?');
+    const pathname = parts[0] ?? '';
+    const queryString = parts[1] ?? '';
     const normalizedPath = this.normalizePath(pathname);
-    const query = this.parseQueryString(queryString || '');
+    const query = this.parseQueryString(queryString);
 
     for (const compiled of this.compiledRoutes) {
       const match = normalizedPath.match(compiled.regex);
       if (match) {
         const params: RouteParams = {};
         compiled.paramNames.forEach((name, index) => {
-          params[name] = decodeURIComponent(match[index + 1]);
+          params[name] = decodeURIComponent(match[index + 1] ?? '');
         });
         const matched = this.getMatchedChain(compiled);
         return {
@@ -156,8 +153,9 @@ export class Router {
     const parts = queryString.replace(/^\?/, '').split('&');
     for (const part of parts) {
       if (!part) continue;
-      const [key, ...valueParts] = part.split('=');
-      const value = valueParts.join('=');
+      const splitParts = part.split('=');
+      const key = splitParts[0] ?? '';
+      const value = splitParts.slice(1).join('=');
       params[decodeURIComponent(key)] = decodeURIComponent(value || '');
     }
     return params;
@@ -219,7 +217,7 @@ export class Router {
   private async navigate(
     path: string,
     type: 'push' | 'replace' | 'pop',
-    state?: any
+    state?: any,
   ): Promise<boolean> {
     const newMatch = this.match(path);
     if (!newMatch) return false;
@@ -282,13 +280,14 @@ export class Router {
     } else if (type === 'replace') {
       this.history[this.historyIndex] = entry;
     } else if (type === 'pop') {
-      const newIndex = this.history.findIndex(h => h.path === path);
+      const newIndex = this.history.findIndex((h) => h.path === path);
       if (newIndex >= 0) this.historyIndex = newIndex;
     }
 
     // Record navigation event
     const event: NavigationEvent = {
-      type: type === 'pop' ? (this.historyIndex < this.history.length - 1 ? 'back' : 'forward') : type,
+      type:
+        type === 'pop' ? (this.historyIndex < this.history.length - 1 ? 'back' : 'forward') : type,
       from: previousMatch,
       to: newMatch,
       timestamp: Date.now(),
@@ -296,7 +295,7 @@ export class Router {
     this.navigationEvents.push(event);
 
     // Notify listeners
-    this.listeners.forEach(listener => listener(newMatch));
+    this.listeners.forEach((listener) => listener(newMatch));
 
     // Run after hooks
     for (const hook of this.afterHooks) {
@@ -360,7 +359,7 @@ export class Router {
   // Generate breadcrumbs from matched chain
   getBreadcrumbs(): Array<{ label: string; path: string }> {
     if (!this.currentMatch) return [];
-    return this.currentMatch.matched.map(route => ({
+    return this.currentMatch.matched.map((route) => ({
       label: route.meta?.title || route.path,
       path: route.path,
     }));

@@ -3,8 +3,11 @@
 // ============================================================================
 
 import {
-  CommandItem, CommandGroup, CommandPaletteConfig,
-  CommandSearchResult, MatchRange
+  CommandItem,
+  CommandGroup,
+  CommandPaletteConfig,
+  CommandSearchResult,
+  MatchRange,
 } from './types';
 
 interface RecentCommand {
@@ -139,7 +142,8 @@ export class CommandPalette {
         ? this.fuzzyMatch(queryLower, command.description.toLowerCase()) * 0.7
         : 0;
       const keywordScore = command.keywords
-        ? Math.max(...command.keywords.map(k => this.fuzzyMatch(queryLower, k.toLowerCase()))) * 0.8
+        ? Math.max(...command.keywords.map((k) => this.fuzzyMatch(queryLower, k.toLowerCase()))) *
+          0.8
         : 0;
 
       const score = Math.max(labelScore, descScore, keywordScore);
@@ -223,7 +227,11 @@ export class CommandPalette {
         if (rangeStart === -1) rangeStart = i;
         queryIdx++;
         // Check if next char doesn't match (end of range)
-        if (i + 1 >= target.length || queryIdx >= query.length || target[i + 1] !== query[queryIdx]) {
+        if (
+          i + 1 >= target.length ||
+          queryIdx >= query.length ||
+          target[i + 1] !== query[queryIdx]
+        ) {
           ranges.push({ start: rangeStart, end: i + 1 });
           rangeStart = -1;
         }
@@ -256,7 +264,7 @@ export class CommandPalette {
       .sort((a, b) => b[1].timestamp - a[1].timestamp)
       .slice(0, this.maxRecent);
 
-    for (const [id, recent] of recentEntries) {
+    for (const [id, _recent] of recentEntries) {
       const command = this.commands.get(id);
       if (command && !command.disabled) {
         results.push({ item: command, score: 1, matches: [] });
@@ -265,7 +273,7 @@ export class CommandPalette {
 
     // Fill with remaining commands grouped by category
     const remaining = this.getAvailableCommands()
-      .filter(c => !results.some(r => r.item.id === c.id) && !c.disabled)
+      .filter((c) => !results.some((r) => r.item.id === c.id) && !c.disabled)
       .slice(0, (this.config.maxResults || 20) - results.length);
 
     for (const command of remaining) {
@@ -305,8 +313,10 @@ export class CommandPalette {
       this.state.nestedStack.push(command);
       this.state.query = '';
       this.state.selectedIndex = 0;
-      this.state.results = command.children.map(child => ({
-        item: child, score: 1, matches: [],
+      this.state.results = command.children.map((child) => ({
+        item: child,
+        score: 1,
+        matches: [],
       }));
       this.notifyListeners();
       return;
@@ -330,8 +340,9 @@ export class CommandPalette {
 
     // Trim recent list
     if (this.recentCommands.size > 50) {
-      const sorted = Array.from(this.recentCommands.entries())
-        .sort((a, b) => b[1].timestamp - a[1].timestamp);
+      const sorted = Array.from(this.recentCommands.entries()).sort(
+        (a, b) => b[1].timestamp - a[1].timestamp,
+      );
       this.recentCommands = new Map(sorted.slice(0, 50));
     }
 
@@ -346,9 +357,11 @@ export class CommandPalette {
     this.state.selectedIndex = 0;
 
     if (this.state.nestedStack.length > 0) {
-      const parent = this.state.nestedStack[this.state.nestedStack.length - 1];
-      this.state.results = (parent.children || []).map(child => ({
-        item: child, score: 1, matches: [],
+      const parent = this.state.nestedStack[this.state.nestedStack.length - 1]!;
+      this.state.results = (parent.children || []).map((child) => ({
+        item: child,
+        score: 1,
+        matches: [],
       }));
     } else {
       this.state.results = this.getInitialResults();
@@ -404,7 +417,9 @@ export class CommandPalette {
   }
 
   // Get state
-  getState(): PaletteState { return { ...this.state }; }
+  getState(): PaletteState {
+    return { ...this.state };
+  }
 
   // Subscribe
   subscribe(listener: PaletteListener): () => void {
@@ -413,7 +428,7 @@ export class CommandPalette {
   }
 
   private notifyListeners(): void {
-    this.listeners.forEach(listener => listener({ ...this.state }));
+    this.listeners.forEach((listener) => listener({ ...this.state }));
   }
 
   destroy(): void {

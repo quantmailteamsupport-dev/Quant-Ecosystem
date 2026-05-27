@@ -3,8 +3,16 @@
 // ============================================================================
 
 import {
-  Store, Action, Reducer, Selector, Middleware, MiddlewareAPI,
-  Dispatch, Unsubscribe, StateHistoryEntry, ThunkAction
+  Store,
+  Action,
+  Reducer,
+  Selector,
+  Middleware,
+  MiddlewareAPI,
+  Dispatch,
+  Unsubscribe,
+  StateHistoryEntry,
+  ThunkAction,
 } from './types';
 
 // Memoized selector cache
@@ -25,7 +33,7 @@ function shallowEqual(a: any, b: any): boolean {
   const keysB = Object.keys(b);
   if (keysA.length !== keysB.length) return false;
   for (let i = 0; i < keysA.length; i++) {
-    const key = keysA[i];
+    const key = keysA[i]!;
     if (a[key] !== b[key]) return false;
   }
   return true;
@@ -34,8 +42,12 @@ function shallowEqual(a: any, b: any): boolean {
 // Compose middleware functions
 function composeMiddleware(...middlewares: Function[]): Function {
   if (middlewares.length === 0) return (arg: any) => arg;
-  if (middlewares.length === 1) return middlewares[0];
-  return middlewares.reduce((a, b) => (...args: any[]) => a(b(...args)));
+  if (middlewares.length === 1) return middlewares[0]!;
+  return middlewares.reduce(
+    (a, b) =>
+      (...args: any[]) =>
+        a(b(...args)),
+  );
 }
 
 // Built-in thunk middleware for async actions
@@ -73,15 +85,15 @@ export function loggerMiddleware<S>(): Middleware<S> {
 }
 
 // Combine multiple reducers into one
-export function combineReducers<S extends Record<string, any>>(
-  reducers: { [K in keyof S]: Reducer<S[K]> }
-): Reducer<S> {
+export function combineReducers<S extends Record<string, any>>(reducers: {
+  [K in keyof S]: Reducer<S[K]>;
+}): Reducer<S> {
   const reducerKeys = Object.keys(reducers) as (keyof S)[];
   return (state: S, action: Action): S => {
     let hasChanged = false;
     const nextState = {} as S;
     for (let i = 0; i < reducerKeys.length; i++) {
-      const key = reducerKeys[i];
+      const key = reducerKeys[i]!;
       const reducer = reducers[key];
       const previousStateForKey = state[key];
       const nextStateForKey = reducer(previousStateForKey, action);
@@ -96,12 +108,12 @@ export function combineReducers<S extends Record<string, any>>(
 // Create a memoized selector with dependency tracking
 export function createSelector<S, R>(
   dependencies: Selector<S, any>[],
-  resultFn: (...args: any[]) => R
+  resultFn: (...args: any[]) => R,
 ): Selector<S, R> {
   let lastArgs: any[] | null = null;
   let lastResult: R | undefined;
   return (state: S): R => {
-    const currentArgs = dependencies.map(dep => dep(state));
+    const currentArgs = dependencies.map((dep) => dep(state));
     if (lastArgs !== null) {
       let allEqual = true;
       for (let i = 0; i < currentArgs.length; i++) {
@@ -131,7 +143,7 @@ export function createActionCreator<P = void>(type: string) {
 
 // Action types factory - creates action creators from a map
 export function createActions<T extends Record<string, string>>(
-  typeMap: T
+  typeMap: T,
 ): { [K in keyof T]: (payload?: any) => Action } {
   const actions = {} as { [K in keyof T]: (payload?: any) => Action };
   for (const key of Object.keys(typeMap) as (keyof T)[]) {
@@ -144,7 +156,7 @@ export function createActions<T extends Record<string, string>>(
 export function createStore<S>(
   reducer: Reducer<S>,
   initialState: S,
-  middlewares: Middleware<S>[] = []
+  middlewares: Middleware<S>[] = [],
 ): Store<S> {
   let currentState: S = initialState;
   let currentReducer: Reducer<S> = reducer;
@@ -152,11 +164,13 @@ export function createStore<S>(
   let isDispatching = false;
 
   // Time-travel state history
-  const history: StateHistoryEntry<S>[] = [{
-    state: initialState,
-    action: { type: '@@INIT' },
-    timestamp: Date.now(),
-  }];
+  const history: StateHistoryEntry<S>[] = [
+    {
+      state: initialState,
+      action: { type: '@@INIT' },
+      timestamp: Date.now(),
+    },
+  ];
   let historyIndex = 0;
   const maxHistorySize = 100;
 
@@ -178,7 +192,7 @@ export function createStore<S>(
   }
 
   function notifyListeners(): void {
-    listeners.forEach(listener => {
+    listeners.forEach((listener) => {
       try {
         listener();
       } catch (e) {
@@ -221,13 +235,13 @@ export function createStore<S>(
   }
 
   // Apply middleware chain
-  let dispatch: Dispatch = baseDispatch;
+  let dispatch: Dispatch = baseDispatch as unknown as Dispatch;
   if (middlewares.length > 0) {
     const middlewareAPI: MiddlewareAPI<S> = {
       getState,
       dispatch: (action: any) => dispatch(action),
     };
-    const chain = middlewares.map(middleware => middleware(middlewareAPI));
+    const chain = middlewares.map((middleware) => middleware(middlewareAPI));
     dispatch = composeMiddleware(...chain)(baseDispatch) as Dispatch;
   }
 
@@ -245,7 +259,7 @@ export function createStore<S>(
       throw new Error(`Invalid history index: ${index}`);
     }
     historyIndex = index;
-    currentState = history[index].state;
+    currentState = history[index]!.state;
     notifyListeners();
   }
 
@@ -274,7 +288,7 @@ export class StateManager<S extends Record<string, any> = Record<string, any>> {
       enableDevTools?: boolean;
       enableThunk?: boolean;
       enableLogger?: boolean;
-    } = {}
+    } = {},
   ) {
     const middlewares: Middleware<S>[] = [];
     if (options.enableThunk !== false) {
@@ -312,7 +326,7 @@ export class StateManager<S extends Record<string, any> = Record<string, any>> {
   createMemoizedSelector<R>(
     id: string,
     dependencies: Selector<S, any>[],
-    resultFn: (...args: any[]) => R
+    resultFn: (...args: any[]) => R,
   ): Selector<S, R> {
     const selector = createSelector(dependencies, resultFn);
     this.selectorCache.set(id, {
@@ -339,7 +353,6 @@ export class StateManager<S extends Record<string, any> = Record<string, any>> {
 
   // Batch multiple actions (single notification)
   batch(actions: Action[]): void {
-    const listeners: Set<() => void> = new Set();
     for (const action of actions) {
       this.store.dispatch(action);
     }

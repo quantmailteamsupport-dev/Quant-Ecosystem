@@ -57,6 +57,14 @@ export type {
   ProactiveSearchOptions,
 } from './services/proactive';
 
+export { CrossAppSearchService } from './cross-app-search';
+export type {
+  CrossAppSearchResult,
+  CrossAppSearchOptions,
+  CrossAppSearchSuggestion,
+  CrossAppSearchResponse,
+} from './cross-app-search';
+
 export type {
   SearchQuery,
   SearchResult,

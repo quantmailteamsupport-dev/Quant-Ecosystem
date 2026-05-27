@@ -2,17 +2,7 @@
 // @quant/shared-ui - Advanced Keyboard Shortcut Manager
 // ============================================================================
 
-import {
-  ShortcutBinding, ShortcutScope, ShortcutCombo, ShortcutSequence
-} from './types';
-
-interface ParsedCombo {
-  key: string;
-  ctrl: boolean;
-  shift: boolean;
-  alt: boolean;
-  meta: boolean;
-}
+import { ShortcutBinding, ShortcutScope, ShortcutCombo, ShortcutSequence } from './types';
 
 interface ConflictInfo {
   binding1: ShortcutBinding;
@@ -42,7 +32,9 @@ export class KeyboardShortcutManager {
 
   constructor(options?: { isMac?: boolean }) {
     // Detect platform
-    this.isMac = options?.isMac ?? (typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || ''));
+    this.isMac =
+      options?.isMac ??
+      (typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || ''));
 
     // Initialize global scope
     this.scopes.set('global', {
@@ -55,7 +47,7 @@ export class KeyboardShortcutManager {
 
   // Parse a combo string like "Ctrl+Shift+K" into structured format
   parseComboString(comboStr: string): ShortcutCombo {
-    const parts = comboStr.split('+').map(p => p.trim().toLowerCase());
+    const parts = comboStr.split('+').map((p) => p.trim().toLowerCase());
     const combo: ShortcutCombo = {
       key: '',
       ctrl: false,
@@ -126,10 +118,20 @@ export class KeyboardShortcutManager {
 
   private formatKeyName(key: string): string {
     const keyNames: Record<string, string> = {
-      'escape': 'Esc', 'enter': 'Enter', 'space': 'Space',
-      'backspace': 'Backspace', 'delete': 'Del', 'tab': 'Tab',
-      'arrowup': '\u2191', 'arrowdown': '\u2193', 'arrowleft': '\u2190', 'arrowright': '\u2192',
-      'home': 'Home', 'end': 'End', 'pageup': 'PgUp', 'pagedown': 'PgDn',
+      escape: 'Esc',
+      enter: 'Enter',
+      space: 'Space',
+      backspace: 'Backspace',
+      delete: 'Del',
+      tab: 'Tab',
+      arrowup: '\u2191',
+      arrowdown: '\u2193',
+      arrowleft: '\u2190',
+      arrowright: '\u2192',
+      home: 'Home',
+      end: 'End',
+      pageup: 'PgUp',
+      pagedown: 'PgDn',
     };
     return keyNames[key] || key.charAt(0).toUpperCase() + key.slice(1);
   }
@@ -138,7 +140,7 @@ export class KeyboardShortcutManager {
   register(
     comboStr: string,
     handler: () => void,
-    options: { scope?: string; description?: string; id?: string; preventDefault?: boolean } = {}
+    options: { scope?: string; description?: string; id?: string; preventDefault?: boolean } = {},
   ): string {
     const combo = this.normalizeCombo(this.parseComboString(comboStr));
     const scope = options.scope || 'global';
@@ -182,16 +184,20 @@ export class KeyboardShortcutManager {
     this.globalBindings.delete(id);
     const scope = this.scopes.get(binding.scope || 'global');
     if (scope) {
-      scope.bindings = scope.bindings.filter(b => b.id !== id);
+      scope.bindings = scope.bindings.filter((b) => b.id !== id);
     }
   }
 
   // Register a key sequence (Vim-style: g then g)
-  registerSequence(combos: string[], handler: () => void, options?: { id?: string; scope?: string; timeout?: number }): string {
+  registerSequence(
+    combos: string[],
+    handler: () => void,
+    options?: { id?: string; scope?: string; timeout?: number },
+  ): string {
     const id = options?.id || `seq_${this.sequences.length + 1}`;
     const sequence: ShortcutSequence = {
       id,
-      combos: combos.map(c => this.normalizeCombo(this.parseComboString(c))),
+      combos: combos.map((c) => this.normalizeCombo(this.parseComboString(c))),
       handler,
       timeout: options?.timeout || 1000,
       scope: options?.scope,
@@ -201,7 +207,13 @@ export class KeyboardShortcutManager {
   }
 
   // Handle a key event
-  handleKeyEvent(event: { key: string; ctrlKey: boolean; shiftKey: boolean; altKey: boolean; metaKey: boolean }): boolean {
+  handleKeyEvent(event: {
+    key: string;
+    ctrlKey: boolean;
+    shiftKey: boolean;
+    altKey: boolean;
+    metaKey: boolean;
+  }): boolean {
     if (!this.enabled) return false;
 
     const pressedCombo: ShortcutCombo = {
@@ -220,10 +232,10 @@ export class KeyboardShortcutManager {
 
     if (matchingBindings.length > 0) {
       // Execute the most specific match (deepest scope)
-      const binding = matchingBindings[0];
+      const binding = matchingBindings[0]!;
       if (binding.enabled && !this.disabledBindings.has(binding.id)) {
         binding.handler();
-        this.listeners.forEach(listener => listener(binding));
+        this.listeners.forEach((listener) => listener(binding));
         return binding.preventDefault !== false;
       }
     }
@@ -237,7 +249,7 @@ export class KeyboardShortcutManager {
       const { sequence, currentIndex, timer } = this.activeSequence;
       const expectedCombo = sequence.combos[currentIndex + 1];
 
-      if (this.combosMatch(pressedCombo, expectedCombo)) {
+      if (expectedCombo && this.combosMatch(pressedCombo, expectedCombo)) {
         clearTimeout(timer);
 
         if (currentIndex + 1 === sequence.combos.length - 1) {
@@ -250,7 +262,9 @@ export class KeyboardShortcutManager {
           this.activeSequence = {
             sequence,
             currentIndex: currentIndex + 1,
-            timer: setTimeout(() => { this.activeSequence = null; }, sequence.timeout || 1000),
+            timer: setTimeout(() => {
+              this.activeSequence = null;
+            }, sequence.timeout || 1000),
           };
           return true;
         }
@@ -264,7 +278,8 @@ export class KeyboardShortcutManager {
     // Check if this starts a new sequence
     for (const sequence of this.sequences) {
       if (sequence.scope && !this.isScopeActive(sequence.scope)) continue;
-      if (this.combosMatch(pressedCombo, sequence.combos[0])) {
+      const firstCombo = sequence.combos[0];
+      if (firstCombo && this.combosMatch(pressedCombo, firstCombo)) {
         if (sequence.combos.length === 1) {
           sequence.handler();
           return true;
@@ -272,7 +287,9 @@ export class KeyboardShortcutManager {
         this.activeSequence = {
           sequence,
           currentIndex: 0,
-          timer: setTimeout(() => { this.activeSequence = null; }, sequence.timeout || 1000),
+          timer: setTimeout(() => {
+            this.activeSequence = null;
+          }, sequence.timeout || 1000),
         };
         return true;
       }
@@ -306,11 +323,13 @@ export class KeyboardShortcutManager {
 
   // Check if two combos match
   private combosMatch(a: ShortcutCombo, b: ShortcutCombo): boolean {
-    return a.key === b.key &&
+    return (
+      a.key === b.key &&
       a.ctrl === (b.ctrl || false) &&
       a.shift === (b.shift || false) &&
       a.alt === (b.alt || false) &&
-      a.meta === (b.meta || false);
+      a.meta === (b.meta || false)
+    );
   }
 
   // Generate unique key for combo
@@ -347,14 +366,16 @@ export class KeyboardShortcutManager {
       }
     }
 
-    comboMap.forEach((bindings, key) => {
+    comboMap.forEach((bindings, _key) => {
       if (bindings.length > 1) {
         for (let i = 0; i < bindings.length - 1; i++) {
+          const b1 = bindings[i]!;
+          const b2 = bindings[i + 1]!;
           conflicts.push({
-            binding1: bindings[i],
-            binding2: bindings[i + 1],
-            scope: bindings[i].scope || 'global',
-            combo: this.comboToString(bindings[i].combo),
+            binding1: b1,
+            binding2: b2,
+            scope: b1.scope || 'global',
+            combo: this.comboToString(b1.combo),
           });
         }
       }
@@ -364,20 +385,32 @@ export class KeyboardShortcutManager {
   }
 
   // Enable/disable shortcuts dynamically
-  enable(): void { this.enabled = true; }
-  disable(): void { this.enabled = false; }
+  enable(): void {
+    this.enabled = true;
+  }
+  disable(): void {
+    this.enabled = false;
+  }
 
-  enableBinding(id: string): void { this.disabledBindings.delete(id); }
-  disableBinding(id: string): void { this.disabledBindings.add(id); }
+  enableBinding(id: string): void {
+    this.disabledBindings.delete(id);
+  }
+  disableBinding(id: string): void {
+    this.disabledBindings.add(id);
+  }
 
   // Generate help display data
-  getHelpData(): Array<{ scope: string; shortcuts: Array<{ combo: string; description: string }> }> {
-    const help: Array<{ scope: string; shortcuts: Array<{ combo: string; description: string }> }> = [];
+  getHelpData(): Array<{
+    scope: string;
+    shortcuts: Array<{ combo: string; description: string }>;
+  }> {
+    const help: Array<{ scope: string; shortcuts: Array<{ combo: string; description: string }> }> =
+      [];
 
-    for (const [scopeId, scope] of this.scopes) {
+    for (const [_scopeId, scope] of this.scopes) {
       const shortcuts = scope.bindings
-        .filter(b => b.description && b.enabled)
-        .map(b => ({
+        .filter((b) => b.description && b.enabled)
+        .map((b) => ({
           combo: this.comboToString(b.combo),
           description: b.description || '',
         }));
