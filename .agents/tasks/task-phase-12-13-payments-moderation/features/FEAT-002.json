@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Phase 13: Add abuse graph, spam detection, AI output safety checks, ad policy enforcement, bot detection, content labeling, and safety audit logs to the moderation package. This completes the Phase 13 requirements that are not yet implemented.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create packages/moderation/src/services/abuse-graph.ts - An AbuseGraphService class that tracks relationships between abusive accounts (shared IPs, shared devices, coordinated activity, follow patterns). Detects abuse rings by finding connected components. Methods: addNode, addEdge, findCluster, getRelatedAccounts, getRiskScore for account based on graph neighbors. Uses adjacency list in-memory.",
     "Create packages/moderation/src/services/spam-detection.ts - A SpamDetectionService class with rate limiting (messages per time window), duplicate content detection (exact and fuzzy matching using simple similarity), link spam detection (excessive URLs, known-bad domains), new account burst detection. Returns SpamVerdict: clean/suspicious/spam with confidence score.",
