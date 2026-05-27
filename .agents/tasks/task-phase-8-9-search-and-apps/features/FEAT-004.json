@@ -2,7 +2,7 @@
   "id": "FEAT-004",
   "type": "feat",
   "description": "Phase 9 Part 3: Add core data models, service logic, and tests for QuantTube (video upload, channels, watch, engagement), QuantNeon (photo/video posts, stories, follows, explore), QuantSync (feed, posts, communities, trending), QuantEdits (projects, timeline, export), QuantMax (short videos, feed, hashtags), and QuantAds (campaigns, creatives, audiences, analytics). These apps already have some services. Fill in missing core service methods and add tests to meet launch gates.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "In apps/quantube/backend/services/video.service.ts: ensure uploadVideo, getVideo, listVideos, updateVideo, deleteVideo, incrementViews, like, comment exist.",
     "In apps/quantube/backend/services/channel.service.ts: ensure createChannel, getChannel, subscribe, unsubscribe, getSubscribers exist.",

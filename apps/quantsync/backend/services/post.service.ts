@@ -256,4 +256,16 @@ export class PostService {
       },
     });
   }
+
+  async bookmark(postId: string, _userId: string): Promise<Post> {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+    });
+
+    if (!post || post.deletedAt) {
+      throw createAppError('Post not found', 404, 'POST_NOT_FOUND');
+    }
+
+    return post;
+  }
 }

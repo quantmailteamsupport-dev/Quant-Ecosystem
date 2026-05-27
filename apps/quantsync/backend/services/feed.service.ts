@@ -176,4 +176,42 @@ export class FeedService {
       hasPrev: page > 1,
     };
   }
+
+  async getBookmarks(
+    userId: string,
+    options: PaginationOptions = {},
+  ): Promise<PaginatedResult<Post>> {
+    const page = options.page ?? 1;
+    const pageSize = options.pageSize ?? 20;
+    const skip = (page - 1) * pageSize;
+
+    const [data, total] = await Promise.all([
+      this.prisma.post.findMany({
+        where: {
+          userId,
+          deletedAt: null,
+        },
+        skip,
+        take: pageSize,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.post.count({
+        where: {
+          userId,
+          deletedAt: null,
+        },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(total / pageSize);
+    return {
+      data,
+      total,
+      page,
+      pageSize,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1,
+    };
+  }
 }
