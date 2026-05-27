@@ -9,6 +9,6 @@
     "tests": "pass",
     "test_quality": "pass",
     "docker_build": "skipped",
-    "summary": "All gates pass: typecheck 82/82, test 84/84 (all pass). v2 review issues resolved: useFeed pagination now passes offset, fetchNextPage wrapped in useEffect, useLive exposes fetched stream data, useReels as-any cast removed."
+    "summary": "All gates pass: typecheck 82/82, test 84/84, build 60/60, lint 70/70 (0 errors). Hard gate: grep for mock/Mock/fakeData/placeholderData in .tsx returns 0 results outside test files. Semantic review v3: APPROVED."
   }
 }
