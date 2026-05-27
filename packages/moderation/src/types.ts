@@ -280,6 +280,20 @@ export interface TextModerationResponse {
   selfHarm: TextModerationCategoryResult;
   sexual: TextModerationCategoryResult;
   violence: TextModerationCategoryResult;
+  sexualMinors?: TextModerationCategoryResult;
+  threatOfViolence?: TextModerationCategoryResult;
+  spam?: TextModerationCategoryResult;
+}
+
+/** Full moderation score card with all 7 required categories (Phase 20) */
+export interface ModerationScoreCard {
+  toxicity: number;
+  hate: number;
+  harassment: number;
+  sexualMinor: number;
+  violenceExplicit: number;
+  selfHarm: number;
+  spam: number;
 }
 
 /** API client interface for text moderation */
@@ -334,6 +348,9 @@ export interface PolicyDecision {
   confidence: number;
 }
 
+/** Moderator role for appeal handling */
+export type ModeratorRole = 'moderator' | 'senior_moderator' | 'legal';
+
 /** Appeal record - Zod validated */
 export const AppealRecordSchema = z.object({
   id: z.string(),
@@ -363,6 +380,8 @@ export const AppealRecordSchema = z.object({
   source: z.enum(['automated', 'user_initiated']),
   assignedTo: z.string().optional(),
   resolution: z.string().optional(),
+  priority: z.enum(['critical', 'high', 'medium', 'low']).optional(),
+  slaDeadline: z.number().optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
   resolvedAt: z.number().optional(),
@@ -389,6 +408,45 @@ export interface TransparencyReport {
 export interface CSAMMatcherInterface {
   checkHash(hash: string): Promise<{ matched: boolean; reportId?: string }>;
   reportMatch(params: { hash: string; source: string }): Promise<void>;
+}
+
+// ============================================================================
+// CSAM Hash Provider Types (Phase 20)
+// ============================================================================
+
+/** Interface for CSAM hash-matching providers (PhotoDNA, Thorn Safer, etc.) */
+export interface CSAMHashProvider {
+  /** Check whether a given SHA-256 hash matches the provider's known CSAM database */
+  checkHash(hash: string): Promise<CSAMHashCheckResult>;
+  /** Report a confirmed match to the provider for audit/legal purposes */
+  reportMatch(params: { hash: string; source: string; timestamp: number }): Promise<void>;
+  /** Get the name of this provider for logging/reporting */
+  getProviderName(): string;
+}
+
+/** Result of a hash check against a CSAM provider */
+export interface CSAMHashCheckResult {
+  matched: boolean;
+  confidence?: number;
+  providerResponse?: Record<string, unknown>;
+}
+
+/** Report generated when a CSAM match is detected */
+export interface CSAMReport {
+  hash: string;
+  source: string;
+  timestamp: number;
+  reportId: string;
+  providerName: string;
+  providerResponse?: Record<string, unknown>;
+}
+
+/** Configuration for the CSAM matching service */
+export interface CSAMConfig {
+  provider: CSAMHashProvider;
+  legalContactEmail: string;
+  pagingWebhookUrl: string;
+  enabledApps: string[];
 }
 
 // ============================================================================
@@ -545,4 +603,189 @@ export interface SafetyAuditEntry {
   reason: string;
   metadata: Record<string, unknown>;
   timestamp: number;
+}
+
+// ============================================================================
+// Video & Live Stream Moderation Types (Phase 20)
+// ============================================================================
+
+/** Result of a keyframe extraction operation */
+export interface KeyframeResult {
+  timestamp: number;
+  framePath?: string;
+  buffer?: Buffer;
+}
+
+/** A single segment within a transcription result */
+export interface TranscriptionSegment {
+  start: number;
+  end: number;
+  text: string;
+  confidence: number;
+}
+
+/** Result from audio transcription */
+export interface TranscriptionResult {
+  text: string;
+  segments: TranscriptionSegment[];
+  duration: number;
+  language?: string;
+}
+
+/** Events emitted by the LiveModerator */
+export type LiveModerationEventType = 'flag' | 'disconnect' | 'ban';
+
+/** Event payload emitted by the LiveModerator */
+export interface LiveModerationEvent {
+  type: LiveModerationEventType;
+  sessionId: string;
+  userId: string;
+  reason: string;
+  timestamp: number;
+  violationCount: number;
+}
+
+/** Session state tracked by the LiveModerator */
+export interface LiveModerationSession {
+  sessionId: string;
+  userId: string;
+  startedAt: number;
+  violationCount: number;
+  lastFlagAt?: number;
+  disconnected: boolean;
+  banned: boolean;
+}
+
+/** Configuration for stream moderation */
+export interface StreamModerationConfig {
+  frameSampleIntervalMs: number;
+  violationThresholdForDisconnect: number;
+  violationThresholdForBan: number;
+  banDurationMs: number;
+  profanityKeywords: string[];
+}
+
+/** Interface for Whisper-compatible transcription providers */
+export interface WhisperProvider {
+  transcribe(audio: Buffer | string): Promise<TranscriptionResult>;
+}
+
+/** Interface for frame extraction backends (DI pattern) */
+export interface FrameExtractorBackend {
+  extractFrames(input: string | Buffer, timestamps: number[]): Promise<KeyframeResult[]>;
+}
+
+// ============================================================================
+// Account Integrity & Verification Types (Phase 20)
+// ============================================================================
+
+/** SMS provider interface for phone verification */
+export interface SMSProvider {
+  /** Send an SMS message to a phone number */
+  send(phoneNumber: string, message: string): Promise<SMSSendResult>;
+  /** Get provider name for logging */
+  getProviderName(): string;
+}
+
+/** Result of sending an SMS */
+export interface SMSSendResult {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+}
+
+/** Result of phone verification */
+export interface PhoneVerificationResult {
+  success: boolean;
+  error?: string;
+  messageId?: string;
+  retryAfter?: number;
+}
+
+/** Result of email validation */
+export interface EmailValidationResult {
+  valid: boolean;
+  reason?: string;
+  disposable: boolean;
+  mxValid: boolean;
+}
+
+/** Raw browser signals for device fingerprinting */
+export interface DeviceSignals {
+  userAgent: string;
+  screenResolution: string;
+  timezone: string;
+  language: string;
+  canvasHash?: string;
+  webglHash?: string;
+  installedFontsHash?: string;
+}
+
+/** Computed device fingerprint */
+export interface DeviceFingerprint {
+  deviceId: string;
+  signals: DeviceSignals;
+  createdAt: number;
+}
+
+/** Result of a sybil check */
+export interface SybilCheckResult {
+  isSybil: boolean;
+  confidence: number;
+  linkedAccounts: string[];
+}
+
+/** Behavioral signals for risk analysis */
+export interface BehavioralSignals {
+  accountAgeDays: number;
+  typingSpeedWpm?: number;
+  mouseEntropy?: number;
+  sessionCount: number;
+  avgSessionDurationMs?: number;
+}
+
+/** Behavioral risk score result */
+export interface BehavioralRiskScore {
+  score: number;
+  factors: BehavioralRiskFactor[];
+  classification: 'low' | 'medium' | 'high' | 'critical';
+}
+
+/** Individual behavioral risk factor */
+export interface BehavioralRiskFactor {
+  name: string;
+  score: number;
+  description: string;
+}
+
+/** Human-likeness assessment */
+export interface HumanLikenessResult {
+  confidence: number;
+  factors: { name: string; passed: boolean; detail: string }[];
+}
+
+/** Age groups for age gating */
+export type AgeGroup = 'under13' | 'under16' | 'under18' | 'adult';
+
+/** Age verification result */
+export interface AgeVerificationResult {
+  ageGroup: AgeGroup;
+  restrictions: string[];
+}
+
+/** Step-up verification methods */
+export type StepUpMethod = 'id_upload' | 'parental_consent' | 'phone';
+
+/** Step-up verification requirement */
+export interface StepUpVerification {
+  required: boolean;
+  method: StepUpMethod;
+}
+
+/** Age restriction record */
+export interface AgeRestriction {
+  feature: string;
+  minAgeGroup: AgeGroup;
+  requiresStepUp: boolean;
+  stepUpMethod?: StepUpMethod;
 }

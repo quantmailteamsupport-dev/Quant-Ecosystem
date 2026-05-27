@@ -11,10 +11,34 @@ export {
   type ClassifierThresholds,
 } from './services/classifier-thresholds';
 export { PerceptualHasher } from './services/perceptual-hash';
-export { CSAMGuard } from './services/csam-matcher';
+export { BloomFilter } from './services/bloom-filter';
+export { HashRegistry } from './services/hash-registry';
+export type { HashCheckResult, HashRegistryStats } from './services/hash-registry';
+export { CSAMGuard, CSAMGuardLegacy, CSAMMatchService } from './services/csam-matcher';
+export {
+  PhotoDNAProvider,
+  TestHashProvider,
+  NullProvider,
+  NCMEC_TEST_HASHES,
+} from './services/csam-hash-provider';
 export { PolicyEngine, PolicySchema, PolicyRuleSchema } from './services/policy-engine';
 export { AppealWorkflow } from './services/appeal-workflow';
+export type { Reviewer } from './services/appeal-workflow';
+export { AppealsQueue } from './services/appeals-queue';
+export type { QueueStats, ReviewerWorkload } from './services/appeals-queue';
 export { TransparencyReportGenerator } from './services/transparency-report';
+export { SafetyMicrofeatures } from './services/safety-microfeatures';
+export type {
+  OneTapAction,
+  OneTapActionResult,
+  UsageMetrics,
+  DistressResult,
+  MassUnfollowResult,
+  SelfHarmRedirectResult,
+  CrisisHotline,
+} from './services/safety-microfeatures';
+export { GroomingPatternDetector } from './services/grooming-detector';
+export type { GroomingDetectionResult, ConversationMessage } from './services/grooming-detector';
 export { ContentClassifier } from './services/content-classifier';
 export { TextModerator } from './services/text-moderator';
 export { ImageModerator } from './services/image-moderator';
@@ -30,3 +54,23 @@ export { AdPolicyEnforcementService } from './services/ad-policy-enforcement';
 export { BotDetectionService } from './services/bot-detection';
 export { ContentLabelService } from './services/content-labels';
 export { SafetyAuditLogService } from './services/safety-audit-log';
+export {
+  KeyframeExtractor,
+  MockFrameExtractorBackend,
+  FfmpegFrameExtractorBackend,
+} from './services/keyframe-extractor';
+export {
+  AudioTranscriber,
+  OpenAIWhisperProvider,
+  MockWhisperProvider,
+} from './services/audio-transcriber';
+export { LiveModerator } from './services/live-moderator';
+export {
+  PhoneVerificationService,
+  TwilioSMSProvider,
+  MSG91SMSProvider,
+} from './services/phone-verification';
+export { EmailVerificationService } from './services/email-verification';
+export { DeviceFingerprintService } from './services/device-fingerprint';
+export { BehavioralSignalAnalyzer } from './services/behavioral-signals';
+export { AgeGateService } from './services/age-gate';

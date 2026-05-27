@@ -97,4 +97,77 @@ export class TransparencyReportGenerator {
       topCategories,
     };
   }
+
+  /** Export a transparency report as a formatted markdown string */
+  exportAsMarkdown(report: TransparencyReport): string {
+    const startDateStr = new Date(report.startDate).toISOString().split('T')[0];
+    const endDateStr = new Date(report.endDate).toISOString().split('T')[0];
+
+    const lines: string[] = [];
+    lines.push(`# Transparency Report`);
+    lines.push('');
+    lines.push(`**Period:** ${startDateStr} to ${endDateStr}`);
+    lines.push('');
+
+    // Summary
+    lines.push('## Summary');
+    lines.push('');
+    lines.push(`- **Total Actions:** ${report.totalActions}`);
+    lines.push(`- **Appeals Submitted:** ${report.appealStats.submitted}`);
+    lines.push(`- **Appeals Approved:** ${report.appealStats.approved}`);
+    lines.push(`- **Appeals Denied:** ${report.appealStats.denied}`);
+    lines.push(`- **Average Resolution Time:** ${formatDuration(report.avgResolutionTime)}`);
+    lines.push('');
+
+    // False positive rate
+    const totalResolved = report.appealStats.approved + report.appealStats.denied;
+    const falsePositiveRate =
+      totalResolved > 0 ? ((report.appealStats.approved / totalResolved) * 100).toFixed(1) : '0.0';
+    lines.push(`- **False Positive Rate (appeals overturned):** ${falsePositiveRate}%`);
+    lines.push('');
+
+    // Actions by Category
+    lines.push('## Actions by Category');
+    lines.push('');
+    lines.push('| Category | Count |');
+    lines.push('|----------|-------|');
+    for (const [category, count] of Object.entries(report.actionsByCategory)) {
+      lines.push(`| ${category} | ${count} |`);
+    }
+    lines.push('');
+
+    // Top Categories
+    if (report.topCategories.length > 0) {
+      lines.push('## Top Violation Categories');
+      lines.push('');
+      for (let i = 0; i < report.topCategories.length; i++) {
+        const cat = report.topCategories[i]!;
+        lines.push(`${i + 1}. **${cat.category}** - ${cat.count} actions`);
+      }
+      lines.push('');
+    }
+
+    // Appeal Outcomes
+    lines.push('## Appeal Outcomes');
+    lines.push('');
+    lines.push(`- Submitted: ${report.appealStats.submitted}`);
+    lines.push(`- Approved (overturned): ${report.appealStats.approved}`);
+    lines.push(`- Denied (upheld): ${report.appealStats.denied}`);
+    lines.push('');
+
+    return lines.join('\n');
+  }
+}
+
+/** Format milliseconds to human-readable duration */
+function formatDuration(ms: number): string {
+  if (ms === 0) return '0ms';
+  const hours = Math.floor(ms / 3600000);
+  const minutes = Math.floor((ms % 3600000) / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+  const parts: string[] = [];
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+  if (seconds > 0 && hours === 0) parts.push(`${seconds}s`);
+  return parts.join(' ') || '< 1s';
 }
