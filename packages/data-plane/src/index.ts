@@ -14,3 +14,4 @@ export type {
   OperationContext,
   FindOptions,
 } from './base-repository.js';
+export { IdempotencyKeyStore, withIdempotency } from './idempotency.js';

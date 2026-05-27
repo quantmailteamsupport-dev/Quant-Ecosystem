@@ -1885,6 +1885,12 @@ importers:
       '@quant/health-server':
         specifier: workspace:*
         version: link:../../packages/health-server
+      '@quant/realtime':
+        specifier: workspace:*
+        version: link:../../packages/realtime
+      ws:
+        specifier: ^8.18.0
+        version: 8.21.0
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
