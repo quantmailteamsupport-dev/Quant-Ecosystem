@@ -6,3 +6,7 @@ export * from './types';
 export * from './constants';
 export * from './utils';
 export * from './validators';
+export { DeepLinkingService } from './deep-linking';
+export type { DeepLink, LinkHandler } from './deep-linking';
+export { ActivityFeedService } from './activity-feed';
+export type { Activity, ActivityType, ActivityFeedOptions } from './activity-feed';

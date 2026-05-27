@@ -2,7 +2,7 @@
   "id": "FEAT-008",
   "type": "feat",
   "description": "Add cross-app integration features: universal notification center, deep linking service, shared media picker, cross-app search aggregator, and activity feed across apps. These live in the packages/ directory as shared infrastructure.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create packages/notifications/src/universal-notification-center.ts - UniversalNotificationCenter class that aggregates notifications from all apps. Methods: getAll(userId, filters), markRead(ids), markAllRead(appId), getUnreadCounts(), subscribe(callback), setPreferences(userId, prefs). Group by app, support priority levels, batch digest",
     "Create packages/common/src/deep-linking.ts - DeepLinkingService with generateLink(app, route, params), parseLink(url), registerHandler(pattern, handler), navigate(link). Support universal links across all 19 apps. Pattern: quant://appname/path?params",

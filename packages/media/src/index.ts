@@ -19,6 +19,9 @@ export { CDNService, CDNConfigSchema } from './services/cdn-service';
 export type { CDNConfig, InvalidationResult } from './services/cdn-service';
 export { MetadataExtractor } from './services/metadata-extractor';
 
+export { SharedMediaPickerService } from './shared-media-picker';
+export type { MediaItem, PickerOptions, StorageInfo } from './shared-media-picker';
+
 export type {
   MediaType,
   ImageFormat,
