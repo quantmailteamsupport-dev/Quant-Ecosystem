@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Triton Inference Server client + service infrastructure. Add a new package @quant/triton-client that wraps Triton HTTP/gRPC inference protocol. Replace the naive neural-cf.ts with a Triton-backed client. Add Triton to docker-compose and Helm values. Add model repository structure for ONNX models.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create packages/triton-client/ with package.json (deps: zod), tsconfig.json, src/index.ts barrel export",
     "Create src/triton-http-client.ts: TritonInferenceClient class that speaks Triton HTTP inference protocol v2 (POST /v2/models/{model}/infer). Interface-based with TritonTransport for DI/mocking. Methods: infer(modelName, inputs) -> outputs, getModelStatus(modelName), getServerHealth(). Input/output typed with TensorData (name, shape, datatype, data).",
@@ -33,5 +33,5 @@
     "cd /projects/sandbox/Quant-Ecosystem && pnpm test --filter=@quant/triton-client --filter=@quant/recommendations"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All acceptance criteria met. triton-client builds/typechecks with 9 passing tests (mocked transport). recommendations package has 67 passing tests with new Triton-backed NeuralCF. Prettier ran via lint-staged hook on commit with no issues. The NeuralCF public API is now async (returns Promises) since it calls Triton over HTTP. Fallback mode with InMemoryNeuralCF is synchronous but wrapped in the async interface."
 }
