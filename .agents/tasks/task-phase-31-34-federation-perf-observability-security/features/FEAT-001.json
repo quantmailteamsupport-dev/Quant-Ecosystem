@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Phase 31: Federation & Open Protocols - Extend the existing @quant/federation package with CalDAV/CardDAV, IMAP adapters, developer platform (OAuth2 provider, API keys, webhooks, public APIs with rate limits), and documentation. Extend services/identity with OAuth2 provider routes.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "1. Add CalDAV/CardDAV protocol support in packages/federation/src/caldav/ with: (a) caldav-server.ts implementing RFC 4791 PROPFIND/REPORT/PUT/DELETE for calendar events, (b) carddav-server.ts implementing RFC 6352 for contact vCards, (c) vcal-serializer.ts for iCalendar (RFC 5545) export/import, (d) vcard-serializer.ts for vCard 4.0 (RFC 6350) serialization. Include Zod schemas for validation.",
     "2. Add IMAP/POP3 protocol adapter in packages/federation/src/mail-protocols/ with: (a) imap-adapter.ts implementing core IMAP commands (SELECT, FETCH, SEARCH, STORE, COPY) with mailbox mapping, (b) pop3-adapter.ts implementing USER/PASS/STAT/LIST/RETR/DELE, (c) smtp-relay.ts wrapping outbound SMTP with DKIM signing support. Reference services/smtp-inbound for patterns.",
@@ -23,5 +23,5 @@
     "pnpm build --filter=@quant/federation"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All modules implemented and verified. Typecheck, test (98 tests pass), and build all succeed. Prettier reformatted files via lint-staged pre-commit hook."
 }
