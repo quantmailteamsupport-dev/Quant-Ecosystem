@@ -31,6 +31,8 @@ const defaultNotificationPrefs: NotificationPreferences = {
   pushNotifications: true,
   desktopNotifications: true,
   digestFrequency: 'daily',
+  quietHours: null,
+  categories: {},
 };
 const noop = async () => {
   /* placeholder */

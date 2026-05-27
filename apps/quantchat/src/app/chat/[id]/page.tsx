@@ -1,5 +1,6 @@
 'use client';
 
+import { use } from 'react';
 import { ChatBubble, ChatInput, TypingIndicator, TopBar } from '@quant/shared-ui';
 
 interface Message {
@@ -36,11 +37,12 @@ const mockMessages: Message[] = [
   },
 ];
 
-export default function ChatPage({ params }: { params: { id: string } }) {
+export default function ChatPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   return (
     <div className="flex flex-col h-screen">
       <TopBar
-        title={`Chat ${params.id}`}
+        title={`Chat ${id}`}
         onBack={() => {
           window.location.href = '/';
         }}

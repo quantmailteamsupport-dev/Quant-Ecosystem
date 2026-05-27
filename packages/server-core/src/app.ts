@@ -7,6 +7,15 @@ import healthPlugin from './plugins/health';
 import authPlugin from './plugins/auth';
 
 export async function createApp(config: AppConfig) {
+  // Production security validation
+  if (config.env === 'production') {
+    if (!config.jwtSecret || config.jwtSecret.length < 32) {
+      throw new Error(
+        '[FATAL] jwtSecret must be at least 32 characters in production. Set a strong secret.',
+      );
+    }
+  }
+
   const fastify = Fastify({
     logger:
       config.env === 'test'

@@ -1,5 +1,10 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { WebSocket } from '@fastify/websocket';
+import * as jose from 'jose';
+
+const JWT_SECRET = process.env.JWT_SECRET || '';
+const JWT_ISSUER = process.env.JWT_ISSUER || 'quant-ecosystem';
+const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'quant-apps';
 
 interface WsMessage {
   type: string;
@@ -53,11 +58,28 @@ export default async function wsRoutes(fastify: FastifyInstance) {
     }
   }
 
-  fastify.get('/', { websocket: true }, (socket: WebSocket) => {
-    // TODO: Authentication should be added here. In production, validate a JWT token
-    // passed as a query parameter or in the initial WebSocket upgrade headers.
-    // Example: const token = request.query.token; verify(token, jwtSecret);
-    // Until then, any connected socket can join rooms without proving identity.
+  fastify.get('/', { websocket: true }, async (socket: WebSocket, request: FastifyRequest) => {
+    // Authenticate the WebSocket connection via JWT token in query string
+    const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
+    const token = url.searchParams.get('token');
+
+    if (!token) {
+      socket.send(JSON.stringify({ type: 'error', message: 'Authentication required' }));
+      socket.close(4001, 'Authentication required');
+      return;
+    }
+
+    try {
+      const secret = new TextEncoder().encode(JWT_SECRET);
+      await jose.jwtVerify(token, secret, {
+        issuer: JWT_ISSUER,
+        audience: JWT_AUDIENCE,
+      });
+    } catch {
+      socket.send(JSON.stringify({ type: 'error', message: 'Invalid token' }));
+      socket.close(4001, 'Invalid token');
+      return;
+    }
 
     socket.on('message', (rawData: Buffer | string) => {
       let message: WsMessage;
@@ -90,8 +112,6 @@ export default async function wsRoutes(fastify: FastifyInstance) {
             );
             return;
           }
-          // TODO: Validate that the room exists in RoomService and that the participant
-          // has been authenticated and authorized to join this room.
           const connections = rooms.get(message.roomId) ?? [];
           connections.push({
             socket,
