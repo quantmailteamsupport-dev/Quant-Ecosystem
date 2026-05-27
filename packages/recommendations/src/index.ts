@@ -53,12 +53,38 @@ export { OnDeviceRanker } from './on-device-ranker';
 export type { UserPrefs, RankedCandidate, OnnxRuntime } from './on-device-ranker';
 
 // Experiment
-export { ExperimentService } from './experiment/experiment-service';
+export { ExperimentService, InMemoryBucketStore } from './experiment/experiment-service';
 export type {
   ExperimentConfig,
   ExperimentResult,
   ExposureRecord,
+  GuardrailMetric,
+  GuardrailCheckResult,
+  BucketStore,
 } from './experiment/experiment-service';
+export { GuardrailEvaluator } from './experiment/guardrails';
+export type { GuardrailBreachDetail, GuardrailEvaluation } from './experiment/guardrails';
+
+// Personalization
+export {
+  UserSignalProcessor,
+  InMemorySignalStore,
+  TimeWellSpent,
+  InMemorySessionStore,
+  FollowingMode,
+} from './personalization';
+export type {
+  NegativeSignal,
+  SignalStore,
+  SessionData,
+  DailySummary,
+  RegretPrediction,
+  SessionStore,
+  SocialGraph,
+  ContentStore,
+  ContentPost,
+  FollowingFeedResult,
+} from './personalization';
 
 export type {
   UserProfile,
