@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Wire Memory API routes in QuantAI backend and enhance the Memory Inspector UI to use real backend data, support full CRUD, export/import, search, category filtering, lock, and full-disclosure view.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Step 1: Add @quant/ai-memory as a dependency in apps/quantai/package.json.",
     "Step 2: Create apps/quantai/backend/services/memory.service.ts - instantiate AIMemoryStore and MemoryExporter. Provide methods: listMemories(userId, filters), createMemory(userId, data), updateMemory(id, data), deleteMemory(id), purgeByTag(userId, tag), createCandidate(userId, data), getPendingCandidates(userId), approveCandidate(id), rejectCandidate(id), exportMemories(userId, format), importMemories(userId, json), getFullDisclosure(userId) which returns all memories + access logs.",
@@ -32,5 +32,5 @@
     "pnpm turbo lint --filter=@quant/quantai"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All gates pass (typecheck, test, lint). The MemoryExporter JSON export uses a sorted-key whitelist that only preserves top-level field names in nested objects, so content fields are not visible in the plain JSON export string. Import uses separately constructed full JSON. The search filter matches on both content and explanation fields. Prettier reformats on commit via lint-staged."
 }
