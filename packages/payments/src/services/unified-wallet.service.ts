@@ -56,10 +56,12 @@ interface WalletSummary {
 export class UnifiedWalletService {
   private walletService: WalletService;
   private cashouts: Map<string, CashoutRecord[]>;
+  private runningTotals: Map<string, { totalAdded: number; totalSpent: number }>;
 
   constructor(walletService?: WalletService) {
     this.walletService = walletService || new WalletService();
     this.cashouts = new Map();
+    this.runningTotals = new Map();
   }
 
   /** Ensure a wallet exists for the user */
@@ -82,7 +84,14 @@ export class UnifiedWalletService {
     await this.ensureWallet(userId);
 
     const description = `Add money via ${source}`;
-    return this.walletService.credit(userId, amount, description, paymentRef);
+    const txn = await this.walletService.credit(userId, amount, description, paymentRef);
+
+    // Update running totals
+    const totals = this.runningTotals.get(userId) || { totalAdded: 0, totalSpent: 0 };
+    totals.totalAdded += amount;
+    this.runningTotals.set(userId, totals);
+
+    return txn;
   }
 
   /** Spend from wallet for a specific category */
@@ -95,7 +104,14 @@ export class UnifiedWalletService {
     SpendSchema.parse({ userId, amount, category, targetId });
 
     const description = `Spend: ${category} (${targetId})`;
-    return this.walletService.debit(userId, amount, description, targetId);
+    const txn = await this.walletService.debit(userId, amount, description, targetId);
+
+    // Update running totals
+    const totals = this.runningTotals.get(userId) || { totalAdded: 0, totalSpent: 0 };
+    totals.totalSpent += amount;
+    this.runningTotals.set(userId, totals);
+
+    return txn;
   }
 
   /** Get wallet summary for AppShell display */
@@ -108,15 +124,7 @@ export class UnifiedWalletService {
       (c) => c.status === 'pending' || c.status === 'processing',
     );
 
-    let totalAdded = 0;
-    let totalSpent = 0;
-    const { transactions: allTxns } = await this.walletService.getTransactionHistory(userId, {
-      limit: 1000,
-    });
-    for (const txn of allTxns) {
-      if (txn.type === 'credit') totalAdded += txn.amount;
-      if (txn.type === 'debit') totalSpent += txn.amount;
-    }
+    const totals = this.runningTotals.get(userId) || { totalAdded: 0, totalSpent: 0 };
 
     return {
       balance: balance.balance,
@@ -124,14 +132,19 @@ export class UnifiedWalletService {
       frozen: balance.frozen,
       recentTransactions: transactions,
       pendingCashouts,
-      totalAdded,
-      totalSpent,
+      totalAdded: totals.totalAdded,
+      totalSpent: totals.totalSpent,
     };
   }
 
   /** Request a cashout via Stripe Connect */
   async cashoutStripeConnect(userId: string, amount: number): Promise<CashoutRecord> {
     await this.walletService.debit(userId, amount, 'Cashout via Stripe Connect');
+
+    // Update running totals for the debit
+    const totals = this.runningTotals.get(userId) || { totalAdded: 0, totalSpent: 0 };
+    totals.totalSpent += amount;
+    this.runningTotals.set(userId, totals);
 
     const record: CashoutRecord = {
       id: `cashout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -151,6 +164,11 @@ export class UnifiedWalletService {
   /** Request a cashout via Razorpay Payout */
   async cashoutRazorpay(userId: string, amount: number): Promise<CashoutRecord> {
     await this.walletService.debit(userId, amount, 'Cashout via Razorpay Payout');
+
+    // Update running totals for the debit
+    const totals = this.runningTotals.get(userId) || { totalAdded: 0, totalSpent: 0 };
+    totals.totalSpent += amount;
+    this.runningTotals.set(userId, totals);
 
     const record: CashoutRecord = {
       id: `cashout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,

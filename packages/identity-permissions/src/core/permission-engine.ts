@@ -77,13 +77,16 @@ export class PermissionEngine {
     }
 
     // Evaluate ABAC conditions on applicable policies
-    if (applicablePolicies.length > 0 && context) {
-      // All applicable policies with conditions must have at least one that passes
+    if (applicablePolicies.length > 0) {
       const policiesWithConditions = applicablePolicies.filter(
         (p) => p.conditions && p.conditions.length > 0,
       );
 
       if (policiesWithConditions.length > 0) {
+        // If policies have conditions but no context was provided, deny access
+        if (!context) {
+          return false;
+        }
         const anyPolicyPasses = policiesWithConditions.some((policy) =>
           this.evaluateConditions(policy.conditions!, context),
         );

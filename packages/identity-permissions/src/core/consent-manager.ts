@@ -128,7 +128,7 @@ export class ConsentManager {
 
   /** Grant consent and record in the ledger */
   grantConsent(userId: string, scope: string, source: string, expiry?: number): string {
-    const id = `ledger-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const id = `ledger-${userId}-${Date.now()}-${crypto.randomUUID().slice(0, 12)}`;
     const entry: ConsentLedgerEntry = {
       id,
       userId,

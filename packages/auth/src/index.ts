@@ -38,7 +38,11 @@ export type { FederatedClientConfig } from './services/federated-identity-servic
 export { TravelModeService } from './services/travel-mode-service';
 export type { AccessRequestContext } from './services/travel-mode-service';
 export { AccountLifecycleService } from './services/account-lifecycle-service';
-export type { VacationResponder, AccountExportData } from './services/account-lifecycle-service';
+export type {
+  VacationResponder,
+  AccountExportData,
+  PurgeableService,
+} from './services/account-lifecycle-service';
 export { SignInWithQuantSDK } from './services/sign-in-with-quant-sdk';
 export type {
   QuantUserProfile,

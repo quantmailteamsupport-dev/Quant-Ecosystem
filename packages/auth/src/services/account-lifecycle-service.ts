@@ -23,6 +23,11 @@ export interface AccountExportData {
   activityLog: Record<string, unknown>[];
 }
 
+/** Interface for services that hold user data and need cleanup on purge */
+export interface PurgeableService {
+  purgeUserData(userId: string): void | Promise<void>;
+}
+
 /** Grace period in milliseconds (14 days) */
 const DELETION_GRACE_PERIOD_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -39,6 +44,14 @@ export class AccountLifecycleService {
   private deletionRequests: Map<string, AccountDeletionRequest> = new Map();
   private vacationResponders: Map<string, VacationResponder> = new Map();
   private purgedAccounts: Set<string> = new Set();
+  private purgeableServices: PurgeableService[] = [];
+
+  /**
+   * Register a service for cross-service cleanup on account purge
+   */
+  registerPurgeableService(service: PurgeableService): void {
+    this.purgeableServices.push(service);
+  }
 
   /**
    * Request account deletion with 14-day grace period
@@ -99,6 +112,12 @@ export class AccountLifecycleService {
     }
     this.vacationResponders.delete(userId);
     this.purgedAccounts.add(userId);
+
+    // Orchestrate cross-service cleanup
+    for (const service of this.purgeableServices) {
+      service.purgeUserData(userId);
+    }
+
     return true;
   }
 

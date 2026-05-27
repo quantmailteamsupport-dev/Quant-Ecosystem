@@ -3,7 +3,7 @@
 // ============================================================================
 
 import * as jose from 'jose';
-import type { AuthConfig } from '../types';
+import type { AuthConfig, OAuthClient } from '../types';
 import type { PermissionScope } from '@quant/common';
 import { generateCodeVerifier, generateCodeChallenge } from '../crypto/pkce';
 import { generateSecureToken, generateId } from '../crypto/secure-random';
@@ -45,6 +45,8 @@ export class SignInWithQuantSDK {
   private config: AuthConfig;
   private secret: Uint8Array;
   private authorizationEndpoint: string;
+  // In-memory store for registered clients (maps clientId -> client record)
+  private registeredClients: Map<string, OAuthClient> = new Map();
   // In-memory store for authorization codes (maps code -> metadata)
   private authCodes: Map<
     string,
@@ -62,6 +64,13 @@ export class SignInWithQuantSDK {
     this.config = config;
     this.secret = new TextEncoder().encode(config.jwtSecret);
     this.authorizationEndpoint = `https://auth.quant.app/oauth2/authorize`;
+  }
+
+  /**
+   * Register a client with the SDK for secret validation.
+   */
+  registerClient(client: OAuthClient): void {
+    this.registeredClients.set(client.clientId, client);
   }
 
   /**
@@ -104,7 +113,7 @@ export class SignInWithQuantSDK {
   async handleCallback(
     code: string,
     clientId: string,
-    _clientSecret: string,
+    clientSecret: string,
     redirectUri: string,
     codeVerifier: string,
   ): Promise<SDKTokenResponse | null> {
@@ -123,6 +132,14 @@ export class SignInWithQuantSDK {
     // Validate client ID and redirect URI
     if (authCode.clientId !== clientId || authCode.redirectUri !== redirectUri) {
       return null;
+    }
+
+    // Validate clientSecret against registered client (confidential client flow)
+    const registeredClient = this.registeredClients.get(clientId);
+    if (registeredClient) {
+      if (registeredClient.clientSecret !== clientSecret) {
+        return null;
+      }
     }
 
     // Validate PKCE code verifier against stored challenge
@@ -201,8 +218,16 @@ export class SignInWithQuantSDK {
   async refreshToken(
     refreshTokenStr: string,
     clientId: string,
-    _clientSecret: string,
+    clientSecret: string,
   ): Promise<SDKTokenResponse | null> {
+    // Validate clientSecret against registered client (confidential client flow)
+    const registeredClient = this.registeredClients.get(clientId);
+    if (registeredClient) {
+      if (registeredClient.clientSecret !== clientSecret) {
+        return null;
+      }
+    }
+
     try {
       const { payload } = await jose.jwtVerify(refreshTokenStr, this.secret);
 

@@ -137,9 +137,17 @@ export class RazorpayGateway {
     return this.orders.get(orderId) || null;
   }
 
-  /** Generate a signature for verification (simulated) */
-  generateSignature(orderId: string, paymentId: string): string {
+  /** Generate a signature for verification (simulated, private) */
+  private generateSignature(orderId: string, paymentId: string): string {
     // In production this would be HMAC-SHA256(orderId + '|' + paymentId, secret)
     return `sig_${orderId}_${paymentId}`;
+  }
+
+  /**
+   * Generate a test signature for use in test environments only.
+   * In production, signatures come from Razorpay webhooks.
+   */
+  generateTestSignature(orderId: string, paymentId: string): string {
+    return this.generateSignature(orderId, paymentId);
   }
 }

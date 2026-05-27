@@ -42,7 +42,7 @@ describe('RazorpayGateway', () => {
     it('should verify a valid payment with correct signature', async () => {
       const order = await gateway.createOrder(1000, 'INR');
       const paymentId = 'pay_test_123';
-      const signature = gateway.generateSignature(order.id, paymentId);
+      const signature = gateway.generateTestSignature(order.id, paymentId);
 
       const result = await gateway.verifyPayment(order.id, paymentId, signature);
 
@@ -71,7 +71,7 @@ describe('RazorpayGateway', () => {
     it('should mark order as paid after verification', async () => {
       const order = await gateway.createOrder(1000, 'INR');
       const paymentId = 'pay_test_456';
-      const signature = gateway.generateSignature(order.id, paymentId);
+      const signature = gateway.generateTestSignature(order.id, paymentId);
 
       await gateway.verifyPayment(order.id, paymentId, signature);
       const updatedOrder = await gateway.getOrder(order.id);
@@ -103,7 +103,7 @@ describe('RazorpayGateway', () => {
     it('should return payment after verification', async () => {
       const order = await gateway.createOrder(500, 'INR');
       const paymentId = 'pay_status_test';
-      const signature = gateway.generateSignature(order.id, paymentId);
+      const signature = gateway.generateTestSignature(order.id, paymentId);
 
       await gateway.verifyPayment(order.id, paymentId, signature);
       const payment = await gateway.getPaymentStatus(paymentId);

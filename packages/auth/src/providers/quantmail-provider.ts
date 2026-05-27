@@ -26,6 +26,20 @@ const FIRST_PARTY_DEFAULT_SCOPES: PermissionScope[] = [
   'realtime:connect',
 ];
 
+/** Safe scopes allowed for third-party client registrations */
+const THIRD_PARTY_ALLOWED_SCOPES: PermissionScope[] = [
+  'profile:read',
+  'profile:write',
+  'email:read',
+  'messages:read',
+  'posts:read',
+  'media:read',
+  'contacts:read',
+  'analytics:read',
+  'wallet:read',
+  'realtime:connect',
+];
+
 /**
  * QuantMail OAuth2 Provider
  *
@@ -394,6 +408,14 @@ export class QuantMailProvider {
     allowedScopes: PermissionScope[],
     createdBy: string,
   ): OAuthClient {
+    // Validate scopes against safe subset for third-party apps
+    const invalidScopes = allowedScopes.filter((s) => !THIRD_PARTY_ALLOWED_SCOPES.includes(s));
+    if (invalidScopes.length > 0) {
+      throw new Error(
+        `Invalid scopes for third-party client: ${invalidScopes.join(', ')}. Allowed: ${THIRD_PARTY_ALLOWED_SCOPES.join(', ')}`,
+      );
+    }
+
     const clientId = `tp_${generateSecureToken(16)}`;
     const clientSecret = this.generateClientSecret();
     const client: OAuthClient = {
