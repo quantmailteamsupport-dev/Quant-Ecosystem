@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Expand AI Memory schema to 8 categories, add per-memory access scopes, TTL expiration, explicit-signal requirement (anti-creep), and weekly digest candidate system. Enhance ContextGraph with Phase 26 node/edge types.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Step 1: Update packages/ai-memory/src/types.ts - expand MemoryCategory to 8 categories: 'people', 'places', 'projects', 'preferences', 'skills', 'goals', 'schedules', 'routines'. Add MemoryAccessScope type (array of app names that can read the memory). Add MemorySource type to distinguish explicit ('remember-this') vs candidate ('pattern-detected'). Add approved/pending status for candidates. Add 'tags' field for search/purge-by-topic. Update MemoryEntrySchema zod schema accordingly.",
     "Step 2: Update packages/ai-memory/src/memory-store.ts - add accessScopes field to MemoryEntry handling. Add a 'writeSignal' field that must be 'explicit' | 'digest-approved' for a memory to be active (anti-creep gate). Add methods: createCandidate() for pattern-detected memories (status=pending), approveCandidate(id), rejectCandidate(id), getPendingCandidates(userId) for weekly digest, purgeByTag(userId, tag) for 'forget everything about Z'. Enforce that create() requires writeSignal='explicit'.",
@@ -31,5 +31,5 @@
     "pnpm turbo lint --filter=@quant/ai-memory --filter=@quant/identity-permissions"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All verification gates pass (typecheck, test, build, lint). Pre-commit hooks enforce 100-char line length on commit body lines and header. Prettier reformats on commit via lint-staged. The identity-permissions MemoryEntry type (used by MemoryManager) is separate from ai-memory MemoryEntry and was not affected."
 }
