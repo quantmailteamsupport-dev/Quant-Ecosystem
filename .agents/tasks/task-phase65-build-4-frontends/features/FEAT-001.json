@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Build QuantCalendar frontend - complete Next.js app with calendar views (month/week/day/agenda), event CRUD UI, mini-calendar, sidebar with multiple calendars",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Update apps/quantcalendar/package.json: add next, react, react-dom, @tanstack/react-query to dependencies. Add @types/react, @types/react-dom, autoprefixer, postcss, tailwindcss to devDependencies. Update scripts to: dev='next dev --port 3004', build='next build', start='next start', typecheck='tsc --noEmit && tsc --noEmit -p tsconfig.backend.json'",
     "Replace apps/quantcalendar/tsconfig.json with Next.js-compatible config (copy pattern from apps/quantmail/tsconfig.json, keep @quant/* paths including shared-ui and common)",
@@ -41,5 +41,5 @@
     "pnpm build 2>&1 | tail -5 (should show 88/88 successful)"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "LoadingState component uses `text` prop (not `message`). Prettier reformatted all files via lint-staged pre-commit hook. Build and typecheck both pass clean."
 }
