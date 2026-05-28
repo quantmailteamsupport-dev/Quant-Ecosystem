@@ -6,7 +6,6 @@ export interface DeviceIntent {
 
 export interface GrammarPattern {
   id: string;
-  type: 'exact' | 'regex' | 'keyword';
   pattern: string;
   capability: string;
   action: string;

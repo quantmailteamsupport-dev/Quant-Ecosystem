@@ -1,10 +1,12 @@
 import type { DeviceIntent, GrammarPattern } from './types.js';
 
+// Pattern ordering matters: Hindi/Hinglish patterns MUST come before English patterns.
+// The Hindi "call kar" pattern would otherwise be swallowed by the generic English "call"
+// pattern. Patterns are matched top-to-bottom; first match wins.
 const patterns: GrammarPattern[] = [
-  // Hindi/Hinglish patterns (must come before generic "call" to avoid false matches)
+  // Hindi/Hinglish patterns
   {
     id: 'hindi-call',
-    type: 'regex',
     pattern: '^call kar\\s+(.+)$',
     capability: 'phone',
     action: 'place',
@@ -12,7 +14,6 @@ const patterns: GrammarPattern[] = [
   },
   {
     id: 'hindi-message',
-    type: 'regex',
     pattern: '^message bhej\\s+(.+)$',
     capability: 'sms',
     action: 'send',
@@ -20,7 +21,6 @@ const patterns: GrammarPattern[] = [
   },
   {
     id: 'hindi-navigate',
-    type: 'exact',
     pattern: '^ghar le chal$',
     capability: 'location',
     action: 'navigate',
@@ -28,15 +28,14 @@ const patterns: GrammarPattern[] = [
   },
   {
     id: 'hindi-alarm',
-    type: 'regex',
     pattern: '^alarm laga\\s+(.+)$',
     capability: 'alarm',
     action: 'set',
     extract: (t) => ({ time: t.match(/^alarm laga\s+(.+)$/i)![1] }),
   },
+  // English patterns
   {
     id: 'call',
-    type: 'regex',
     pattern: '^call\\s+(.+)$',
     capability: 'phone',
     action: 'place',
@@ -44,7 +43,6 @@ const patterns: GrammarPattern[] = [
   },
   {
     id: 'text',
-    type: 'regex',
     pattern: '^(?:text|message)\\s+(\\S+)\\s+(.+)$',
     capability: 'sms',
     action: 'send',
@@ -55,7 +53,6 @@ const patterns: GrammarPattern[] = [
   },
   {
     id: 'text-short',
-    type: 'regex',
     pattern: '^(?:text|message)\\s+(\\S+)$',
     capability: 'sms',
     action: 'send',
@@ -63,7 +60,6 @@ const patterns: GrammarPattern[] = [
   },
   {
     id: 'alarm',
-    type: 'regex',
     pattern: '^(?:set alarm|alarm)\\s+(.+)$',
     capability: 'alarm',
     action: 'set',
@@ -71,7 +67,6 @@ const patterns: GrammarPattern[] = [
   },
   {
     id: 'navigate',
-    type: 'regex',
     pattern: '^(?:navigate to|take me to|directions to)\\s+(.+)$',
     capability: 'location',
     action: 'navigate',
@@ -81,7 +76,6 @@ const patterns: GrammarPattern[] = [
   },
   {
     id: 'toggle-on',
-    type: 'regex',
     pattern: '^turn on\\s+(.+)$',
     capability: 'iot',
     action: 'toggle',
@@ -89,7 +83,6 @@ const patterns: GrammarPattern[] = [
   },
   {
     id: 'toggle-off',
-    type: 'regex',
     pattern: '^turn off\\s+(.+)$',
     capability: 'iot',
     action: 'toggle',
@@ -97,7 +90,6 @@ const patterns: GrammarPattern[] = [
   },
   {
     id: 'open',
-    type: 'regex',
     pattern: '^open\\s+(.+)$',
     capability: 'app',
     action: 'open',
@@ -105,7 +97,6 @@ const patterns: GrammarPattern[] = [
   },
   {
     id: 'play',
-    type: 'regex',
     pattern: '^play\\s+(.+)$',
     capability: 'media',
     action: 'play',
@@ -113,7 +104,6 @@ const patterns: GrammarPattern[] = [
   },
   {
     id: 'stop',
-    type: 'exact',
     pattern: '^(?:stop|pause)$',
     capability: 'media',
     action: 'pause',
@@ -121,7 +111,6 @@ const patterns: GrammarPattern[] = [
   },
   {
     id: 'search',
-    type: 'regex',
     pattern: '^(?:search|look up)\\s+(.+)$',
     capability: 'search',
     action: 'query',
@@ -129,7 +118,6 @@ const patterns: GrammarPattern[] = [
   },
   {
     id: 'remind',
-    type: 'regex',
     pattern: '^remind me\\s+(.+)$',
     capability: 'reminder',
     action: 'set',
@@ -137,7 +125,6 @@ const patterns: GrammarPattern[] = [
   },
   {
     id: 'email',
-    type: 'regex',
     pattern: '^send email to\\s+(.+)$',
     capability: 'email',
     action: 'compose',
@@ -145,7 +132,6 @@ const patterns: GrammarPattern[] = [
   },
   {
     id: 'check',
-    type: 'regex',
     pattern: '^check\\s+(.+)$',
     capability: 'info',
     action: 'check',
@@ -153,7 +139,6 @@ const patterns: GrammarPattern[] = [
   },
   {
     id: 'show',
-    type: 'regex',
     pattern: '^show\\s+(.+)$',
     capability: 'display',
     action: 'show',
