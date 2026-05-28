@@ -146,12 +146,13 @@ const patterns: GrammarPattern[] = [
   },
 ];
 
+const compiledPatterns = patterns.map((p) => ({ ...p, regex: new RegExp(p.pattern, 'i') }));
+
 export class CommandGrammar {
   match(text: string): DeviceIntent | null {
     const normalized = text.trim().toLowerCase();
-    for (const p of patterns) {
-      const regex = new RegExp(p.pattern, 'i');
-      if (regex.test(normalized)) {
+    for (const p of compiledPatterns) {
+      if (p.regex.test(normalized)) {
         const params = p.extract ? p.extract(normalized) : {};
         return { capability: p.capability, action: p.action, params };
       }

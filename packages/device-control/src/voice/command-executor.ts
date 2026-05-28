@@ -19,7 +19,11 @@ export class CommandExecutor {
     return {
       success,
       results: [
-        { intent, success, error: success ? undefined : `No provider for ${intent.capability}` },
+        {
+          intent,
+          success,
+          error: success ? undefined : `Capability '${intent.capability}' is not yet supported`,
+        },
       ],
     };
   }
@@ -43,7 +47,10 @@ export class CommandExecutor {
     return { success: results.every((r) => r.success), results };
   }
 
-  async executeShortcut(shortcut: CustomShortcut): Promise<ExecutionResult> {
-    return this.executeSequence(shortcut.actions, { stopOnFailure: shortcut.stopOnFailure });
+  async executeShortcut(shortcut: CustomShortcut, confirmed?: boolean): Promise<ExecutionResult> {
+    return this.executeSequence(shortcut.actions, {
+      stopOnFailure: shortcut.stopOnFailure,
+      confirmed: confirmed ?? true,
+    });
   }
 }

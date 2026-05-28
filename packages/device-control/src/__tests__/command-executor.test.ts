@@ -30,11 +30,11 @@ describe('CommandExecutor', () => {
     expect(r.results[0]!.success).toBe(true);
   });
 
-  it('returns error when no provider found', async () => {
+  it('returns error when capability is not yet supported', async () => {
     const exec = setup();
     const r = await exec.execute({ capability: 'media', action: 'play', params: {} }, true);
     expect(r.success).toBe(false);
-    expect(r.results[0]!.error).toContain('No provider');
+    expect(r.results[0]!.error).toContain('is not yet supported');
   });
 
   it('executes a multi-step sequence', async () => {
