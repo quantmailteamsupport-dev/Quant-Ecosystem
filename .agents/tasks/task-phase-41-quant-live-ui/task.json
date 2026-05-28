@@ -1,0 +1,7 @@
+{
+  "task_id": "task-phase-41-quant-live-ui",
+  "task_description": "Create the <QuantLive /> conversational UI component suite in packages/shared-ui with pulsing orb, captions, action chip, privacy indicator, and controls. Phase 41 FEAT-004.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null
+}
