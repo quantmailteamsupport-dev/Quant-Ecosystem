@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Phase 70 - Universal Tool Layer: Create packages/quant-tools with typed tool registry, per-app tool definitions (17 apps x 5+ tools each), multi-tool planner, permission engine, MCP server adapter, intent router, undo registry, audit log.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Step 1 - Create packages/quant-tools/package.json: Name @quant/quant-tools, workspace:* dep on @quant/common. Include typecheck/test/build/lint scripts. Create tsconfig.json following existing package pattern.",
     "Step 2 - Create src/types.ts with comprehensive tool type definitions: ToolDefinition (id, appId, name, description, inputSchema with typed Record, outputSchema, permissionTier 0-3, costEstimate, undoRecipe, tags). PermissionTier enum (Auto=0, Notify=1, Confirm=2, Admin=3). ToolExecutionContext, ToolResult, ToolChain, ToolPlan, ToolPlanStep, IntentMatch, AuditEntry, UndoAction, MCPToolCatalog interfaces.",
