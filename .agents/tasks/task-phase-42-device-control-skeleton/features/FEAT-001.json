@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Create the @quant/device-control package skeleton with capability interfaces, registry, permission model, action audit, and tests. Branch from feat/phase-41-latency-budget-ci to feat/phase-42-device-control-skeleton.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create git branch feat/phase-42-device-control-skeleton from current branch feat/phase-41-latency-budget-ci",
     "Create packages/device-control/package.json following the pattern of packages/identity-permissions/package.json: name @quant/device-control, private, type module, main/types pointing to src/index.ts, scripts (build: tsc, typecheck: tsc --noEmit, test: vitest run, lint: eslint .), dependencies on @capacitor/core and zod, devDependencies on @types/node, typescript, vitest",
@@ -52,5 +52,5 @@
     "pnpm turbo build --filter=@quant/device-control succeeds"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Node.js needed to be installed via mise (MISE_NODE_VERIFY=0 to skip gpg). All 17 tests pass, typecheck clean, build succeeds. 492 LOC total in src/."
 }
