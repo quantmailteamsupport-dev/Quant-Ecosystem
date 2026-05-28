@@ -284,20 +284,36 @@ export type {
   AIPreferencesStepProps,
 } from './components/Onboarding';
 
-// Motion components
+// Motion / Animation primitives (union of phase-67/68 motion systems)
 export {
+  MotionProvider,
+  useMotionConfig,
+  FadeIn,
+  StaggerList,
+  PageTransition,
+  SpringButton,
+  AnimatedSkeleton,
+  SlidePanel,
+  ScaleOnHover,
   AnimatedPage,
   AnimatedList,
-  SpringButton,
   BottomSheet,
   SkeletonFade,
   PullToRefresh,
 } from './components/Motion';
 export type {
+  MotionProviderProps,
+  MotionConfigContextValue,
+  FadeInProps,
+  StaggerListProps,
+  PageTransitionProps,
+  SpringButtonProps,
+  AnimatedSkeletonProps,
+  SlidePanelProps,
+  ScaleOnHoverProps,
   AnimatedPageProps,
   PageTransitionVariant,
   AnimatedListProps,
-  SpringButtonProps,
   BottomSheetProps,
   SnapPoint,
   SkeletonFadeProps,
@@ -337,6 +353,9 @@ export type {
 // useOptimisticAction hook
 export { useOptimisticAction } from './hooks/useOptimisticAction';
 export type { UseOptimisticActionReturn } from './hooks/useOptimisticAction';
+
+// Sanitization utilities
+export { sanitizeHtmlContent, sanitizeCodeHighlight } from './utils/sanitize';
 
 // QuantLive components
 export {

@@ -1,8 +1,12 @@
+'use client';
+
 // ============================================================================
 // Shared UI - Empty State Component
 // ============================================================================
 
 import React from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { useMotionConfig } from '../Motion/MotionConfig';
 
 export interface EmptyStateProps {
   icon?: React.ReactNode;
@@ -10,6 +14,7 @@ export interface EmptyStateProps {
   description: string;
   actionLabel?: string;
   onAction?: () => void;
+  animated?: boolean;
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
@@ -18,9 +23,14 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   description,
   actionLabel,
   onAction,
+  animated = true,
 }) => {
-  return (
-    <div className="flex flex-col items-center justify-center p-8 text-center" role="status">
+  const { shouldAnimate: contextAnimate } = useMotionConfig();
+  const prefersReducedMotion = useReducedMotion();
+  const shouldAnimate = animated && contextAnimate && !prefersReducedMotion;
+
+  const content = (
+    <>
       {icon ? (
         <div className="mb-4 text-gray-400">{icon}</div>
       ) : (
@@ -48,6 +58,26 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           {actionLabel}
         </button>
       )}
-    </div>
+    </>
+  );
+
+  if (!shouldAnimate) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center" role="status">
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      className="flex flex-col items-center justify-center p-8 text-center"
+      role="status"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      {content}
+    </motion.div>
   );
 };

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AnimatedPage, AppShell, Sidebar, SearchInput } from '@quant/shared-ui';
+import { AppShell, Sidebar, SearchInput, PageTransition, FadeIn } from '@quant/shared-ui';
 import type { SidebarItem } from '@quant/shared-ui';
 import type { FileItem } from '../hooks/useFiles';
 import { Breadcrumbs } from '../components/Breadcrumbs';
@@ -65,9 +65,9 @@ export default function DrivePage() {
       }
       aria-label="QuantDrive application"
     >
-      <AnimatedPage>
-        <div className="flex h-full">
-          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex h-full">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <FadeIn direction="down">
             <div className="p-4 border-b border-[var(--quant-border)]">
               <SearchInput
                 value={searchQuery}
@@ -76,7 +76,9 @@ export default function DrivePage() {
                 aria-label="Search files"
               />
             </div>
+          </FadeIn>
 
+          <PageTransition>
             <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
               {searchQuery ? (
                 <SearchResults query={searchQuery} onFileSelect={handleFileSelect} />
@@ -94,17 +96,17 @@ export default function DrivePage() {
                 </>
               )}
             </div>
-          </div>
-
-          {selectedFile && (
-            <FilePreview
-              file={selectedFile}
-              onClose={() => setSelectedFile(null)}
-              onShare={() => setShareDialogOpen(true)}
-            />
-          )}
+          </PageTransition>
         </div>
-      </AnimatedPage>
+
+        {selectedFile && (
+          <FilePreview
+            file={selectedFile}
+            onClose={() => setSelectedFile(null)}
+            onShare={() => setShareDialogOpen(true)}
+          />
+        )}
+      </div>
 
       {selectedFile && (
         <ShareDialog

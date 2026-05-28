@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { AnimatedPage, SpringButton, Input } from '@quant/shared-ui';
-import { Button } from '@quant/shared-ui';
+import { Button, Input, PageTransition, FadeIn, StaggerList } from '@quant/shared-ui';
 
 interface RecentMeeting {
   id: string;
@@ -49,23 +48,25 @@ export default function MeetHomePage() {
   };
 
   return (
-    <AnimatedPage>
-      <main className="flex flex-col items-center justify-center min-h-screen p-4 md:p-8">
+    <main className="flex flex-col items-center justify-center min-h-screen p-4 md:p-8">
+      <PageTransition>
         <div className="w-full max-w-md space-y-8">
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold">QuantMeet</h1>
-            <p className="text-[var(--quant-muted-foreground)]">
-              Video conferencing with AI-powered collaboration
-            </p>
-          </div>
+          <FadeIn>
+            <div className="text-center space-y-2">
+              <h1 className="text-3xl font-bold">QuantMeet</h1>
+              <p className="text-[var(--quant-muted-foreground)]">
+                Video conferencing with AI-powered collaboration
+              </p>
+            </div>
+          </FadeIn>
 
           <section className="space-y-4" aria-labelledby="new-meeting-heading">
             <h2 id="new-meeting-heading" className="sr-only">
               Create a new meeting
             </h2>
-            <SpringButton variant="primary" onClick={handleNewMeeting} className="w-full">
+            <Button variant="primary" onClick={handleNewMeeting} className="w-full">
               New Meeting
-            </SpringButton>
+            </Button>
           </section>
 
           <div className="relative">
@@ -105,34 +106,33 @@ export default function MeetHomePage() {
               >
                 Recent Meetings
               </h2>
-              <ul
+              <StaggerList
+                as="ul"
                 className="divide-y divide-[var(--quant-border)] rounded-lg border border-[var(--quant-border)]"
-                role="list"
               >
                 {recentMeetings.map((meeting) => (
-                  <li key={meeting.id}>
-                    <button
-                      className="w-full text-left px-4 py-3 hover:bg-[var(--quant-muted)] transition-colors"
-                      onClick={() => router.push(`/meeting/${meeting.id}`)}
-                      aria-label={`Rejoin ${meeting.title}`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium truncate">{meeting.title}</span>
-                        <span className="text-xs text-[var(--quant-muted-foreground)]">
-                          {meeting.participantCount} participants
-                        </span>
-                      </div>
+                  <button
+                    key={meeting.id}
+                    className="w-full text-left px-4 py-3 hover:bg-[var(--quant-muted)] transition-colors"
+                    onClick={() => router.push(`/meeting/${meeting.id}`)}
+                    aria-label={`Rejoin ${meeting.title}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium truncate">{meeting.title}</span>
                       <span className="text-xs text-[var(--quant-muted-foreground)]">
-                        {meeting.date}
+                        {meeting.participantCount} participants
                       </span>
-                    </button>
-                  </li>
+                    </div>
+                    <span className="text-xs text-[var(--quant-muted-foreground)]">
+                      {meeting.date}
+                    </span>
+                  </button>
                 ))}
-              </ul>
+              </StaggerList>
             </section>
           )}
         </div>
-      </main>
-    </AnimatedPage>
+      </PageTransition>
+    </main>
   );
 }

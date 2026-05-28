@@ -61,12 +61,6 @@ describe('SpringButton', () => {
     expect(screen.getByText('Press me')).toBeDefined();
   });
 
-  it('renders underlying Button with variant', () => {
-    render(<SpringButton variant="danger">Delete</SpringButton>);
-    const button = screen.getByRole('button');
-    expect(button.className).toContain('bg-red-600');
-  });
-
   it('handles click events', () => {
     const handleClick = vi.fn();
     render(<SpringButton onClick={handleClick}>Click</SpringButton>);

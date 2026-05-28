@@ -1,39 +1,33 @@
 {
   "id": "FEAT-001",
   "type": "feat",
-  "description": "Add framer-motion to shared-ui and create reusable animated component primitives: AnimatedPage (page transitions with spring physics), AnimatedList (stagger-in children), SpringButton (press scale with spring), BottomSheet (spring-physics bottom sheet), SkeletonFade (skeleton-to-content crossfade), PullToRefresh (branded pull-to-refresh), and a useReducedMotion hook. Also create a responsive layout system: ResponsiveShell (breakpoint-aware app shell wrapper with sidebar collapse, safe-area insets, foldable-aware), useBreakpoint/useOrientation hooks. Export all from shared-ui index.",
+  "description": "Install framer-motion in shared-ui and create reusable animation primitive components (FadeIn, StaggerList, PageTransition, SpringButton, AnimatedSkeleton, SlidePanel, ScaleOnHover) that use the brand motion tokens from @quant/brand. These components wrap framer-motion's declarative API for React and serve as the animation foundation for the entire ecosystem.",
   "status": "completed",
   "steps": [
-    "Add framer-motion ^11 as a dependency to packages/shared-ui/package.json",
-    "Create packages/shared-ui/src/components/Motion/index.ts barrel exporting all motion components",
-    "Create packages/shared-ui/src/components/Motion/AnimatedPage.tsx - wraps children in framer-motion AnimatePresence + motion.div with spring transition from @quant/brand spring.gentle. Props: children, transition variant (slide-left, slide-right, fade, scale)",
-    "Create packages/shared-ui/src/components/Motion/AnimatedList.tsx - maps children with stagger delay (0.05s) using framer-motion. Each child fades+slides up with spring.snappy",
-    "Create packages/shared-ui/src/components/Motion/SpringButton.tsx - extends existing Button component with whileTap={{scale:0.95}} and whileHover={{scale:1.02}} using spring.snappy transition",
-    "Create packages/shared-ui/src/components/Motion/BottomSheet.tsx - drag-to-dismiss bottom sheet with spring physics (spring.gentle), backdrop, snap points (25%/50%/90%). Uses motion.div with dragConstraints",
-    "Create packages/shared-ui/src/components/Motion/SkeletonFade.tsx - wraps content in AnimatePresence, shows Skeleton while loading=true, crossfades to children when loading=false",
-    "Create packages/shared-ui/src/components/Motion/PullToRefresh.tsx - branded pull-to-refresh with spring animation on the indicator",
-    "Create packages/shared-ui/src/hooks/useReducedMotion.ts - wraps framer-motion useReducedMotion for accessibility",
-    "Create packages/shared-ui/src/components/Responsive/index.ts barrel",
-    "Create packages/shared-ui/src/components/Responsive/ResponsiveShell.tsx - wraps AppShell with responsive behavior: sidebar collapses to bottom nav below md breakpoint, safe-area padding via env(safe-area-inset-*), landscape detection",
-    "Create packages/shared-ui/src/hooks/useBreakpoint.ts - returns current breakpoint name (xs/sm/md/lg/xl/2xl) using window.matchMedia and shared-ui breakpoints",
-    "Create packages/shared-ui/src/hooks/useOrientation.ts - returns 'portrait' | 'landscape' using matchMedia",
-    "Export all new components and hooks from packages/shared-ui/src/index.ts",
-    "Create packages/shared-ui/src/components/Motion/__tests__/Motion.test.tsx with tests for AnimatedPage, AnimatedList, SpringButton, BottomSheet, SkeletonFade rendering correctly",
-    "Create packages/shared-ui/src/components/Responsive/__tests__/Responsive.test.tsx with tests for ResponsiveShell rendering with/without sidebar",
-    "Run pnpm typecheck --filter=@quant/shared-ui and pnpm test --filter=@quant/shared-ui to verify"
+    "Add framer-motion@^11 as a dependency in packages/shared-ui/package.json and run pnpm install",
+    "Create packages/shared-ui/src/components/Motion/index.ts as the barrel export for all animation primitives",
+    "Create packages/shared-ui/src/components/Motion/FadeIn.tsx - a wrapper using framer-motion's motion.div with fade + slide-up entrance animation. Props: direction (up/down/left/right), delay, duration, className, children. Use brand duration.normal and easing.easeOut. Respect prefers-reduced-motion via framer-motion's useReducedMotion hook.",
+    "Create packages/shared-ui/src/components/Motion/StaggerList.tsx - animates children with staggered entrances. Props: staggerDelay (default 0.05s), children, className. Uses AnimatePresence and motion.div with brand spring.gentle config.",
+    "Create packages/shared-ui/src/components/Motion/PageTransition.tsx - full-page entrance animation. Props: children, className. Fade + slight Y translate on mount using brand duration.moderate.",
+    "Create packages/shared-ui/src/components/Motion/SpringButton.tsx - button with spring scale on press (whileTap). Props: extends ButtonHTMLAttributes. Uses brand spring.snappy for the tap animation. Scale to 0.97 on press.",
+    "Create packages/shared-ui/src/components/Motion/AnimatedSkeleton.tsx - skeleton loading placeholder with shimmer effect using framer-motion's animate prop for a repeating gradient shift. Props: variant (text/circle/rect), width, height, className.",
+    "Create packages/shared-ui/src/components/Motion/SlidePanel.tsx - side panel that slides in/out with spring physics. Props: isOpen, side (left/right), width, onClose, children. Uses brand spring.stiff for snappy open/close.",
+    "Create packages/shared-ui/src/components/Motion/ScaleOnHover.tsx - wrapper that scales up subtly (1.02) on hover. Props: scale (default 1.02), children, className. Uses brand spring.snappy transition.",
+    "Create packages/shared-ui/src/components/Motion/MotionConfig.tsx - a context provider that reads prefers-reduced-motion and provides a shouldAnimate boolean to all motion components. Export a useMotionConfig hook.",
+    "Export all Motion components and their Props types from packages/shared-ui/src/index.ts under a '// Motion / Animation primitives' section",
+    "Run pnpm typecheck to confirm all 111 packages pass",
+    "Run pnpm build to confirm all 88 packages pass"
   ],
   "acceptance_criteria": [
-    "framer-motion is listed in shared-ui package.json dependencies",
-    "All 7 motion components (AnimatedPage, AnimatedList, SpringButton, BottomSheet, SkeletonFade, PullToRefresh, useReducedMotion) are exported from @quant/shared-ui",
-    "ResponsiveShell, useBreakpoint, useOrientation are exported from @quant/shared-ui",
-    "All motion components use @quant/brand spring constants (not hardcoded values)",
-    "pnpm typecheck --filter=@quant/shared-ui passes",
-    "pnpm test --filter=@quant/shared-ui passes"
+    "framer-motion is listed in packages/shared-ui/package.json dependencies",
+    "All 7 animation components plus MotionConfig exist in packages/shared-ui/src/components/Motion/",
+    "All components are exported from packages/shared-ui/src/index.ts",
+    "All components accept a className prop for style composition",
+    "All components check for prefers-reduced-motion and skip animation when enabled",
+    "pnpm typecheck passes (111/111)",
+    "pnpm build passes (88/88)"
   ],
-  "verification": [
-    "pnpm typecheck --filter=@quant/shared-ui",
-    "pnpm test --filter=@quant/shared-ui"
-  ],
+  "verification": ["pnpm typecheck 2>&1 | tail -5", "pnpm build 2>&1 | tail -5"],
   "blocked_reason": null,
-  "findings": "jsdom does not parse env() CSS function values so the safe-area inset test was adjusted to verify behavior when safeArea=false rather than checking the CSS value directly. Prettier reformatted files via lint-staged pre-commit hook. All 174 tests pass including 14 Motion and 5 Responsive tests."
+  "findings": "framer-motion@11.18.2 installed. SpringButton uses explicit prop interface instead of extending ButtonHTMLAttributes to avoid onDrag type conflicts with framer-motion's HTMLMotionProps. Pre-commit hook runs prettier on staged files. All 111/111 typecheck and 88/88 build pass. POST-REVIEW: Fixed 6 issues - LoadingState reduced-motion now shows static indicators, skeleton respects reduced-motion, StaggerList supports as/childAs props for semantic HTML, MotionProvider is consumed by all primitives via useMotionConfig(), animated prop added to all 4 state components, and use client directive added to all Motion files."
 }

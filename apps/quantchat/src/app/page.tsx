@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatedPage, AppShell, TopBar, BottomNav, ChatList } from '@quant/shared-ui';
+import { AppShell, TopBar, BottomNav, ChatList } from '@quant/shared-ui';
 import { LoadingState, ErrorState, EmptyState } from '@quant/shared-ui';
 import type { NavItem } from '@quant/shared-ui';
 import { useConversations } from '../hooks/useConversations';
@@ -33,23 +33,15 @@ export default function ChatListPage() {
 
   return (
     <AppShell topBar={<TopBar title="QuantChat" />}>
-      <AnimatedPage>
-        <div className="flex flex-col h-full pb-16">
-          <ChatList
-            items={chatItems}
-            onSelect={(id) => {
-              window.location.href = `/chat/${id}`;
-            }}
-          />
-        </div>
-      </AnimatedPage>
-      <BottomNav
-        items={navItems}
-        activeId="chats"
-        onChange={(id) => {
-          console.log('Navigate to:', id);
-        }}
-      />
+      <div className="flex flex-col h-full pb-16">
+        <ChatList
+          items={chatItems}
+          onSelect={(id) => {
+            window.location.href = `/chat/${id}`;
+          }}
+        />
+      </div>
+      <BottomNav items={navItems} activeId="chats" onChange={() => {}} />
     </AppShell>
   );
 }

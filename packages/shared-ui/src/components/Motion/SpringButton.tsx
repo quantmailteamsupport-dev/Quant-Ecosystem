@@ -1,36 +1,71 @@
-// ============================================================================
-// Shared UI - SpringButton Component
-// ============================================================================
+'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { spring } from '@quant/brand';
-import { Button } from '../Button';
-import type { ButtonProps } from '../Button';
+import { useMotionConfig } from './MotionConfig';
 
-export interface SpringButtonProps extends ButtonProps {
-  tapScale?: number;
-  hoverScale?: number;
+export interface SpringButtonProps {
+  scale?: number;
+  className?: string;
+  disabled?: boolean;
+  type?: 'button' | 'submit' | 'reset';
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  onFocus?: React.FocusEventHandler<HTMLButtonElement>;
+  onBlur?: React.FocusEventHandler<HTMLButtonElement>;
+  'aria-label'?: string;
+  children: React.ReactNode;
 }
 
-export const SpringButton: React.FC<SpringButtonProps> = ({
-  tapScale = 0.95,
-  hoverScale = 1.02,
-  ...buttonProps
-}) => {
-  const transition = {
-    type: 'spring' as const,
-    ...spring.snappy,
-  };
+export function SpringButton({
+  scale = 0.97,
+  children,
+  className,
+  disabled,
+  type,
+  onClick,
+  onFocus,
+  onBlur,
+  'aria-label': ariaLabel,
+}: SpringButtonProps) {
+  const { shouldAnimate: contextAnimate } = useMotionConfig();
+  const prefersReducedMotion = useReducedMotion();
+  const shouldAnimate = contextAnimate && !prefersReducedMotion;
+
+  if (!shouldAnimate) {
+    return (
+      <button
+        className={className}
+        disabled={disabled}
+        type={type}
+        onClick={onClick}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        aria-label={ariaLabel}
+      >
+        {children}
+      </button>
+    );
+  }
 
   return (
-    <motion.div
-      whileTap={{ scale: tapScale }}
-      whileHover={{ scale: hoverScale }}
-      transition={transition}
-      style={{ display: 'inline-block' }}
+    <motion.button
+      className={className}
+      disabled={disabled}
+      type={type}
+      onClick={onClick}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      aria-label={ariaLabel}
+      whileTap={{ scale }}
+      transition={{
+        type: 'spring',
+        damping: spring.snappy.damping,
+        stiffness: spring.snappy.stiffness,
+        mass: spring.snappy.mass,
+      }}
     >
-      <Button {...buttonProps} />
-    </motion.div>
+      {children}
+    </motion.button>
   );
-};
+}

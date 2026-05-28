@@ -1,7 +1,14 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { AnimatedPage, AppShell, Button, LoadingState, ErrorState } from '@quant/shared-ui';
+import {
+  AppShell,
+  Button,
+  LoadingState,
+  ErrorState,
+  PageTransition,
+  FadeIn,
+} from '@quant/shared-ui';
 import { useEvents } from '../hooks/useEvents';
 import { useCalendars } from '../hooks/useCalendars';
 import { CalendarSidebar } from '../components/CalendarSidebar';
@@ -127,8 +134,8 @@ export default function CalendarPage() {
       }
       aria-label="QuantCalendar application"
     >
-      <AnimatedPage>
-        <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full">
+        <FadeIn direction="down">
           <header className="flex flex-wrap items-center gap-2 p-3 border-b border-[var(--quant-border)]">
             <Button variant="secondary" size="sm" onClick={handleToday}>
               Today
@@ -164,6 +171,8 @@ export default function CalendarPage() {
               ))}
             </nav>
           </header>
+        </FadeIn>
+        <PageTransition>
           <div className="flex-1 overflow-hidden">
             <CalendarGrid
               view={currentView}
@@ -172,8 +181,8 @@ export default function CalendarPage() {
               onEventClick={handleEventClick}
             />
           </div>
-        </div>
-      </AnimatedPage>
+        </PageTransition>
+      </div>
 
       <EventForm
         open={isEventFormOpen}

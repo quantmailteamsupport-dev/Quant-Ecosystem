@@ -1,39 +1,30 @@
 {
   "id": "FEAT-003",
   "type": "feat",
-  "description": "Apply UI/UX excellence to all 7 Next.js app frontends: integrate framer-motion animations, responsive shell, command palette, dark mode, and branded empty states across quantmail, quantchat, quantai, quantcalendar, quantdocs, quantdrive, and quantmeet. Each app gets: (1) ResponsiveShell wrapper in layout, (2) ThemeProvider in layout, (3) page transition animations via AnimatedPage, (4) SpringButton replacing Button in key CTAs, (5) CommandPaletteUI wired with Cmd+K, (6) globals.css updated with responsive breakpoints and dark mode variables. Add framer-motion as a dependency to each app's package.json.",
+  "description": "Add tests for the new Motion components and verify the 4 new frontend apps (Calendar, Docs, Drive, Meet) can import and use the animation primitives without breaking their typecheck/build. Add a simple usage of FadeIn/StaggerList/PageTransition in each app's main layout or key screen component.",
   "status": "completed",
   "steps": [
-    "Add framer-motion ^11 as a dependency to all 7 Next.js app package.json files (quantmail, quantchat, quantai, quantcalendar, quantdocs, quantdrive, quantmeet)",
-    "Update apps/quantmail/src/app/layout.tsx: wrap children in ThemeProvider and add CommandPaletteUI with app-specific commands (compose email, search, go to inbox/sent/drafts). Import from @quant/shared-ui.",
-    "Update apps/quantmail/src/app/page.tsx: wrap main content in AnimatedPage for page transitions. Use AnimatedList for email list rendering. Replace key buttons with SpringButton.",
-    "Update apps/quantmail/src/app/globals.css: add responsive media queries for 360/414/768/1024/1440px, safe-area-inset padding, and ensure dark mode variables are comprehensive.",
-    "Update apps/quantchat/src/app/layout.tsx: wrap in ThemeProvider, add CommandPaletteUI with chat-specific commands (new chat, search conversations, settings).",
-    "Update apps/quantchat/src/app/page.tsx: wrap in AnimatedPage, use AnimatedList for conversation list.",
-    "Update apps/quantai/src/app/layout.tsx: wrap in ThemeProvider, add CommandPaletteUI with AI commands (new conversation, change model, history).",
-    "Update apps/quantai/src/app/page.tsx: wrap in AnimatedPage.",
-    "Update apps/quantcalendar/src/app/layout.tsx: wrap in ThemeProvider, add CommandPaletteUI with calendar commands (new event, today, switch view).",
-    "Update apps/quantcalendar/src/app/page.tsx: wrap calendar content in AnimatedPage.",
-    "Update apps/quantdocs/src/app/layout.tsx: wrap in ThemeProvider, add CommandPaletteUI with docs commands (new doc, search, templates).",
-    "Update apps/quantdocs/src/app/page.tsx: wrap in AnimatedPage.",
-    "Update apps/quantdrive/src/app/layout.tsx: wrap in ThemeProvider, add CommandPaletteUI with drive commands (upload, new folder, search files).",
-    "Update apps/quantdrive/src/app/page.tsx: wrap in AnimatedPage.",
-    "Update apps/quantmeet/src/app/layout.tsx: wrap in ThemeProvider, add CommandPaletteUI with meet commands (new meeting, join meeting).",
-    "Update apps/quantmeet/src/app/page.tsx: wrap main content in AnimatedPage, use SpringButton for 'New Meeting' CTA.",
-    "Ensure all 7 apps have consistent globals.css with responsive breakpoints (360/414/768/1024/1440px), dark mode .dark class, safe-area insets, and app-specific accent via --app-color CSS var.",
-    "Run pnpm typecheck to verify all apps pass typecheck",
-    "Run pnpm build to verify all apps build successfully"
+    "Create packages/shared-ui/src/__tests__/motion-components.test.tsx with tests for all Motion primitives: FadeIn renders children, StaggerList renders children, PageTransition renders children, SpringButton renders and handles clicks, AnimatedSkeleton renders with correct role, SlidePanel renders when open/hidden when closed, ScaleOnHover renders children, MotionConfig provides context values. Use @testing-library/react and mock framer-motion appropriately for jsdom.",
+    "In apps/quantcalendar/src/app/ - find the root layout or page component and wrap the main content area with PageTransition from @quant/shared-ui. If there is a list view (CalendarGrid or AgendaView), wrap items with StaggerList.",
+    "In apps/quantdocs/src/app/ - find the root layout or page component and wrap the main content area with PageTransition. Wrap DocList items with StaggerList.",
+    "In apps/quantdrive/src/app/ - find the root layout or page component and wrap the main content area with PageTransition. Wrap FileBrowser items with StaggerList.",
+    "In apps/quantmeet/src/app/ - find the root layout or page component and wrap the main content area with PageTransition.",
+    "Run pnpm typecheck to confirm all 111 packages pass",
+    "Run pnpm build to confirm all 88 packages pass",
+    "Run pnpm test --filter=@quant/shared-ui to confirm motion tests pass"
   ],
   "acceptance_criteria": [
-    "All 7 Next.js apps have framer-motion in their dependencies",
-    "All 7 apps have ThemeProvider wrapping children in layout.tsx",
-    "All 7 apps have CommandPaletteUI with app-specific commands in layout.tsx",
-    "All 7 apps page.tsx uses AnimatedPage for page transitions",
-    "All 7 apps globals.css has responsive breakpoints and dark mode",
-    "pnpm typecheck passes for all apps",
-    "pnpm build passes for all apps"
+    "packages/shared-ui/src/__tests__/motion-components.test.tsx exists and tests pass",
+    "All 4 frontend apps import at least one Motion component from @quant/shared-ui",
+    "pnpm typecheck passes (111/111)",
+    "pnpm build passes (88/88)",
+    "pnpm test --filter=@quant/shared-ui passes"
   ],
-  "verification": ["pnpm typecheck", "pnpm build"],
+  "verification": [
+    "pnpm typecheck 2>&1 | tail -5",
+    "pnpm build 2>&1 | tail -5",
+    "pnpm test --filter=@quant/shared-ui 2>&1 | tail -10"
+  ],
   "blocked_reason": null,
-  "findings": "All 7 apps updated with framer-motion, ThemeProvider, CommandPaletteUI, AnimatedPage, and comprehensive globals.css. Prettier reformatted files via lint-staged pre-commit hook. pnpm typecheck (111 tasks), pnpm build (88 tasks), and pnpm test (114 tasks) all pass successfully. SpringButton used for primary CTAs in quantmeet (New Meeting) and quantdocs (New Document)."
+  "findings": "AnimatedSkeleton needed role=status and aria-busy=true attributes added for proper accessibility testing. The framer-motion mock pattern works well - just need to access container.firstElementChild for className assertions since the mock spreads all props including non-standard ones (initial, animate, transition objects) onto the div."
 }

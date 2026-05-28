@@ -3,6 +3,8 @@
 // ============================================================================
 
 import React from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { spring } from '@quant/brand';
 
 export interface NavItem {
   id: string;
@@ -18,6 +20,7 @@ export interface BottomNavProps {
   activeId: string;
   onChange: (id: string) => void;
   className?: string;
+  animated?: boolean;
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({
@@ -25,9 +28,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   activeId,
   onChange,
   className = '',
+  animated = true,
 }) => {
+  const prefersReducedMotion = useReducedMotion();
+  const shouldAnimate = animated && !prefersReducedMotion;
+
   return (
-    <nav className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-bottom ${className}`}>
+    <nav
+      className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-bottom ${className}`}
+    >
       <div className="flex items-center justify-around h-14">
         {items.map((item) => {
           const isActive = item.id === activeId;
@@ -48,6 +57,16 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 )}
               </div>
               <span className="text-[10px] mt-0.5 font-medium">{item.label}</span>
+              {isActive &&
+                (shouldAnimate ? (
+                  <motion.div
+                    layoutId="bottomNavIndicator"
+                    className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-blue-600 rounded-full"
+                    transition={{ type: 'spring', ...spring.snappy }}
+                  />
+                ) : (
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-blue-600 rounded-full" />
+                ))}
             </button>
           );
         })}
