@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ASRProviderFactory } from '../asr/streaming-asr.js';
 import { WhisperServerProvider } from '../asr/whisper-provider.js';
 import { WebGPUWhisperProvider } from '../asr/webgpu-whisper-provider.js';
@@ -25,6 +25,15 @@ describe('ASRProviderFactory', () => {
 });
 
 describe('WhisperServerProvider', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
   it('starts and stops without errors', () => {
     const provider = new WhisperServerProvider(config);
     provider.start();
@@ -44,21 +53,22 @@ describe('WhisperServerProvider', () => {
     provider.feedAudio(chunk);
   });
 
-  it('calls result callbacks when processing audio', async () => {
-    const mockResponse = { text: 'hello world' };
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockResponse),
-      }),
-    );
+  it('batches audio chunks and sends as multipart form-data', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ text: 'hello world' }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
 
-    const provider = new WhisperServerProvider(config);
+    const provider = new WhisperServerProvider({
+      ...config,
+      batchIntervalMs: 100,
+    });
     const resultCb = vi.fn();
     provider.onResult(resultCb);
     provider.start();
 
+    // Feed multiple chunks
     const chunk: AudioChunk = {
       data: new Float32Array([0.1, 0.2]),
       sampleRate: 16000,
@@ -67,15 +77,81 @@ describe('WhisperServerProvider', () => {
       duration: 100,
     };
     provider.feedAudio(chunk);
+    provider.feedAudio({ ...chunk, timestamp: 100 });
+
+    // Advance timer to trigger batch flush
+    vi.advanceTimersByTime(100);
 
     // Wait for async processing
-    await new Promise((r) => setTimeout(r, 50));
+    await vi.waitFor(() => {
+      expect(resultCb).toHaveBeenCalledTimes(1);
+    });
 
-    expect(resultCb).toHaveBeenCalledTimes(1);
+    // Verify fetch was called once (batched) with FormData
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [url, options] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(config.endpoint);
+    expect(options.body).toBeInstanceOf(FormData);
+
+    const formData = options.body as FormData;
+    expect(formData.get('model')).toBe('whisper-1');
+    expect(formData.get('language')).toBe('en');
+
+    const file = formData.get('file') as Blob;
+    expect(file).toBeInstanceOf(Blob);
+    expect(file.type).toBe('audio/wav');
+
     expect(resultCb.mock.calls[0]?.[0].segments[0]?.text).toBe('hello world');
     expect(resultCb.mock.calls[0]?.[0].isFinal).toBe(true);
+  });
 
-    vi.unstubAllGlobals();
+  it('respects maxConcurrency limit', async () => {
+    let resolveFirst: (() => void) | undefined;
+    const firstCallPromise = new Promise<void>((r) => {
+      resolveFirst = r;
+    });
+
+    const mockFetch = vi.fn().mockImplementation(() => {
+      return firstCallPromise.then(() => ({
+        ok: true,
+        json: () => Promise.resolve({ text: 'result' }),
+      }));
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const provider = new WhisperServerProvider({
+      ...config,
+      batchIntervalMs: 50,
+      maxConcurrency: 1,
+    });
+    provider.start();
+
+    const chunk: AudioChunk = {
+      data: new Float32Array([0.1]),
+      sampleRate: 16000,
+      channels: 1,
+      timestamp: 0,
+      duration: 20,
+    };
+
+    // First batch
+    provider.feedAudio(chunk);
+    vi.advanceTimersByTime(50);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+
+    // Second batch should be blocked by concurrency limit
+    provider.feedAudio({ ...chunk, timestamp: 50 });
+    vi.advanceTimersByTime(50);
+    // Still only 1 call because maxConcurrency=1 is saturated
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+
+    // Resolve first request
+    resolveFirst!();
+    await vi.waitFor(() => {
+      // After the first completes, the next flush will send the queued batch
+    });
+
+    provider.stop();
   });
 
   it('calls error callbacks on fetch failure', async () => {
@@ -87,7 +163,10 @@ describe('WhisperServerProvider', () => {
       }),
     );
 
-    const provider = new WhisperServerProvider(config);
+    const provider = new WhisperServerProvider({
+      ...config,
+      batchIntervalMs: 50,
+    });
     const errorCb = vi.fn();
     provider.onError(errorCb);
     provider.start();
@@ -101,12 +180,46 @@ describe('WhisperServerProvider', () => {
     };
     provider.feedAudio(chunk);
 
-    await new Promise((r) => setTimeout(r, 50));
+    // Advance timer to flush batch
+    vi.advanceTimersByTime(50);
 
-    expect(errorCb).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => {
+      expect(errorCb).toHaveBeenCalledTimes(1);
+    });
+
     expect(errorCb.mock.calls[0]?.[0].message).toContain('500');
+  });
 
-    vi.unstubAllGlobals();
+  it('flushes remaining buffer on stop', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ text: 'flushed' }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const provider = new WhisperServerProvider({
+      ...config,
+      batchIntervalMs: 5000, // long interval
+    });
+    const resultCb = vi.fn();
+    provider.onResult(resultCb);
+    provider.start();
+
+    const chunk: AudioChunk = {
+      data: new Float32Array([0.1, 0.2]),
+      sampleRate: 16000,
+      channels: 1,
+      timestamp: 0,
+      duration: 100,
+    };
+    provider.feedAudio(chunk);
+
+    // Stop before the timer fires - should flush buffered audio
+    provider.stop();
+
+    await vi.waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
   });
 });
 

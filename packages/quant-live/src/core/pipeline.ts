@@ -11,13 +11,23 @@ type TranscriptCallback = (segments: TranscriptSegment[]) => void;
 type ResponseCallback = (text: string) => void;
 type AudioOutCallback = (chunk: AudioChunk) => void;
 
+/**
+ * Orchestrates audio input through ASR and tracks per-segment latency.
+ *
+ * Latency is measured per speech segment rather than per chunk. A measurement
+ * starts when the first audio chunk arrives (or when a new segment begins after
+ * a previous result) and ends when the ASR provider emits a result. This avoids
+ * orphaned measurements that would accumulate if tracked per-chunk, since
+ * streaming ASR aggregates multiple chunks into single results.
+ */
 export class LivePipeline {
   private asrProvider: ASRProvider | null = null;
   private transcriptCallbacks: TranscriptCallback[] = [];
   private responseCallbacks: ResponseCallback[] = [];
   private audioOutCallbacks: AudioOutCallback[] = [];
   private running = false;
-  private chunkId = 0;
+  private segmentId = 0;
+  private segmentMeasureActive = false;
   readonly latencyTracker: LatencyTracker;
 
   constructor(latencyTracker?: LatencyTracker) {
@@ -41,14 +51,21 @@ export class LivePipeline {
     }
     this.running = false;
     this.asrProvider = null;
+    this.segmentMeasureActive = false;
   }
 
   feedAudio(chunk: AudioChunk): void {
     if (!this.running || !this.asrProvider) {
       return;
     }
-    const measureId = `chunk-${this.chunkId++}`;
-    this.latencyTracker.startMeasure('asr', measureId);
+
+    // Start a measurement for the current segment if one is not already active.
+    // The measurement ends when the ASR provider delivers a result.
+    if (!this.segmentMeasureActive) {
+      this.latencyTracker.startMeasure('asr', `segment-${this.segmentId}`);
+      this.segmentMeasureActive = true;
+    }
+
     this.asrProvider.feedAudio(chunk);
   }
 
@@ -77,6 +94,13 @@ export class LivePipeline {
   }
 
   private handleASRResult(result: ASRResult): void {
+    // End the per-segment latency measurement
+    if (this.segmentMeasureActive) {
+      this.latencyTracker.endMeasure('asr', `segment-${this.segmentId}`);
+      this.segmentMeasureActive = false;
+      this.segmentId++;
+    }
+
     for (const cb of this.transcriptCallbacks) {
       cb(result.segments);
     }

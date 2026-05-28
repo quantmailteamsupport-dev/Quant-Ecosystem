@@ -107,4 +107,48 @@ describe('VoiceActivityDetector', () => {
     const speechEnd = events.find((e) => e.type === 'speech-end');
     expect(speechEnd).toBeDefined();
   });
+
+  it('ignores out-of-order chunks with decreasing timestamps', () => {
+    const vad = new VoiceActivityDetector({
+      threshold: 0.01,
+      silenceDuration: 200,
+      minSpeechDuration: 40,
+    });
+    const events: VADEvent[] = [];
+    vad.onEvent((e) => events.push(e));
+    vad.start();
+
+    // Feed chunks with advancing timestamps to start speech
+    vad.feedAudio(createChunk([0.5, 0.5, 0.5, 0.5], 0));
+    vad.feedAudio(createChunk([0.5, 0.5, 0.5, 0.5], 20));
+    vad.feedAudio(createChunk([0.5, 0.5, 0.5, 0.5], 40));
+
+    const speechStartCount = events.filter((e) => e.type === 'speech-start').length;
+    expect(speechStartCount).toBe(1);
+
+    // Now feed an out-of-order chunk (timestamp < 40)
+    const eventsBefore = events.length;
+    vad.feedAudio(createChunk([0.0001, 0.0001], 10));
+
+    // Should not emit any new events since the chunk was ignored
+    expect(events.length).toBe(eventsBefore);
+  });
+
+  it('accepts chunks with equal timestamps (non-decreasing)', () => {
+    const vad = new VoiceActivityDetector({
+      threshold: 0.01,
+      minSpeechDuration: 0,
+    });
+    const events: VADEvent[] = [];
+    vad.onEvent((e) => events.push(e));
+    vad.start();
+
+    // Two chunks with the same timestamp should both be processed
+    vad.feedAudio(createChunk([0.5, 0.5, 0.5, 0.5], 100));
+    vad.feedAudio(createChunk([0.5, 0.5, 0.5, 0.5], 100));
+
+    // Should have emitted speech-start (minSpeechDuration: 0)
+    const speechStart = events.find((e) => e.type === 'speech-start');
+    expect(speechStart).toBeDefined();
+  });
 });

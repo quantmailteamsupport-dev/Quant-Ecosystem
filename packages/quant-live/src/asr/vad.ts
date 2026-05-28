@@ -13,6 +13,7 @@ export class VoiceActivityDetector {
   private isSpeaking = false;
   private speechStartTime: number | null = null;
   private lastSpeechTime: number | null = null;
+  private lastTimestamp: number | null = null;
 
   constructor(config?: Partial<VADConfig>) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -23,6 +24,7 @@ export class VoiceActivityDetector {
     this.isSpeaking = false;
     this.speechStartTime = null;
     this.lastSpeechTime = null;
+    this.lastTimestamp = null;
   }
 
   stop(): void {
@@ -37,8 +39,27 @@ export class VoiceActivityDetector {
     }
   }
 
+  /**
+   * Feed an audio chunk for voice activity analysis.
+   *
+   * **Timestamp contract:** Callers MUST provide monotonically non-decreasing
+   * `chunk.timestamp` values. The VAD uses these timestamps (not wall-clock
+   * time) to measure speech duration and silence gaps. If a chunk arrives with
+   * a timestamp earlier than the previous chunk, it is ignored (out-of-order
+   * audio cannot be meaningfully analyzed for temporal speech patterns).
+   *
+   * @param chunk - Audio chunk with PCM samples and a non-decreasing timestamp.
+   */
   feedAudio(chunk: AudioChunk): void {
     if (!this.running) return;
+
+    // Validate monotonically non-decreasing timestamps
+    if (this.lastTimestamp !== null && chunk.timestamp < this.lastTimestamp) {
+      // Out-of-order chunk; ignore it silently since temporal analysis
+      // requires ordered timestamps.
+      return;
+    }
+    this.lastTimestamp = chunk.timestamp;
 
     const energy = this.computeRMS(chunk.data);
     const now = chunk.timestamp;

@@ -115,7 +115,7 @@ describe('LivePipeline', () => {
     expect(transcriptCb).toHaveBeenCalledWith(result.segments);
   });
 
-  it('tracks latency when feeding audio', () => {
+  it('tracks latency when feeding audio and receiving ASR results', () => {
     const tracker = new LatencyTracker();
     const pipeline = new LivePipeline(tracker);
     const provider = createMockProvider();
@@ -130,8 +130,69 @@ describe('LivePipeline', () => {
     };
     pipeline.feedAudio(chunk);
 
-    // End the measurement manually to verify it was started
-    const duration = tracker.endMeasure('asr', 'chunk-0');
-    expect(duration).toBeGreaterThanOrEqual(0);
+    // Trigger ASR result to end the segment measurement
+    const result: ASRResult = {
+      segments: [
+        {
+          id: 'seg-1',
+          speaker: 'user',
+          text: 'test',
+          startTime: 0,
+          endTime: 10,
+          confidence: 0.9,
+          isFinal: true,
+        },
+      ],
+      isFinal: true,
+      latencyMs: 20,
+    };
+    provider.triggerResult(result);
+
+    const metrics = tracker.getMetrics('asr');
+    expect(metrics).toBeDefined();
+    expect(metrics!.samples).toBe(1);
+    expect(metrics!.lastValue).toBeGreaterThanOrEqual(0);
+  });
+
+  it('groups multiple chunks into a single segment measurement', () => {
+    const tracker = new LatencyTracker();
+    const pipeline = new LivePipeline(tracker);
+    const provider = createMockProvider();
+    pipeline.start(createMockSession(), provider);
+
+    // Feed multiple chunks (all part of one segment)
+    for (let i = 0; i < 5; i++) {
+      const chunk: AudioChunk = {
+        data: new Float32Array([0.1]),
+        sampleRate: 16000,
+        channels: 1,
+        timestamp: i * 20,
+        duration: 20,
+      };
+      pipeline.feedAudio(chunk);
+    }
+
+    // One result ends the segment
+    const result: ASRResult = {
+      segments: [
+        {
+          id: 'seg-1',
+          speaker: 'user',
+          text: 'hello world',
+          startTime: 0,
+          endTime: 100,
+          confidence: 0.95,
+          isFinal: true,
+        },
+      ],
+      isFinal: true,
+      latencyMs: 50,
+    };
+    provider.triggerResult(result);
+
+    const metrics = tracker.getMetrics('asr');
+    expect(metrics).toBeDefined();
+    // Only 1 measurement even though 5 chunks were fed
+    expect(metrics!.samples).toBe(1);
   });
 });
