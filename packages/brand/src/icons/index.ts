@@ -1,0 +1,14 @@
+export { quantmailIcon } from './quantmail.js';
+export { quantchatIcon } from './quantchat.js';
+export { quantaiIcon } from './quantai.js';
+export { quantcalendarIcon } from './quantcalendar.js';
+export { quantdocsIcon } from './quantdocs.js';
+export { quantdriveIcon } from './quantdrive.js';
+export { quantmeetIcon } from './quantmeet.js';
+export { quantneonIcon } from './quantneon.js';
+export { quantsyncIcon } from './quantsync.js';
+export { quantubeIcon } from './quantube.js';
+export { quantmaxIcon } from './quantmax.js';
+export { quanteditsIcon } from './quantedits.js';
+export { quantadsIcon } from './quantads.js';
+export { marketingIcon } from './marketing.js';
