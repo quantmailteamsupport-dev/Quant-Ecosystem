@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "fix",
   "description": "Fix brand system issues from semantic review: color collision, dark-mode token drift, add tests, per-app favicon colors",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Fix quantads color collision in packages/brand/src/apps.ts - change from #10B981 to #059669 (emerald-600)",
     "Fix dark-mode token drift in packages/shared-ui/src/themes/tokens.ts - use brand primary[400] and accent[400]",
@@ -19,5 +19,5 @@
   ],
   "verification": ["pnpm typecheck", "pnpm build", "pnpm test --filter=@quant/brand"],
   "blocked_reason": null,
-  "findings": null
+  "findings": "All 4 review issues resolved. Typecheck 111/111, build 88/88, tests 12/12. Prettier auto-formatted via lint-staged on commit."
 }
