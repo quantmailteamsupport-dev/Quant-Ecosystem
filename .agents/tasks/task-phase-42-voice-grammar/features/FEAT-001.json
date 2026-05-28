@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Implement the voice command grammar system with types, alias registry, shortcut store, command grammar, intent parser, command executor, tests, and barrel exports. All new files go in packages/device-control/src/voice/ with tests in src/__tests__/. Total must be under 500 LOC of new code.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create packages/device-control/src/voice/types.ts defining: DeviceIntent (capability from DeviceCapability union + 'alarm' | 'iot', action string, params Record<string, unknown>), GrammarPattern (id, type: 'exact'|'regex'|'keyword'|'ai-classified', pattern: string|RegExp, capability, action, extract: function), UserAlias (trigger, value, category), CustomShortcut (trigger, actions: DeviceIntent[], description?, enabled, stopOnFailure), and ExecutionResult (success, results array, error?).",
     "Create packages/device-control/src/voice/alias-registry.ts: AliasRegistry class with add(trigger, value, category), remove(trigger), resolve(text) that substitutes all known aliases in text, getAll(), clear(). Simple Map-based storage.",
@@ -32,5 +32,5 @@
     "pnpm --filter @quant/device-control run test"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Hindi patterns must be ordered before generic English patterns to avoid false matches. Pre-commit hook enforces 100-char line limit on commit message bodies. Prettier ran via lint-staged but no formatting changes needed."
 }
