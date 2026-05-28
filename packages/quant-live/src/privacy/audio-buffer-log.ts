@@ -1,10 +1,9 @@
 import type { AudioBufferEntry } from '../types.js';
 
-let idCounter = 0;
-
 export class AudioBufferLog {
   private entries: AudioBufferEntry[] = [];
   private bufferDurationMs: number;
+  private idCounter = 0;
 
   constructor(bufferDurationMs = 300000) {
     this.bufferDurationMs = bufferDurationMs;
@@ -12,7 +11,7 @@ export class AudioBufferLog {
 
   append(chunk: { data: Float32Array; timestamp: number; duration: number }): void {
     const entry: AudioBufferEntry = {
-      id: `buf-${++idCounter}`,
+      id: `buf-${++this.idCounter}`,
       data: chunk.data,
       timestamp: chunk.timestamp,
       duration: chunk.duration,
@@ -37,7 +36,7 @@ export class AudioBufferLog {
 
   forget(seconds: number): void {
     const cutoff = Date.now() - seconds * 1000;
-    this.entries = this.entries.filter((e) => e.timestamp < cutoff);
+    this.entries = this.entries.filter((e) => e.starred || e.timestamp < cutoff);
   }
 
   clear(): void {

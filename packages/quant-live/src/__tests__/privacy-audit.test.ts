@@ -70,11 +70,14 @@ describe('PrivacyAudit', () => {
     expect(parsed.length).toBe(2);
   });
 
-  it('clear removes all events', () => {
+  it('clear removes all events and records a buffer_cleared audit event', () => {
     const audit = new PrivacyAudit();
     audit.record('mic_activated');
     audit.record('mic_deactivated');
     audit.clear();
-    expect(audit.getCount()).toBe(0);
+    expect(audit.getCount()).toBe(1);
+    const events = audit.query({ type: 'buffer_cleared' });
+    expect(events.length).toBe(1);
+    expect(events[0]!.metadata).toEqual({ reason: 'user_initiated', previousCount: 2 });
   });
 });

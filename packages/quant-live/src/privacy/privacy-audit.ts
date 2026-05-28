@@ -1,13 +1,12 @@
 import type { PrivacyAuditEvent, PrivacyAuditEventType } from '../types.js';
 
-let auditIdCounter = 0;
-
 export class PrivacyAudit {
   private events: PrivacyAuditEvent[] = [];
+  private idCounter = 0;
 
   record(type: PrivacyAuditEventType, metadata?: Record<string, unknown>): void {
     const event: PrivacyAuditEvent = Object.freeze({
-      id: `audit-${++auditIdCounter}`,
+      id: `audit-${++this.idCounter}`,
       type,
       timestamp: Date.now(),
       metadata,
@@ -38,7 +37,14 @@ export class PrivacyAudit {
   }
 
   clear(): void {
-    this.events = [];
+    // Record the clear event before wiping - maintains audit trail integrity
+    const event: PrivacyAuditEvent = Object.freeze({
+      id: `audit-${++this.idCounter}`,
+      type: 'buffer_cleared' as PrivacyAuditEventType,
+      timestamp: Date.now(),
+      metadata: { reason: 'user_initiated', previousCount: this.events.length },
+    });
+    this.events = [event];
   }
 
   getCount(): number {

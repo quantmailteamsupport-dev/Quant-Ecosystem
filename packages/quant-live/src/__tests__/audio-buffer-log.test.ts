@@ -70,4 +70,15 @@ describe('AudioBufferLog', () => {
     log.clear();
     expect(log.getSize()).toBe(0);
   });
+
+  it('forget preserves starred entries', () => {
+    const log = new AudioBufferLog();
+    const now = Date.now();
+    vi.spyOn(Date, 'now').mockReturnValue(now);
+    log.append({ data: new Float32Array(10), timestamp: now - 500, duration: 100 });
+    log.star(now - 500, now - 500);
+    log.forget(2); // forget last 2 seconds
+    expect(log.getSize()).toBe(1); // starred entry preserved
+    vi.restoreAllMocks();
+  });
 });
