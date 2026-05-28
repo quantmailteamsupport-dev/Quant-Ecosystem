@@ -29,18 +29,21 @@ export class HealthStore {
     return sum;
   }
 
-  getTrend(type: MetricType, days = 7): number[] {
-    const now = Date.now();
+  getTrend(type: MetricType, days = 7, referenceTime = Date.now()): number[] {
     const result: number[] = [];
     for (let i = days - 1; i >= 0; i--) {
-      const dayStart = now - (i + 1) * 86400000;
+      const dayStart = referenceTime - (i + 1) * 86400000;
       const dayEnd = dayStart + 86400000;
       const dayMetrics = this.getMetrics(type, dayStart, dayEnd);
       if (dayMetrics.length === 0) {
         result.push(0);
       } else {
         const sum = dayMetrics.reduce((acc, m) => acc + m.value, 0);
-        result.push(sum / dayMetrics.length);
+        if (type === MetricType.heartRate || type === MetricType.spo2) {
+          result.push(sum / dayMetrics.length);
+        } else {
+          result.push(sum);
+        }
       }
     }
     return result;

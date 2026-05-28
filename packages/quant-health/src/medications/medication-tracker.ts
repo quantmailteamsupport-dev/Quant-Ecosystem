@@ -38,11 +38,18 @@ export class MedicationTracker {
   getAdherence(medId: string, currentTime = Date.now()): number {
     const med = this.medications.get(medId);
     if (!med) return 0;
+    if (med.frequency === 'as_needed') return 100;
     const record = this.doses.get(medId);
     if (!record || record.length === 0) return 0;
-    const expectedPerDay = med.frequency === 'twice_daily' ? 2 : 1;
     const days = Math.max(1, Math.ceil((currentTime - record[0]!) / 86400000));
-    const expected = days * expectedPerDay;
+    let expected: number;
+    if (med.frequency === 'twice_daily') {
+      expected = days * 2;
+    } else if (med.frequency === 'weekly') {
+      expected = Math.max(1, Math.floor(days / 7));
+    } else {
+      expected = days;
+    }
     return Math.min(Math.round((record.length / expected) * 100), 100);
   }
 

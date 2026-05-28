@@ -69,4 +69,30 @@ describe('MedicationTracker', () => {
     const warnings = tracker.checkInteractions(['Vitamin D', 'Calcium']);
     expect(warnings).toHaveLength(0);
   });
+
+  it('should return 100 adherence for as_needed medications', () => {
+    tracker.addMedication(makeMed({ id: 'prn-1', frequency: 'as_needed' }));
+    const adherence = tracker.getAdherence('prn-1');
+    expect(adherence).toBe(100);
+  });
+
+  it('should compute adherence correctly for weekly medications', () => {
+    const startTime = 1000000;
+    tracker.addMedication(makeMed({ id: 'weekly-1', frequency: 'weekly' }));
+    // Record 1 dose at start
+    tracker.recordDose('weekly-1', startTime);
+    // After 7 days, expected = 1, taken = 1 -> 100%
+    const adherence = tracker.getAdherence('weekly-1', startTime + 7 * 86400000);
+    expect(adherence).toBe(100);
+  });
+
+  it('should not inflate adherence for weekly meds over short periods', () => {
+    const startTime = 1000000;
+    tracker.addMedication(makeMed({ id: 'weekly-2', frequency: 'weekly' }));
+    // Record 1 dose
+    tracker.recordDose('weekly-2', startTime);
+    // After 14 days, expected = 2, taken = 1 -> 50%
+    const adherence = tracker.getAdherence('weekly-2', startTime + 14 * 86400000);
+    expect(adherence).toBe(50);
+  });
 });

@@ -65,4 +65,42 @@ describe('HealthStore', () => {
     expect(trend).toHaveLength(7);
     expect(trend.every((v) => v === 0)).toBe(true);
   });
+
+  it('should accept referenceTime parameter for deterministic trends', () => {
+    const refTime = new Date('2024-01-16T00:00:00Z').getTime();
+    const day15Start = new Date('2024-01-15T00:00:00Z').getTime();
+    store.addMetric(makeMetric({ id: '1', value: 3000, timestamp: day15Start + 1000 }));
+    store.addMetric(makeMetric({ id: '2', value: 2000, timestamp: day15Start + 5000 }));
+
+    const trend = store.getTrend(MetricType.steps, 1, refTime);
+    expect(trend).toHaveLength(1);
+    expect(trend[0]).toBe(5000);
+  });
+
+  it('should sum steps in trend (consistent with getDailyAggregate)', () => {
+    const refTime = new Date('2024-01-16T00:00:00Z').getTime();
+    const day15Start = new Date('2024-01-15T00:00:00Z').getTime();
+    store.addMetric(makeMetric({ id: '1', value: 3000, timestamp: day15Start + 1000 }));
+    store.addMetric(makeMetric({ id: '2', value: 2000, timestamp: day15Start + 5000 }));
+
+    const trend = store.getTrend(MetricType.steps, 1, refTime);
+    const aggregate = store.getDailyAggregate(MetricType.steps, '2024-01-15');
+    expect(trend[0]).toBe(aggregate);
+  });
+
+  it('should average heartRate in trend (consistent with getDailyAggregate)', () => {
+    const refTime = new Date('2024-01-16T00:00:00Z').getTime();
+    const day15Start = new Date('2024-01-15T00:00:00Z').getTime();
+    store.addMetric(
+      makeMetric({ id: '1', type: MetricType.heartRate, value: 60, timestamp: day15Start + 1000 }),
+    );
+    store.addMetric(
+      makeMetric({ id: '2', type: MetricType.heartRate, value: 80, timestamp: day15Start + 5000 }),
+    );
+
+    const trend = store.getTrend(MetricType.heartRate, 1, refTime);
+    const aggregate = store.getDailyAggregate(MetricType.heartRate, '2024-01-15');
+    expect(trend[0]).toBe(aggregate);
+    expect(trend[0]).toBe(70);
+  });
 });
