@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "feat",
   "description": "Add tests for the new Motion components and verify the 4 new frontend apps (Calendar, Docs, Drive, Meet) can import and use the animation primitives without breaking their typecheck/build. Add a simple usage of FadeIn/StaggerList/PageTransition in each app's main layout or key screen component.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create packages/shared-ui/src/__tests__/motion-components.test.tsx with tests for all Motion primitives: FadeIn renders children, StaggerList renders children, PageTransition renders children, SpringButton renders and handles clicks, AnimatedSkeleton renders with correct role, SlidePanel renders when open/hidden when closed, ScaleOnHover renders children, MotionConfig provides context values. Use @testing-library/react and mock framer-motion appropriately for jsdom.",
     "In apps/quantcalendar/src/app/ - find the root layout or page component and wrap the main content area with PageTransition from @quant/shared-ui. If there is a list view (CalendarGrid or AgendaView), wrap items with StaggerList.",
@@ -26,5 +26,5 @@
     "pnpm test --filter=@quant/shared-ui 2>&1 | tail -10"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "AnimatedSkeleton needed role=status and aria-busy=true attributes added for proper accessibility testing. The framer-motion mock pattern works well - just need to access container.firstElementChild for className assertions since the mock spreads all props including non-standard ones (initial, animate, transition objects) onto the div."
 }
