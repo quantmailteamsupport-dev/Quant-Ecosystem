@@ -121,4 +121,43 @@ describe('ToolRegistryImpl', () => {
     expect(result.success).toBe(false);
     expect(result.error).toContain('Tool not found');
   });
+
+  it('should register undo recipe and return undoId on success', async () => {
+    const registry = new ToolRegistryImpl();
+    const tool = createMockTool({
+      permissionTier: 1,
+      undoRecipe: {
+        description: 'Undo the action',
+        handler: vi.fn().mockResolvedValue(undefined),
+      },
+    });
+    registry.register(tool);
+    const context = createMockContext();
+    const result = await registry.execute('test.tool', { value: 'hello' }, context);
+    expect(result.success).toBe(true);
+    expect(result.undoId).toBeDefined();
+    // Verify undo was registered
+    const undoManager = registry.getUndoManager();
+    expect(undoManager.canUndo(result.undoId!)).toBe(true);
+  });
+
+  it('should give higher search score for name+description match', () => {
+    const registry = new ToolRegistryImpl();
+    registry.register(
+      createMockTool({ id: 'email.send', name: 'send_email', description: 'Send email messages' }),
+    );
+    registry.register(
+      createMockTool({
+        id: 'chat.notify',
+        name: 'notify_user',
+        description: 'Send email notification via chat',
+      }),
+    );
+    const results = registry.search('email');
+    // email.send matches both name and description (score 1.0)
+    // chat.notify matches only description (score 0.5)
+    expect(results[0]!.tool.id).toBe('email.send');
+    expect(results[0]!.score).toBe(1.0);
+    expect(results[1]!.score).toBe(0.5);
+  });
 });

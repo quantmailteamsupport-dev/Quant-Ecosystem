@@ -83,4 +83,16 @@ describe('ToolAuditTrail', () => {
       });
     }).toThrow();
   });
+
+  it('should evict oldest entries when maxEntries is exceeded', () => {
+    const trail = new ToolAuditTrail(3);
+    trail.log(createMockAuditEntry({ id: 'a1', timestamp: 1000 }));
+    trail.log(createMockAuditEntry({ id: 'a2', timestamp: 2000 }));
+    trail.log(createMockAuditEntry({ id: 'a3', timestamp: 3000 }));
+    trail.log(createMockAuditEntry({ id: 'a4', timestamp: 4000 }));
+    const all = trail.getAll();
+    expect(all).toHaveLength(3);
+    expect(all[0]!.id).toBe('a2');
+    expect(all[2]!.id).toBe('a4');
+  });
 });

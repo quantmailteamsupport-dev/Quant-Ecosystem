@@ -1,8 +1,17 @@
-import type { QuantTool, ToolContext, ToolResult, PlannedExecution } from './types.js';
+import type {
+  QuantTool,
+  ToolContext,
+  ToolResult,
+  ToolRegistry,
+  PlannedExecution,
+} from './types.js';
 
 export class ToolPlanner {
   plan(intent: string, availableTools: QuantTool[]): PlannedExecution[] {
-    const words = intent.toLowerCase().split(/\s+/);
+    const words = intent
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length >= 3);
     const matched: PlannedExecution[] = [];
     const seen = new Set<string>();
 
@@ -14,16 +23,19 @@ export class ToolPlanner {
 
       let matchCount = 0;
       for (const word of words) {
-        if (word.length < 3) continue;
         for (const tw of toolWords) {
-          if (tw.includes(word) || word.includes(tw)) {
+          if (
+            tw === word ||
+            (tw.length >= 4 && word.length >= 4 && (tw.includes(word) || word.includes(tw)))
+          ) {
             matchCount++;
             break;
           }
         }
       }
 
-      if (matchCount > 0 && !seen.has(tool.id)) {
+      const threshold = words.length > 3 ? 2 : 1;
+      if (matchCount >= threshold && !seen.has(tool.id)) {
         seen.add(tool.id);
         matched.push({
           toolId: tool.id,
@@ -41,10 +53,16 @@ export class ToolPlanner {
     });
   }
 
-  async executePlan(steps: PlannedExecution[], context: ToolContext): Promise<ToolResult[]> {
+  async executePlan(
+    steps: PlannedExecution[],
+    context: ToolContext,
+    registry?: ToolRegistry,
+  ): Promise<ToolResult[]> {
     const results: ToolResult[] = [];
     for (const step of steps) {
-      const result = await step.tool.execute(step.estimatedInput, context);
+      const result = registry
+        ? await registry.execute(step.toolId, step.estimatedInput, context)
+        : await step.tool.execute(step.estimatedInput, context);
       results.push(result);
       if (!result.success) {
         break;

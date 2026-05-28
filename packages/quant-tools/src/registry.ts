@@ -7,11 +7,13 @@ import type {
 } from './types.js';
 import { PermissionEngine } from './permissions.js';
 import { ToolAuditTrail } from './audit.js';
+import { UndoManager } from './undo.js';
 
 export class ToolRegistryImpl implements ToolRegistry {
   private tools = new Map<string, QuantTool>();
   private permissionEngine = new PermissionEngine();
   private auditTrail = new ToolAuditTrail();
+  private undoManager = new UndoManager();
 
   register(tool: QuantTool): void {
     if (this.tools.has(tool.id)) {
@@ -45,7 +47,14 @@ export class ToolRegistryImpl implements ToolRegistry {
       const nameMatch = tool.name.toLowerCase().includes(lower);
       const descMatch = tool.description.toLowerCase().includes(lower);
       if (nameMatch || descMatch) {
-        const score = nameMatch ? 1.0 : 0.5;
+        let score: number;
+        if (nameMatch && descMatch) {
+          score = 1.0;
+        } else if (nameMatch) {
+          score = 0.8;
+        } else {
+          score = 0.5;
+        }
         results.push({ tool, score });
       }
     }
@@ -87,6 +96,14 @@ export class ToolRegistryImpl implements ToolRegistry {
 
     // Log audit entry
     const auditId = result.auditId || crypto.randomUUID();
+
+    // Register undo recipe if the tool defines one and execution succeeded
+    let undoId: string | undefined;
+    if (tool.undoRecipe && result.success) {
+      undoId = crypto.randomUUID();
+      this.undoManager.registerUndo(undoId, context.userId, tool.undoRecipe);
+    }
+
     this.auditTrail.log({
       id: auditId,
       toolId: tool.id,
@@ -98,10 +115,14 @@ export class ToolRegistryImpl implements ToolRegistry {
       undoStatus: tool.undoRecipe ? 'available' : 'none',
     });
 
-    return { ...result, auditId };
+    return { ...result, auditId, undoId };
   }
 
   getAuditTrail(): ToolAuditTrail {
     return this.auditTrail;
+  }
+
+  getUndoManager(): UndoManager {
+    return this.undoManager;
   }
 }

@@ -28,8 +28,13 @@ export class UndoManager {
     if (Date.now() > entry.expiresAt) {
       throw new Error(`Undo expired: ${undoId}`);
     }
-    await entry.recipe.handler(undoId, context);
     entry.executed = true;
+    try {
+      await entry.recipe.handler(undoId, context);
+    } catch (err) {
+      entry.executed = false;
+      throw err;
+    }
   }
 
   canUndo(undoId: string): boolean {

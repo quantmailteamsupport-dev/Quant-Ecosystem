@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { z } from 'zod';
 import { ToolPlanner } from '../planner.js';
+import { ToolRegistryImpl } from '../registry.js';
 import type { QuantTool, ToolContext } from '../types.js';
 
 function createMockTool(overrides: Partial<QuantTool> = {}): QuantTool {
@@ -59,7 +60,7 @@ describe('ToolPlanner', () => {
         description: 'Send an email to recipients',
       }),
     ];
-    const plan = planner.plan('find tax document and email it', tools);
+    const plan = planner.plan('search files then send email', tools);
     expect(plan.length).toBe(2);
   });
 
@@ -117,5 +118,53 @@ describe('ToolPlanner', () => {
     ];
     const plan = planner.plan('schedule a calendar meeting', tools);
     expect(plan.some((p) => p.toolId === 'calendar.create')).toBe(true);
+  });
+
+  it('should route through registry when provided', async () => {
+    const registry = new ToolRegistryImpl();
+    const tool = createMockTool({
+      id: 'mail.send',
+      name: 'send_email',
+      description: 'Send email',
+      inputSchema: z.object({}),
+      permissionTier: 1,
+    });
+    registry.register(tool);
+    const steps = [{ toolId: 'mail.send', tool, estimatedInput: {}, reason: 'test' }];
+    const context = createMockContext();
+    const results = await planner.executePlan(steps, context, registry);
+    expect(results).toHaveLength(1);
+    expect(results[0]!.success).toBe(true);
+    expect(results[0]!.auditId).toBeDefined();
+    // Verify audit trail was populated through registry
+    const audit = registry.getAuditTrail().getAll();
+    expect(audit).toHaveLength(1);
+  });
+
+  it('should not match short words via substring', () => {
+    const tools = [
+      createMockTool({
+        id: 'news.read',
+        name: 'read_news',
+        description: 'Read the latest news articles',
+      }),
+    ];
+    // "new" is only 3 chars, should not match "news" via substring
+    const plan = planner.plan('new document creation', tools);
+    expect(plan.some((p) => p.toolId === 'news.read')).toBe(false);
+  });
+
+  it('should require minimum matches for long intents', () => {
+    const tools = [
+      createMockTool({
+        id: 'drive.upload',
+        name: 'upload_file',
+        description: 'Upload a file to cloud storage drive',
+      }),
+    ];
+    // Intent with >3 words requires at least 2 keyword matches
+    // "please help organize documents nicely" - only "documents" is not in this tool
+    const plan = planner.plan('please help organize documents nicely', tools);
+    expect(plan.some((p) => p.toolId === 'drive.upload')).toBe(false);
   });
 });
