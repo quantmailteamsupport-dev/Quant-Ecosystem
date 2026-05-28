@@ -20,7 +20,13 @@ const mockExtractors: Record<SourceType, Extractor> = {
 
 export class DocumentIngestor {
   private extractors: Record<SourceType, Extractor>;
+  /**
+   * Number of whitespace-split words per chunk. Note: these are whitespace-delimited words,
+   * not BPE/subword tokens. For English text, actual LLM token counts will be roughly 1.3x
+   * higher than the word count.
+   */
   private chunkSize: number;
+  /** Number of overlapping words between consecutive chunks. */
   private overlap: number;
 
   constructor(options?: {

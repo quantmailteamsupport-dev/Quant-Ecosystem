@@ -41,6 +41,9 @@ export class NotebookStore {
 
   addSource(notebookId: string, source: Source): Notebook {
     const nb = this.get(notebookId);
+    if (nb.sources.some((s) => s.id === source.id)) {
+      return nb;
+    }
     nb.sources.push(source);
     nb.updatedAt = new Date();
     return nb;

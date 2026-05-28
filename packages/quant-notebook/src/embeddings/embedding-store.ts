@@ -5,6 +5,12 @@ export interface EmbeddingEntry {
   vector: number[];
   metadata?: Record<string, unknown>;
   text: string;
+  /** Source document ID this chunk belongs to. Used for citation tracking. */
+  sourceId?: string;
+  /** Sequential chunk index within the source document. */
+  index?: number;
+  /** Position within the original document (page, paragraph, or timestamp). */
+  position?: DocumentChunk['position'];
 }
 
 export interface EmbeddingStore {
@@ -34,14 +40,7 @@ interface StoredEntry extends EmbeddingEntry {
 export class InMemoryEmbeddingStore implements EmbeddingStore {
   private store = new Map<string, StoredEntry[]>();
 
-  addEmbeddings(
-    notebookId: string,
-    chunks: (EmbeddingEntry & {
-      sourceId?: string;
-      index?: number;
-      position?: DocumentChunk['position'];
-    })[],
-  ): void {
+  addEmbeddings(notebookId: string, chunks: EmbeddingEntry[]): void {
     const existing = this.store.get(notebookId) ?? [];
     for (const chunk of chunks) {
       existing.push({

@@ -20,6 +20,7 @@ export class AudioOverviewGenerator {
       const hostWords = Math.min(
         Math.ceil((targetWords * 0.3) / Math.max(chunks.length, 1)),
         material.length - i,
+        targetWords - wordCount,
       );
       const hostText = material.slice(i, i + hostWords).join(' ');
       turns.push({ speaker: 'host', text: hostText });
@@ -31,6 +32,7 @@ export class AudioOverviewGenerator {
       const expertWords = Math.min(
         Math.ceil((targetWords * 0.7) / Math.max(chunks.length, 1)),
         material.length - i,
+        targetWords - wordCount,
       );
       const expertText = material.slice(i, i + expertWords).join(' ');
       turns.push({ speaker: 'expert', text: expertText });

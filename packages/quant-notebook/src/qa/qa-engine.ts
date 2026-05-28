@@ -10,6 +10,16 @@ export class QAEngine {
     this.embed = embed;
   }
 
+  /**
+   * Ask a question against the notebook's embedded content.
+   *
+   * @param notebookId - The notebook to query.
+   * @param question - Natural-language question to answer.
+   * @param options.webMode - When true, bypasses the source relevance threshold and returns
+   *   top-K results regardless of score. Note: actual web retrieval is not yet implemented;
+   *   this flag currently only disables the local source guard. Future versions will add
+   *   external retrieval when webMode is enabled.
+   */
   ask(notebookId: string, question: string, options?: { webMode?: boolean }): QAResult {
     const queryVector = this.embed(question);
     const results = this.store.search(notebookId, queryVector, 5);

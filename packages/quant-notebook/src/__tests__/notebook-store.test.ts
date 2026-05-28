@@ -62,4 +62,12 @@ describe('NotebookStore', () => {
     store.removeSource(nb.id, 's1');
     expect(store.get(nb.id).sources).toHaveLength(0);
   });
+
+  it('does not add duplicate source with same id', () => {
+    const nb = store.create('NB');
+    const source: Source = { id: 's1', type: 'pdf', uri: '/file.pdf', title: 'Doc' };
+    store.addSource(nb.id, source);
+    store.addSource(nb.id, source);
+    expect(store.get(nb.id).sources).toHaveLength(1);
+  });
 });
