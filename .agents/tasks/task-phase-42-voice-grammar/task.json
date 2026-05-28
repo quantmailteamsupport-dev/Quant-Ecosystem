@@ -1,0 +1,7 @@
+{
+  "task_id": "task-phase-42-voice-grammar",
+  "task_description": "Phase 42 FEAT-005: Implement voice command grammar, custom shortcuts (verbal macros), alias registry, intent parser, and command executor in the device-control package. Supports English + Hindi/Hinglish commands, user-defined aliases, multi-step shortcut sequences.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}
