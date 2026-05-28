@@ -31,13 +31,22 @@ export function AnimatedSkeleton({
   };
 
   if (prefersReducedMotion) {
-    return <div className={className} style={{ ...style, opacity: 0.7 }} />;
+    return (
+      <div
+        className={className}
+        style={{ ...style, opacity: 0.7 }}
+        role="status"
+        aria-busy="true"
+      />
+    );
   }
 
   return (
     <motion.div
       className={className}
       style={style}
+      role="status"
+      aria-busy="true"
       animate={{ opacity: [0.5, 1, 0.5] }}
       transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
     />

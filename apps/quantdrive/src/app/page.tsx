@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AppShell, Sidebar, SearchInput } from '@quant/shared-ui';
+import { AppShell, Sidebar, SearchInput, PageTransition, FadeIn } from '@quant/shared-ui';
 import type { SidebarItem } from '@quant/shared-ui';
 import type { FileItem } from '../hooks/useFiles';
 import { Breadcrumbs } from '../components/Breadcrumbs';
@@ -67,32 +67,36 @@ export default function DrivePage() {
     >
       <div className="flex h-full">
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <div className="p-4 border-b border-[var(--quant-border)]">
-            <SearchInput
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Search files and folders..."
-              aria-label="Search files"
-            />
-          </div>
+          <FadeIn direction="down">
+            <div className="p-4 border-b border-[var(--quant-border)]">
+              <SearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search files and folders..."
+                aria-label="Search files"
+              />
+            </div>
+          </FadeIn>
 
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
-            {searchQuery ? (
-              <SearchResults query={searchQuery} onFileSelect={handleFileSelect} />
-            ) : (
-              <>
-                <Breadcrumbs currentPath={currentPath} onNavigate={handleBreadcrumbNavigate} />
-                <UploadArea />
-                <FileBrowser
-                  currentPath={currentPath}
-                  viewMode={viewMode}
-                  onViewModeChange={setViewMode}
-                  onFileSelect={handleFileSelect}
-                  onFolderOpen={handleFolderOpen}
-                />
-              </>
-            )}
-          </div>
+          <PageTransition>
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+              {searchQuery ? (
+                <SearchResults query={searchQuery} onFileSelect={handleFileSelect} />
+              ) : (
+                <>
+                  <Breadcrumbs currentPath={currentPath} onNavigate={handleBreadcrumbNavigate} />
+                  <UploadArea />
+                  <FileBrowser
+                    currentPath={currentPath}
+                    viewMode={viewMode}
+                    onViewModeChange={setViewMode}
+                    onFileSelect={handleFileSelect}
+                    onFolderOpen={handleFolderOpen}
+                  />
+                </>
+              )}
+            </div>
+          </PageTransition>
         </div>
 
         {selectedFile && (
