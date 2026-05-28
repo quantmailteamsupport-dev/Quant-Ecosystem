@@ -1,0 +1,83 @@
+'use client';
+
+import { Button } from '@quant/shared-ui';
+import type { FileItem } from '../hooks/useFiles';
+
+interface FilePreviewProps {
+  file: FileItem;
+  onClose: () => void;
+  onShare: () => void;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return `${(bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0)} ${units[i]}`;
+}
+
+function formatDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+export function FilePreview({ file, onClose, onShare }: FilePreviewProps) {
+  return (
+    <aside
+      className="w-full md:w-80 border-l border-[var(--quant-border)] bg-[var(--quant-background)] p-4 overflow-y-auto flex-shrink-0"
+      aria-label="File preview panel"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold truncate">{file.name}</h2>
+        <button
+          onClick={onClose}
+          className="p-1 rounded-md text-[var(--quant-muted-foreground)] hover:text-[var(--quant-foreground)] hover:bg-[var(--quant-muted)] transition-colors"
+          aria-label="Close preview"
+        >
+          &#10005;
+        </button>
+      </div>
+
+      <div className="bg-[var(--quant-muted)] rounded-lg h-40 flex items-center justify-center mb-4">
+        <span className="text-5xl" aria-hidden="true">
+          {file.mimeType.startsWith('image/') ? '\u{1F5BC}' : '\u{1F4C4}'}
+        </span>
+      </div>
+
+      <dl className="space-y-3 text-sm">
+        <div>
+          <dt className="text-[var(--quant-muted-foreground)]">Type</dt>
+          <dd className="font-medium">{file.mimeType}</dd>
+        </div>
+        <div>
+          <dt className="text-[var(--quant-muted-foreground)]">Size</dt>
+          <dd className="font-medium">{formatFileSize(file.size)}</dd>
+        </div>
+        <div>
+          <dt className="text-[var(--quant-muted-foreground)]">Created</dt>
+          <dd className="font-medium">{formatDate(file.createdAt)}</dd>
+        </div>
+        <div>
+          <dt className="text-[var(--quant-muted-foreground)]">Modified</dt>
+          <dd className="font-medium">{formatDate(file.updatedAt)}</dd>
+        </div>
+        <div>
+          <dt className="text-[var(--quant-muted-foreground)]">Location</dt>
+          <dd className="font-medium">{file.path || '/'}</dd>
+        </div>
+      </dl>
+
+      <div className="mt-6 space-y-2">
+        <Button variant="primary" size="sm" onClick={onShare} className="w-full">
+          Share
+        </Button>
+      </div>
+    </aside>
+  );
+}

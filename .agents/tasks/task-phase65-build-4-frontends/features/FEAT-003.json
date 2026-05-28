@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "feat",
   "description": "Build QuantDrive frontend - complete Next.js app with file browser (grid+list), breadcrumbs, upload area, file preview, sharing dialog, search, storage bar, starred/recent/trash views",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Update apps/quantdrive/package.json: add next, react, react-dom, @tanstack/react-query to dependencies. Add @types/react, @types/react-dom, autoprefixer, postcss, tailwindcss to devDependencies. Update scripts to: dev='next dev --port 3006', build='next build', start='next start', typecheck='tsc --noEmit && tsc --noEmit -p tsconfig.backend.json'",
     "Replace apps/quantdrive/tsconfig.json with Next.js-compatible config (pattern from quantmail/tsconfig.json)",
