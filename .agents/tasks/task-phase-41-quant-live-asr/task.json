@@ -1,0 +1,7 @@
+{
+  "task_id": "task-phase-41-quant-live-asr",
+  "task_description": "Phase 41 FEAT-001: Create packages/quant-live skeleton with streaming ASR, VAD, turn-taking, session management, latency tracking, and comprehensive tests.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}
