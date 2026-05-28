@@ -44,7 +44,8 @@ export function parseVCard(vcf: string): UnifiedContact {
         : typeLower.includes('home')
           ? 'home'
           : 'mobile';
-      c.phones.push({ number: valuePart, type });
+      const number = valuePart.replace(/^(tel:|sip:)/i, '');
+      c.phones.push({ number, type });
     } else if (propUpper.startsWith('EMAIL')) {
       const type = propPart.toLowerCase().includes('work') ? 'work' : 'personal';
       c.emails.push({ address: valuePart, type });

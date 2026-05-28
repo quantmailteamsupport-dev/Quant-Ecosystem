@@ -44,8 +44,9 @@ export class ContactResolver {
     const relMatches = all.filter((c) => c.relationships.some((r) => r.label.toLowerCase() === q));
     if (relMatches.length === 1) return { match: relMatches[0]! };
 
-    // fuzzy match (Levenshtein <= 2)
-    const fuzzy = all.filter((c) => levenshtein(c.displayName.toLowerCase(), q) <= 2);
+    // fuzzy match with proportional threshold for short queries
+    const threshold = q.length < 6 ? Math.min(2, Math.floor(q.length / 3)) : 2;
+    const fuzzy = all.filter((c) => levenshtein(c.displayName.toLowerCase(), q) <= threshold);
 
     const candidates = fuzzy.length > 0 ? fuzzy : starts.length > 0 ? starts : exact;
     if (candidates.length === 0) return { notFound: true };

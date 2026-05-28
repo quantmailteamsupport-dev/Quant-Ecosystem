@@ -70,12 +70,31 @@ export class CapacitorContactsBridge {
       } else {
         // Only update fields from device data that are non-empty/non-default
         // to avoid overwriting richer store data with sparse Capacitor data.
+        // Merge arrays (union) instead of replacing to preserve existing entries.
         const updates: Partial<UnifiedContact> = {};
         if (dc.displayName) updates.displayName = dc.displayName;
         if (dc.firstName) updates.firstName = dc.firstName;
         if (dc.lastName) updates.lastName = dc.lastName;
-        if (dc.phones.length > 0) updates.phones = dc.phones;
-        if (dc.emails.length > 0) updates.emails = dc.emails;
+        if (dc.phones.length > 0) {
+          updates.phones = [
+            ...existing.phones,
+            ...dc.phones.filter(
+              (p) =>
+                !existing.phones.some(
+                  (ep) => ep.number.replace(/\D/g, '') === p.number.replace(/\D/g, ''),
+                ),
+            ),
+          ];
+        }
+        if (dc.emails.length > 0) {
+          updates.emails = [
+            ...existing.emails,
+            ...dc.emails.filter(
+              (e) =>
+                !existing.emails.some((ee) => ee.address.toLowerCase() === e.address.toLowerCase()),
+            ),
+          ];
+        }
         if (dc.nicknames.length > 0) updates.nicknames = dc.nicknames;
         if (dc.relationships.length > 0) updates.relationships = dc.relationships;
         store.updateContact(dc.id, updates);

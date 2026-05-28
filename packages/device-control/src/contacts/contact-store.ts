@@ -66,9 +66,27 @@ export class ContactStore {
       const merged: UnifiedContact = { ...unprocessed[0]! };
       for (let i = 1; i < unprocessed.length; i++) {
         const d = unprocessed[i]!;
+        merged.phones = [
+          ...merged.phones,
+          ...d.phones.filter(
+            (p) =>
+              !merged.phones.some(
+                (mp) => mp.number.replace(/\D/g, '') === p.number.replace(/\D/g, ''),
+              ),
+          ),
+        ];
         merged.emails = [
           ...merged.emails,
           ...d.emails.filter((e) => !merged.emails.some((me) => me.address === e.address)),
+        ];
+        merged.addresses = [
+          ...merged.addresses,
+          ...d.addresses.filter(
+            (a) =>
+              !merged.addresses.some(
+                (ma) => ma.street === a.street && ma.city === a.city && ma.zip === a.zip,
+              ),
+          ),
         ];
         merged.nicknames = [...new Set([...merged.nicknames, ...d.nicknames])];
         if (d.lastContacted && (!merged.lastContacted || d.lastContacted > merged.lastContacted))
