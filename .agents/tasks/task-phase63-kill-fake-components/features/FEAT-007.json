@@ -2,7 +2,7 @@
   "id": "FEAT-007",
   "type": "fix",
   "description": "Rewrite 4 fake QuantEdits components from object-tree format to real React JSX with Tailwind CSS: EffectsPanel, ExportDialog, LayerPanel, ToolPanel.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Read apps/quantedits/src/types/index.ts to understand Layer, BlendMode, Effect, AppliedEffect, EffectCategory, etc.",
     "Rewrite apps/quantedits/src/components/EffectsPanel.tsx: Convert to JSX effects browser with applied effects list (toggle/intensity/remove), category tabs, and effects grid. Keep all handler props.",
