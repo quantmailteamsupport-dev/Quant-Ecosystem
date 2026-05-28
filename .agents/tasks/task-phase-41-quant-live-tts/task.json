@@ -9,6 +9,6 @@
     "tests": "pass",
     "test_quality": "pass",
     "docker_build": "skipped",
-    "summary": "typecheck clean, 89 tests passing across 11 files (641ms). Tests cover TTS factory creation, ElevenLabs mock/WS modes, Kokoro mock/HTTP modes, prefetch buffer behavior, adaptive VAD calibration, and pipeline integration."
+    "summary": "typecheck clean, 90 tests passing across 11 files (551ms). Tests cover TTS factory creation, ElevenLabs mock/WS modes, Kokoro mock/HTTP modes, prefetch buffer behavior, adaptive VAD calibration, pipeline TTS integration with latency tracking. v1 review bugs fixed (firstChunk flag, EMA smoothing, pipeline test). v2 review confirms no remaining bugs - only future optimization opportunities."
   }
 }
