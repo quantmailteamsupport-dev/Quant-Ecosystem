@@ -3,6 +3,7 @@
 // ============================================================================
 
 import React from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 
 export interface EmptyStateProps {
   icon?: React.ReactNode;
@@ -19,8 +20,10 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   actionLabel,
   onAction,
 }) => {
-  return (
-    <div className="flex flex-col items-center justify-center p-8 text-center" role="status">
+  const prefersReducedMotion = useReducedMotion();
+
+  const content = (
+    <>
       {icon ? (
         <div className="mb-4 text-gray-400">{icon}</div>
       ) : (
@@ -48,6 +51,26 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           {actionLabel}
         </button>
       )}
-    </div>
+    </>
+  );
+
+  if (prefersReducedMotion) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center" role="status">
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      className="flex flex-col items-center justify-center p-8 text-center"
+      role="status"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      {content}
+    </motion.div>
   );
 };

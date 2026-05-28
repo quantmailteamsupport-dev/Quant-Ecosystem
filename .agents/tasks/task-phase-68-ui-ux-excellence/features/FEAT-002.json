@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Enhance the shared shell/layout components (AppShell, Sidebar, TopBar, BottomNav) and state components (EmptyState, ErrorState, LoadingState, SuccessState) with entrance animations using the new Motion primitives. Also add global responsive CSS improvements. The key constraint is: existing prop interfaces must NOT break - animations are additive.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Update packages/shared-ui/src/components/Layout/AppShell.tsx: Wrap the main content area with PageTransition so page content fades in. Add an optional 'animated' prop (default true) that enables/disables the animation. Do NOT change existing props.",
     "Update packages/shared-ui/src/components/Layout/Sidebar.tsx: Add smooth width transition using framer-motion's motion.nav with animate width based on collapsed state. Use brand spring.stiff for the sidebar collapse animation. Keep existing CSS transition as fallback. Add optional 'animated' prop (default true).",

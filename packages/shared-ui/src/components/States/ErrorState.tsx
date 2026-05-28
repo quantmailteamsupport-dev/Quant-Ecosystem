@@ -3,6 +3,8 @@
 // ============================================================================
 
 import React from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { spring } from '@quant/brand';
 
 export interface ErrorStateProps {
   title?: string;
@@ -17,21 +19,26 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   onRetry,
   retryLabel = 'Try again',
 }) => {
-  return (
-    <div className="flex flex-col items-center justify-center p-8 text-center" role="alert">
-      <svg
-        className="w-16 h-16 mb-4 text-red-400"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
-        />
-      </svg>
+  const prefersReducedMotion = useReducedMotion();
+
+  const icon = (
+    <svg
+      className="w-16 h-16 mb-4 text-red-400"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
+      />
+    </svg>
+  );
+
+  const textContent = (
+    <>
       <h3 className="text-lg font-semibold text-gray-900 mb-1">{title}</h3>
       <p className="text-sm text-gray-500 max-w-sm mb-4">{message}</p>
       {onRetry && (
@@ -42,6 +49,34 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
           {retryLabel}
         </button>
       )}
+    </>
+  );
+
+  if (prefersReducedMotion) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center" role="alert">
+        {icon}
+        {textContent}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center p-8 text-center" role="alert">
+      <motion.div
+        initial={{ scale: 0, rotate: -10 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ type: 'spring', ...spring.bouncy }}
+      >
+        {icon}
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.3 }}
+      >
+        {textContent}
+      </motion.div>
     </div>
   );
 };
