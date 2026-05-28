@@ -1,16 +1,27 @@
 {
-  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "."
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@quant/shared-ui": ["../../packages/shared-ui/src/index.ts"],
+      "@quant/shared-ui/*": ["../../packages/shared-ui/src/*"],
+      "@quant/common": ["../../packages/common/src/index.ts"],
+      "@quant/common/*": ["../../packages/common/src/*"]
+    }
   },
-  "include": ["backend/**/*.ts", "src/**/*.ts"],
-  "references": [
-    { "path": "../../packages/ai" },
-    { "path": "../../packages/queue" },
-    { "path": "../../packages/storage" },
-    { "path": "../../packages/auth" },
-    { "path": "../../packages/common" },
-    { "path": "../../packages/server-core" }
-  ]
+  "include": ["next-env.d.ts", "src/**/*.ts", "src/**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", "backend"]
 }
