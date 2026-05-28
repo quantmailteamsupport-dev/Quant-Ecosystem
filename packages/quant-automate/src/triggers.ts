@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { AutomationTrigger, TriggerContext } from './types.js';
 
 /**
@@ -114,12 +115,25 @@ export class TriggerEvaluator {
   }
 
   private evaluateWebhook(
-    trigger: { path: string; method?: string },
+    trigger: { path: string; method?: string; secret?: string },
     context: TriggerContext,
   ): boolean {
     if (!context.webhook) return false;
     if (context.webhook.path !== trigger.path) return false;
     if (trigger.method && context.webhook.method !== trigger.method) return false;
+
+    // Verify HMAC signature when a secret is configured
+    if (trigger.secret) {
+      const signature = context.webhook.headers['x-webhook-signature'];
+      if (!signature) return false;
+      const body = context.webhook.body ?? '';
+      const expected = createHmac('sha256', trigger.secret).update(body).digest('hex');
+      const sigBuffer = Buffer.from(signature, 'hex');
+      const expectedBuffer = Buffer.from(expected, 'hex');
+      if (sigBuffer.length !== expectedBuffer.length) return false;
+      if (!timingSafeEqual(sigBuffer, expectedBuffer)) return false;
+    }
+
     return true;
   }
 

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type {
   Automation,
   AutomationEngine,
@@ -10,11 +11,12 @@ import { TriggerEvaluator } from './triggers.js';
 import { CronScheduler } from './scheduler.js';
 import { DurableStateManager } from './state.js';
 
-let idCounter = 0;
 function generateId(prefix: string): string {
-  idCounter++;
-  return `${prefix}_${Date.now()}_${idCounter}`;
+  return `${prefix}_${randomUUID()}`;
 }
+
+/** Maximum number of run history entries retained per automation. */
+const MAX_HISTORY_SIZE = 100;
 
 export class AutomationEngineImpl implements AutomationEngine {
   private automations = new Map<string, Automation>();
@@ -78,16 +80,26 @@ export class AutomationEngineImpl implements AutomationEngine {
       };
     }
 
-    const runId = generateId('run');
-    const startedAt = Date.now();
+    // Resume from an incomplete checkpoint if one exists
+    const lastCheckpoint = this.stateManager.getLatestCheckpoint(automationId);
+    const resuming = lastCheckpoint != null && lastCheckpoint.status === 'running';
+    const startFromIndex = resuming ? lastCheckpoint.currentStepIndex : 0;
+    const priorResults: StepRunResult[] = resuming ? lastCheckpoint.stepResults : [];
+
+    const runId = resuming ? lastCheckpoint.runId : generateId('run');
+    const startedAt = resuming ? lastCheckpoint.createdAt : Date.now();
 
     // Create initial checkpoint
-    this.stateManager.checkpoint(runId, automationId, 0, [], 'running');
+    this.stateManager.checkpoint(runId, automationId, startFromIndex, priorResults, 'running');
 
-    // Execute steps
+    // Execute steps (optionally starting from a resumed index)
     let stepResults: StepRunResult[];
     try {
-      stepResults = await this.stepExecutor.executeSteps(automation.steps);
+      stepResults = await this.stepExecutor.executeSteps(automation.steps, startFromIndex);
+      // Prepend results from prior checkpoint when resuming
+      if (priorResults.length > 0) {
+        stepResults = [...priorResults, ...stepResults];
+      }
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
       const result: RunResult = {
@@ -96,11 +108,11 @@ export class AutomationEngineImpl implements AutomationEngine {
         status: 'failed',
         startedAt,
         completedAt: Date.now(),
-        stepResults: [],
+        stepResults: priorResults,
         error,
       };
       this.addToHistory(automationId, result);
-      this.stateManager.checkpoint(runId, automationId, 0, [], 'failed');
+      this.stateManager.checkpoint(runId, automationId, startFromIndex, priorResults, 'failed');
       return result;
     }
 
@@ -182,6 +194,10 @@ export class AutomationEngineImpl implements AutomationEngine {
   private addToHistory(automationId: string, result: RunResult): void {
     const history = this.runHistory.get(automationId) ?? [];
     history.push(result);
+    // Evict oldest entries to prevent unbounded growth
+    if (history.length > MAX_HISTORY_SIZE) {
+      history.splice(0, history.length - MAX_HISTORY_SIZE);
+    }
     this.runHistory.set(automationId, history);
   }
 }

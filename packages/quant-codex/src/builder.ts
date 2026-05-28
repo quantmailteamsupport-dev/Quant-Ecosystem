@@ -43,7 +43,7 @@ export class ProjectBuilder {
 
   async build(
     artifacts: ProjectArtifact[],
-    options?: { features?: string[] },
+    options?: { features?: string[]; feedback?: string; targetFiles?: string[] },
   ): Promise<BuildResult> {
     const startTime = Date.now();
     this.progress = { total: artifacts.length, completed: 0, errors: [] };
@@ -91,13 +91,16 @@ export class ProjectBuilder {
 
   private async generateForArtifact(
     artifact: ProjectArtifact,
-    options?: { features?: string[] },
+    options?: { features?: string[]; feedback?: string; targetFiles?: string[] },
   ): Promise<CodeGenerateResult> {
     const prompt = this.buildPrompt(artifact, options);
     return this.generator.generate(prompt);
   }
 
-  private buildPrompt(artifact: ProjectArtifact, options?: { features?: string[] }): string {
+  private buildPrompt(
+    artifact: ProjectArtifact,
+    options?: { features?: string[]; feedback?: string; targetFiles?: string[] },
+  ): string {
     const parts = [`Generate implementation for: ${artifact.path}`];
 
     if (artifact.type === 'test') {
@@ -106,6 +109,14 @@ export class ProjectBuilder {
 
     if (options?.features && options.features.length > 0) {
       parts.push(`Features: ${options.features.join(', ')}`);
+    }
+
+    if (options?.feedback) {
+      parts.push(`Feedback: ${options.feedback}`);
+    }
+
+    if (options?.targetFiles && options.targetFiles.length > 0) {
+      parts.push(`Target files: ${options.targetFiles.join(', ')}`);
     }
 
     return parts.join('\n');

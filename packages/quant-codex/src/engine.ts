@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type {
   BuildResult,
   CodexEngine,
@@ -19,13 +20,15 @@ import { ProjectDeployer } from './deployer.js';
 // Codex Engine Implementation
 // ============================================================
 
+/** Maximum number of projects retained in memory. */
+const MAX_PROJECTS = 100;
+
 export class CodexEngineImpl implements CodexEngine {
   private projects: Map<string, CodexProject> = new Map();
   private scaffolder: ProjectScaffolder;
   private builder: ProjectBuilder;
   private tester: ProjectTester;
   private deployer: ProjectDeployer;
-  private idCounter = 0;
 
   constructor() {
     this.scaffolder = new ProjectScaffolder();
@@ -35,8 +38,7 @@ export class CodexEngineImpl implements CodexEngine {
   }
 
   createProject(name: string, description: string, options: ProjectOptions): CodexProject {
-    this.idCounter++;
-    const id = `codex-project-${this.idCounter}`;
+    const id = `codex-project-${randomUUID()}`;
     const now = Date.now();
 
     const project: CodexProject = {
@@ -50,6 +52,14 @@ export class CodexEngineImpl implements CodexEngine {
       createdAt: now,
       updatedAt: now,
     };
+
+    // Evict oldest project when at capacity
+    if (this.projects.size >= MAX_PROJECTS) {
+      const oldestKey = this.projects.keys().next().value;
+      if (oldestKey !== undefined) {
+        this.projects.delete(oldestKey);
+      }
+    }
 
     this.projects.set(id, project);
     return project;
@@ -180,6 +190,8 @@ export class CodexEngineImpl implements CodexEngine {
     try {
       const buildResult = await this.builder.build(project.artifacts, {
         features: project.config.features,
+        feedback: feedback.feedback,
+        targetFiles: feedback.targetFiles,
       });
 
       if (buildResult.success) {

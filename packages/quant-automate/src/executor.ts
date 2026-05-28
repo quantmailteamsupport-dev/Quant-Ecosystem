@@ -125,11 +125,12 @@ export class StepExecutor {
     this.toolExecutor = toolExecutor;
   }
 
-  async executeSteps(steps: AutomationStep[]): Promise<StepRunResult[]> {
+  async executeSteps(steps: AutomationStep[], startFromIndex = 0): Promise<StepRunResult[]> {
     const stepResults = new Map<string, StepRunResult>();
     const results: StepRunResult[] = [];
 
-    for (const step of steps) {
+    for (let i = startFromIndex; i < steps.length; i++) {
+      const step = steps[i]!;
       const result = await this.executeStep(step, stepResults);
       stepResults.set(step.id, result);
       results.push(result);

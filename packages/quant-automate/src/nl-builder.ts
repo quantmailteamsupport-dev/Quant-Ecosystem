@@ -115,10 +115,11 @@ function extractWebhookTrigger(input: string): AutomationTrigger | undefined {
 
 /**
  * Extracts steps from natural language input.
+ * Steps are sorted by their match position in the input string so that
+ * the output order reflects the user's intended sequencing.
  */
 function extractSteps(input: string): AutomationStep[] {
   const lower = input.toLowerCase();
-  const steps: AutomationStep[] = [];
 
   const actionPatterns: Array<{ pattern: RegExp; toolId: string; name: string }> = [
     { pattern: /send (?:an? )?email/i, toolId: 'mail.send', name: 'Send Email' },
@@ -133,19 +134,23 @@ function extractSteps(input: string): AutomationStep[] {
     { pattern: /analyze/i, toolId: 'ai.analyze', name: 'Analyze' },
   ];
 
-  let stepIndex = 0;
+  const matches: Array<{ index: number; toolId: string; name: string }> = [];
+
   for (const { pattern, toolId, name } of actionPatterns) {
-    if (pattern.test(lower)) {
-      stepIndex++;
-      steps.push({
-        id: `step_${stepIndex}`,
-        toolId,
-        name,
-      });
+    const match = pattern.exec(lower);
+    if (match) {
+      matches.push({ index: match.index, toolId, name });
     }
   }
 
-  return steps;
+  // Sort by position in the original input string
+  matches.sort((a, b) => a.index - b.index);
+
+  return matches.map((m, idx) => ({
+    id: `step_${idx + 1}`,
+    toolId: m.toolId,
+    name: m.name,
+  }));
 }
 
 export class NLAutomationBuilder {

@@ -181,7 +181,7 @@ export interface ToolExecutor {
 export interface TriggerContext {
   currentTime: number;
   event?: { name: string; payload: Record<string, unknown> };
-  webhook?: { path: string; method: string; headers: Record<string, string> };
+  webhook?: { path: string; method: string; headers: Record<string, string>; body?: string };
   aiEvaluation?: { result: boolean; confidence: number };
 }
 
