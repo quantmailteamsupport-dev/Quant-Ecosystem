@@ -25,9 +25,14 @@ export async function DELETE(
   { params }: { params: Promise<{ fileId: string }> },
 ) {
   const { fileId } = await params;
+  const body = await request.json();
   const res = await fetch(`${BACKEND_URL}/drive/files/${fileId}/share`, {
     method: 'DELETE',
-    headers: { Authorization: request.headers.get('Authorization') || '' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: request.headers.get('Authorization') || '',
+    },
+    body: JSON.stringify(body),
   });
   const data = await res.json();
   return NextResponse.json(data, { status: res.status });

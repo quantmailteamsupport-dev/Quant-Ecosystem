@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.QUANTCHAT_BACKEND_URL || 'http://localhost:3001';
+const BACKEND_URL = process.env.QUANTCHAT_BACKEND_URL || 'http://localhost:3108';
 
 export async function POST(request: NextRequest) {
   const body = await request.arrayBuffer();

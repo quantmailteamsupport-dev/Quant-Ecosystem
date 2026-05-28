@@ -10,6 +10,12 @@ export async function GET(
   const res = await fetch(`${BACKEND_URL}/drive/files/${fileId}/download`, {
     headers: { Authorization: request.headers.get('Authorization') || '' },
   });
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
+
+  return new NextResponse(res.body, {
+    status: res.status,
+    headers: {
+      'Content-Type': res.headers.get('Content-Type') || 'application/octet-stream',
+      'Content-Disposition': res.headers.get('Content-Disposition') || '',
+    },
+  });
 }
