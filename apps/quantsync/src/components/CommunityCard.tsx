@@ -12,40 +12,58 @@ interface CommunityCardProps {
 }
 
 export function CommunityCard({ community, onJoin, onClick }: CommunityCardProps) {
-  return {
-    type: 'div',
-    className: 'community-card',
-    onClick: () => onClick?.(community.id),
-    children: [
-      community.banner && { type: 'div', className: 'community-banner', style: { backgroundImage: `url(${community.banner})` } },
-      {
-        type: 'div',
-        className: 'community-info',
-        children: [
-          { type: 'img', className: 'community-icon', src: community.icon || '/default-community.png', alt: community.displayName },
-          { type: 'h4', className: 'community-name', text: community.displayName },
-          { type: 'span', className: 'community-handle', text: `r/${community.name}` },
-          { type: 'p', className: 'community-description', text: community.description.substring(0, 150) },
-          {
-            type: 'div',
-            className: 'community-stats',
-            children: [
-              { type: 'span', text: `${formatCount(community.memberCount)} members` },
-              { type: 'span', text: `${community.onlineCount} online` },
-            ],
-          },
-          { type: 'span', className: 'community-category', text: community.category },
-          !community.isJoined && {
-            type: 'button',
-            className: 'join-btn',
-            onClick: (e: any) => { e.stopPropagation(); onJoin?.(community.id); },
-            text: 'Join',
-          },
-          community.isJoined && { type: 'span', className: 'joined-badge', text: 'Joined' },
-        ].filter(Boolean),
-      },
-    ].filter(Boolean),
-  };
+  return (
+    <div
+      className="flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+      onClick={() => onClick?.(community.id)}
+      role="article"
+      aria-label={`Community: ${community.displayName}`}
+    >
+      {community.banner && (
+        <div
+          className="h-24 w-full bg-cover bg-center"
+          style={{ backgroundImage: `url(${community.banner})` }}
+          aria-hidden="true"
+        />
+      )}
+      <div className="flex flex-col items-start gap-2 p-4">
+        <img
+          className="h-12 w-12 rounded-full border-2 border-white shadow-sm -mt-8"
+          src={community.icon || '/default-community.png'}
+          alt={community.displayName}
+        />
+        <h4 className="text-lg font-semibold text-gray-900">{community.displayName}</h4>
+        <span className="text-sm text-gray-500">r/{community.name}</span>
+        <p className="text-sm text-gray-600 line-clamp-3">
+          {community.description.substring(0, 150)}
+        </p>
+        <div className="flex items-center gap-3 text-xs text-gray-500">
+          <span>{formatCount(community.memberCount)} members</span>
+          <span>{community.onlineCount} online</span>
+        </div>
+        <span className="inline-block rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">
+          {community.category}
+        </span>
+        {!community.isJoined && (
+          <button
+            className="mt-2 min-h-[44px] rounded-full bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onJoin?.(community.id);
+            }}
+            aria-label={`Join ${community.displayName}`}
+          >
+            Join
+          </button>
+        )}
+        {community.isJoined && (
+          <span className="mt-2 inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+            Joined
+          </span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function formatCount(num: number): string {
