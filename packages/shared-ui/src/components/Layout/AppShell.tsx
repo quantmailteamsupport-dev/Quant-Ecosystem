@@ -3,6 +3,7 @@
 // ============================================================================
 
 import React from 'react';
+import { PageTransition } from '../Motion';
 
 export interface AppShellProps {
   children: React.ReactNode;
@@ -10,6 +11,7 @@ export interface AppShellProps {
   topBar?: React.ReactNode;
   theme?: 'light' | 'dark' | 'neon';
   className?: string;
+  animated?: boolean;
   'aria-label'?: string;
 }
 
@@ -19,6 +21,7 @@ export const AppShell: React.FC<AppShellProps> = ({
   topBar,
   theme = 'light',
   className = '',
+  animated = true,
   'aria-label': ariaLabel = 'Application shell',
 }) => {
   const themeStyles: Record<string, string> = {
@@ -44,7 +47,9 @@ export const AppShell: React.FC<AppShellProps> = ({
             {topBar}
           </header>
         )}
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 overflow-y-auto">
+          {animated ? <PageTransition>{children}</PageTransition> : children}
+        </main>
       </div>
     </div>
   );

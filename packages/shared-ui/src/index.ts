@@ -284,6 +284,30 @@ export type {
   AIPreferencesStepProps,
 } from './components/Onboarding';
 
+// Motion / Animation primitives
+export {
+  MotionProvider,
+  useMotionConfig,
+  FadeIn,
+  StaggerList,
+  PageTransition,
+  SpringButton,
+  AnimatedSkeleton,
+  SlidePanel,
+  ScaleOnHover,
+} from './components/Motion';
+export type {
+  MotionProviderProps,
+  MotionConfigContextValue,
+  FadeInProps,
+  StaggerListProps,
+  PageTransitionProps,
+  SpringButtonProps,
+  AnimatedSkeletonProps,
+  SlidePanelProps,
+  ScaleOnHoverProps,
+} from './components/Motion';
+
 // QuantLive components
 export {
   QuantLive,

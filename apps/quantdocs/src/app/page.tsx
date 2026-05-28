@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AppShell, Sidebar, Button } from '@quant/shared-ui';
+import { AppShell, Sidebar, Button, PageTransition } from '@quant/shared-ui';
 import type { SidebarItem } from '@quant/shared-ui';
 import { DocList } from '../components/DocList';
 
@@ -41,7 +41,9 @@ export default function DocsPage() {
       }
       aria-label="QuantDocs application"
     >
-      <DocList filter={activeFilter} />
+      <PageTransition>
+        <DocList filter={activeFilter} />
+      </PageTransition>
     </AppShell>
   );
 }
