@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "fix",
   "description": "Rewrite 6 fake QuantAds components from object-tree format to real React JSX with Tailwind CSS: AnalyticsChart, AudienceBuilder, BudgetOptimizer, CampaignCard, CreativePreview, PlacementSelector.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Read apps/quantads/src/types/index.ts to understand Campaign, Creative, Placement, and other types",
     "Rewrite apps/quantads/src/components/AnalyticsChart.tsx: Convert to JSX chart/metrics display component.",
