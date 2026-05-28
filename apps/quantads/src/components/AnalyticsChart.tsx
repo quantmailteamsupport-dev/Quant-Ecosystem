@@ -37,55 +37,69 @@ export function AnalyticsChart({
   const trendPercent = firstHalf > 0 ? ((secondHalf - firstHalf) / firstHalf) * 100 : 0;
   const trendDirection = trendPercent >= 0 ? 'up' : 'down';
 
-  return {
-    type: 'div',
-    className: `analytics-chart chart-${type}`,
-    style: { height: `${height}px` },
-    children: [
-      {
-        type: 'div',
-        className: 'chart-header',
-        children: [
-          { type: 'h4', className: 'chart-title', text: title },
-          showTrend && {
-            type: 'span',
-            className: `chart-trend ${trendDirection}`,
-            text: `${trendPercent >= 0 ? '+' : ''}${trendPercent.toFixed(1)}%`,
-          },
-        ].filter(Boolean),
-      },
-      {
-        type: 'div',
-        className: 'chart-stats',
-        children: [
-          { type: 'span', className: 'stat-total', text: `Total: ${formatValue(total)}` },
-          { type: 'span', className: 'stat-avg', text: `Avg: ${formatValue(avg)}` },
-        ],
-      },
-      {
-        type: 'div',
-        className: 'chart-canvas',
-        children: data.map((point, i) => ({
-          type: 'div',
-          className: 'chart-bar',
-          style: {
-            height: `${(point.value / maxValue) * 100}%`,
-            backgroundColor: color,
-            left: `${(i / data.length) * 100}%`,
-          },
-          title: `${point.date}: ${formatValue(point.value)}`,
-        })),
-      },
-      {
-        type: 'div',
-        className: 'chart-x-axis',
-        children: [
-          data.length > 0 && { type: 'span', text: data[0]?.date },
-          data.length > 1 && { type: 'span', text: data[data.length - 1]?.date },
-        ].filter(Boolean),
-      },
-    ],
-  };
+  return (
+    <div
+      className={`relative flex flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm chart-${type}`}
+      style={{ height: `${height}px` }}
+      role="figure"
+      aria-label={`${title} analytics chart`}
+    >
+      {/* Header */}
+      <div className="mb-3 flex items-center justify-between">
+        <h4 className="text-sm font-semibold text-gray-900">{title}</h4>
+        {showTrend && (
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+              trendDirection === 'up' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+            }`}
+            aria-label={`Trend ${trendDirection} ${Math.abs(trendPercent).toFixed(1)} percent`}
+          >
+            {trendPercent >= 0 ? '+' : ''}
+            {trendPercent.toFixed(1)}%
+          </span>
+        )}
+      </div>
+
+      {/* Stats */}
+      <div className="mb-3 flex gap-4">
+        <span className="text-xs text-gray-500">
+          Total: <span className="font-medium text-gray-900">{formatValue(total)}</span>
+        </span>
+        <span className="text-xs text-gray-500">
+          Avg: <span className="font-medium text-gray-900">{formatValue(avg)}</span>
+        </span>
+      </div>
+
+      {/* Chart Canvas */}
+      <div
+        className="relative flex flex-1 items-end gap-px overflow-hidden rounded-md"
+        role="img"
+        aria-label={`Bar chart showing ${data.length} data points`}
+      >
+        {data.map((point, i) => (
+          <div
+            key={`${point.date}-${i}`}
+            className="flex-1 rounded-t-sm transition-all hover:opacity-80"
+            style={{
+              height: `${(point.value / maxValue) * 100}%`,
+              backgroundColor: color,
+              minWidth: '2px',
+            }}
+            title={`${point.date}: ${formatValue(point.value)}`}
+            aria-label={`${point.date}: ${formatValue(point.value)}`}
+          />
+        ))}
+      </div>
+
+      {/* X-Axis */}
+      <div className="mt-2 flex justify-between">
+        {data.length > 0 && <span className="text-xs text-gray-400">{data[0]?.date}</span>}
+        {data.length > 1 && (
+          <span className="text-xs text-gray-400">{data[data.length - 1]?.date}</span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function formatValue(n: number): string {

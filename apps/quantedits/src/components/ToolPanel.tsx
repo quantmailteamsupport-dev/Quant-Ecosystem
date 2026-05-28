@@ -9,7 +9,13 @@ interface ToolPanelProps {
   onToolAction: (action: string, params: Record<string, unknown>) => void;
 }
 
-interface Tool { id: string; name: string; icon: string; shortcut: string; group: string; }
+interface Tool {
+  id: string;
+  name: string;
+  icon: string;
+  shortcut: string;
+  group: string;
+}
 
 const TOOLS: Tool[] = [
   { id: 'select', name: 'Select', icon: 'cursor', shortcut: 'V', group: 'basic' },
@@ -26,27 +32,42 @@ const TOOLS: Tool[] = [
   { id: 'eyedropper', name: 'Eyedropper', icon: 'eyedropper', shortcut: 'I', group: 'utility' },
 ];
 
-export function ToolPanel({ activeTool, onSelectTool, onToolAction }: ToolPanelProps) {
-  const groups = [...new Set(TOOLS.map(t => t.group))];
+export function ToolPanel({
+  activeTool,
+  onSelectTool,
+  // TODO: wire up handler
+  onToolAction: _onToolAction,
+}: ToolPanelProps) {
+  const groups = [...new Set(TOOLS.map((t) => t.group))];
 
-  return {
-    type: 'div',
-    className: 'tool-panel',
-    children: groups.map(group => ({
-      type: 'div',
-      className: 'tool-group',
-      children: [
-        { type: 'div', className: 'group-divider' },
-        ...TOOLS.filter(t => t.group === group).map(tool => ({
-          type: 'button',
-          className: `tool-btn ${tool.id === activeTool ? 'active' : ''}`,
-          title: `${tool.name} (${tool.shortcut})`,
-          onClick: () => onSelectTool(tool.id),
-          children: [{ type: 'span', className: `icon icon-${tool.icon}` }],
-        })),
-      ],
-    })),
-  };
+  return (
+    <nav className="flex flex-col gap-1 p-2 bg-gray-900 text-white" aria-label="Editing tools">
+      {groups.map((group) => (
+        <div key={group} className="flex flex-col" role="group" aria-label={`${group} tools`}>
+          <div className="h-px bg-gray-700 my-1" aria-hidden="true" />
+          {TOOLS.filter((t) => t.group === group).map((tool) => (
+            <button
+              key={tool.id}
+              type="button"
+              onClick={() => onSelectTool(tool.id)}
+              className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded ${
+                tool.id === activeTool
+                  ? 'bg-blue-600 text-white'
+                  : 'hover:bg-gray-700 text-gray-300'
+              }`}
+              title={`${tool.name} (${tool.shortcut})`}
+              aria-label={`${tool.name} tool`}
+              aria-pressed={tool.id === activeTool}
+            >
+              <span className="text-sm" aria-hidden="true">
+                {tool.shortcut}
+              </span>
+            </button>
+          ))}
+        </div>
+      ))}
+    </nav>
+  );
 }
 
 export default ToolPanel;

@@ -24,31 +24,63 @@ export function VoteButtons({
   size = 'medium',
   orientation = 'vertical',
 }: VoteButtonsProps) {
-  return {
-    type: 'div',
-    className: `vote-buttons ${orientation} size-${size}`,
-    children: [
-      {
-        type: 'button',
-        className: `upvote-btn ${userVote === 'up' ? 'active' : ''}`,
-        onClick: onUpvote,
-        'aria-label': 'Upvote',
-        children: [{ type: 'span', className: 'vote-icon up' }],
-      },
-      {
-        type: 'span',
-        className: `vote-score ${score > 0 ? 'positive' : score < 0 ? 'negative' : ''}`,
-        text: formatScore(score),
-      },
-      {
-        type: 'button',
-        className: `downvote-btn ${userVote === 'down' ? 'active' : ''}`,
-        onClick: onDownvote,
-        'aria-label': 'Downvote',
-        children: [{ type: 'span', className: 'vote-icon down' }],
-      },
-    ],
+  const sizeClasses = {
+    small: 'h-11 w-11 text-xs',
+    medium: 'h-11 w-11 text-sm',
+    large: 'h-11 w-11 text-base',
   };
+
+  const iconScale = {
+    small: 'text-sm',
+    medium: 'text-lg',
+    large: 'text-xl',
+  };
+
+  const containerClasses =
+    orientation === 'vertical' ? 'flex flex-col items-center gap-1' : 'flex items-center gap-2';
+
+  return (
+    <div className={containerClasses} role="group" aria-label="Vote buttons">
+      <button
+        type="button"
+        className={`${sizeClasses[size]} flex items-center justify-center rounded-md transition-colors ${
+          userVote === 'up'
+            ? 'bg-orange-100 text-orange-600'
+            : 'text-gray-400 hover:bg-gray-100 hover:text-orange-500'
+        }`}
+        onClick={onUpvote}
+        aria-label="Upvote"
+        aria-pressed={userVote === 'up'}
+      >
+        <span className={iconScale[size]} aria-hidden="true">
+          &#9650;
+        </span>
+      </button>
+      <span
+        className={`text-sm font-bold ${
+          score > 0 ? 'text-orange-600' : score < 0 ? 'text-blue-600' : 'text-gray-600'
+        }`}
+        aria-label={`Score: ${score}`}
+      >
+        {formatScore(score)}
+      </span>
+      <button
+        type="button"
+        className={`${sizeClasses[size]} flex items-center justify-center rounded-md transition-colors ${
+          userVote === 'down'
+            ? 'bg-blue-100 text-blue-600'
+            : 'text-gray-400 hover:bg-gray-100 hover:text-blue-500'
+        }`}
+        onClick={onDownvote}
+        aria-label="Downvote"
+        aria-pressed={userVote === 'down'}
+      >
+        <span className={iconScale[size]} aria-hidden="true">
+          &#9660;
+        </span>
+      </button>
+    </div>
+  );
 }
 
 function formatScore(score: number): string {

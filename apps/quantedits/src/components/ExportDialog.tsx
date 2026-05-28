@@ -3,6 +3,7 @@
 // Export settings, format selection, quality, and progress
 // ============================================================================
 
+import { useState } from 'react';
 import type { ExportConfig, ExportJob, ExportFormat, ExportQuality } from '../types';
 
 interface ExportDialogProps {
@@ -35,50 +36,151 @@ const QUALITIES: { value: ExportQuality; label: string }[] = [
   { value: '8k', label: '8K (4320p)' },
 ];
 
-export function ExportDialog({ isOpen, job, projectWidth, projectHeight, onExport, onCancel, onClose }: ExportDialogProps) {
+export function ExportDialog({
+  isOpen,
+  job,
+  projectWidth,
+  projectHeight,
+  onExport,
+  onCancel,
+  onClose,
+}: ExportDialogProps) {
+  const [format, setFormat] = useState<ExportFormat>('mp4');
+  const [quality, setQuality] = useState<ExportQuality>('high');
+
   if (!isOpen) return null;
 
-  return {
-    type: 'div',
-    className: 'export-dialog-overlay',
-    children: [{
-      type: 'div',
-      className: 'export-dialog',
-      children: [
-        { type: 'h2', text: 'Export' },
-        job ? {
-          type: 'div', className: 'export-progress', children: [
-            { type: 'div', className: 'progress-bar', children: [
-              { type: 'div', className: 'progress-fill', style: { width: `${job.progress}%` } },
-            ]},
-            { type: 'p', text: `${job.status} - ${job.progress}%` },
-            job.status === 'completed' ? { type: 'a', href: job.outputUrl, text: 'Download' } : null,
-            job.status !== 'completed' && job.status !== 'failed' ? { type: 'button', text: 'Cancel', onClick: onCancel } : null,
-            { type: 'button', text: 'Close', onClick: onClose },
-          ],
-        } : {
-          type: 'div', className: 'export-settings', children: [
-            { type: 'div', className: 'setting-group', children: [
-              { type: 'label', text: 'Format' },
-              { type: 'select', children: FORMATS.map(f => ({ type: 'option', value: f.value, text: f.label })) },
-            ]},
-            { type: 'div', className: 'setting-group', children: [
-              { type: 'label', text: 'Quality' },
-              { type: 'select', children: QUALITIES.map(q => ({ type: 'option', value: q.value, text: q.label })) },
-            ]},
-            { type: 'div', className: 'setting-group', children: [
-              { type: 'label', text: 'Resolution' },
-              { type: 'span', text: `${projectWidth} x ${projectHeight}` },
-            ]},
-            { type: 'div', className: 'dialog-actions', children: [
-              { type: 'button', text: 'Cancel', onClick: onClose, className: 'btn-secondary' },
-              { type: 'button', text: 'Export', onClick: () => onExport({ format: 'mp4', quality: 'high', width: projectWidth, height: projectHeight }), className: 'btn-primary' },
-            ]},
-          ],
-        },
-      ],
-    }],
-  };
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Export dialog"
+    >
+      <div className="w-full max-w-md bg-gray-900 text-white rounded-lg shadow-xl p-6">
+        <h2 className="text-lg font-bold mb-4">Export</h2>
+
+        {job ? (
+          <div className="space-y-4">
+            {/* Progress bar */}
+            <div
+              className="w-full h-3 bg-gray-700 rounded overflow-hidden"
+              role="progressbar"
+              aria-valuenow={job.progress}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Export progress"
+            >
+              <div
+                className="h-full bg-blue-500 transition-all"
+                style={{ width: `${job.progress}%` }}
+              />
+            </div>
+            <p className="text-sm text-gray-300 capitalize">
+              {job.status} - {job.progress}%
+            </p>
+
+            {job.status === 'completed' && job.outputUrl && (
+              <a
+                href={job.outputUrl}
+                className="inline-block px-4 py-2 bg-green-600 hover:bg-green-500 rounded text-sm font-medium min-h-[44px] leading-[44px] text-center"
+                aria-label="Download exported file"
+              >
+                Download
+              </a>
+            )}
+
+            <div className="flex gap-2 pt-2">
+              {job.status !== 'completed' && job.status !== 'failed' && (
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="px-4 py-2 rounded bg-red-600 hover:bg-red-500 text-sm font-medium min-h-[44px]"
+                >
+                  Cancel
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600 text-sm font-medium min-h-[44px]"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Format */}
+            <div className="flex flex-col gap-1">
+              <label htmlFor="export-format" className="text-sm font-medium text-gray-300">
+                Format
+              </label>
+              <select
+                id="export-format"
+                value={format}
+                onChange={(e) => setFormat(e.target.value as ExportFormat)}
+                className="px-3 py-2 rounded bg-gray-800 border border-gray-600 text-white text-sm min-h-[44px]"
+              >
+                {FORMATS.map((f) => (
+                  <option key={f.value} value={f.value}>
+                    {f.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Quality */}
+            <div className="flex flex-col gap-1">
+              <label htmlFor="export-quality" className="text-sm font-medium text-gray-300">
+                Quality
+              </label>
+              <select
+                id="export-quality"
+                value={quality}
+                onChange={(e) => setQuality(e.target.value as ExportQuality)}
+                className="px-3 py-2 rounded bg-gray-800 border border-gray-600 text-white text-sm min-h-[44px]"
+              >
+                {QUALITIES.map((q) => (
+                  <option key={q.value} value={q.value}>
+                    {q.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Resolution */}
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-medium text-gray-300">Resolution</span>
+              <span className="text-sm text-gray-400">
+                {projectWidth} x {projectHeight}
+              </span>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600 text-sm font-medium min-h-[44px]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  onExport({ format, quality, width: projectWidth, height: projectHeight })
+                }
+                className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-500 text-sm font-medium min-h-[44px]"
+              >
+                Export
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default ExportDialog;
