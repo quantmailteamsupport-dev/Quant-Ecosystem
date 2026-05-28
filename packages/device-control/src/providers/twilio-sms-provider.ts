@@ -98,9 +98,7 @@ export class TwilioSMSProvider implements SMSCapability {
     if (this.webhookHandler) {
       return this.webhookHandler.onIncoming(cb);
     }
-    // Mock mode: return no-op unsubscribe
-    const callbacks: Array<(msg: SmsMessage) => void> = [];
-    callbacks.push(cb);
+    // Mock mode: no webhook handler, just return no-op unsubscribe
     return () => {
       /* no-op */
     };

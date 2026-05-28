@@ -1,7 +1,9 @@
 import twilio from 'twilio';
 import type { SmsMessage } from '../capabilities/sms.js';
-import type { SMSWebhookPayload } from './types.js';
+import type { MessageStatus, SMSWebhookPayload } from './types.js';
 import type { MessageStore } from './message-store.js';
+
+const VALID_STATUSES: readonly string[] = ['queued', 'sent', 'delivered', 'failed', 'received'];
 
 export interface WebhookHandlerConfig {
   authToken: string;
@@ -50,8 +52,8 @@ export class SMSWebhookHandler {
     if (!this.validateSignature(signature, url, payload as unknown as Record<string, string>)) {
       return false;
     }
-    if (payload.MessageStatus) {
-      this.store.updateStatus(payload.MessageSid, payload.MessageStatus as never);
+    if (payload.MessageStatus && VALID_STATUSES.includes(payload.MessageStatus)) {
+      this.store.updateStatus(payload.MessageSid, payload.MessageStatus as MessageStatus);
     }
     return true;
   }
