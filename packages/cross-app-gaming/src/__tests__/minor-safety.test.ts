@@ -34,12 +34,51 @@ describe('MinorSafetyService', () => {
   }
 
   describe('checkGameAccess', () => {
-    it('should allow access for all age groups', () => {
+    it('should allow access to everyone-rated games for all age groups', () => {
       const service = createService();
+      service.registerGame({
+        gameId: 'trivia',
+        contentRating: 'everyone',
+        supportedContexts: ['chat_embed', 'fullscreen'],
+      });
 
       expect(service.checkGameAccess('player-1', 'trivia', 'under13')).toBe(true);
       expect(service.checkGameAccess('player-2', 'trivia', 'teen')).toBe(true);
       expect(service.checkGameAccess('player-3', 'trivia', 'adult')).toBe(true);
+    });
+
+    it('should block teen-rated games for under13', () => {
+      const service = createService();
+      service.registerGame({
+        gameId: 'battle-royale',
+        contentRating: 'teen',
+        supportedContexts: ['fullscreen'],
+      });
+
+      expect(service.checkGameAccess('child-1', 'battle-royale', 'under13')).toBe(false);
+      expect(service.checkGameAccess('teen-1', 'battle-royale', 'teen')).toBe(true);
+      expect(service.checkGameAccess('adult-1', 'battle-royale', 'adult')).toBe(true);
+    });
+
+    it('should block mature-rated games for under13 and teens', () => {
+      const service = createService();
+      service.registerGame({
+        gameId: 'poker',
+        contentRating: 'mature',
+        supportedContexts: ['fullscreen'],
+      });
+
+      expect(service.checkGameAccess('child-1', 'poker', 'under13')).toBe(false);
+      expect(service.checkGameAccess('teen-1', 'poker', 'teen')).toBe(false);
+      expect(service.checkGameAccess('adult-1', 'poker', 'adult')).toBe(true);
+    });
+
+    it('should allow access to unregistered games (no rating info)', () => {
+      const service = createService();
+
+      expect(service.checkGameAccess('player-1', 'unknown-game', 'under13')).toBe(true);
+      expect(service.checkGameAccess('player-2', 'unknown-game', 'teen')).toBe(true);
+      expect(service.checkGameAccess('player-3', 'unknown-game', 'adult')).toBe(true);
     });
   });
 

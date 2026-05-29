@@ -260,4 +260,59 @@ describe('GameSessionService', () => {
       expect(() => service.destroySession('nonexistent')).toThrow('Session not found');
     });
   });
+
+  describe('cleanupAbandonedSessions', () => {
+    it('should remove abandoned sessions older than maxAgeMs', () => {
+      const service = createService();
+      const session = service.createSession('trivia', 'host-1', 'chat_embed');
+      // Abandon the session by having the host leave
+      service.leaveSession(session.id, 'host-1');
+
+      // Force createdAt to be in the past
+      const s = service.getSession(session.id)!;
+      s.createdAt = new Date(Date.now() - 10000);
+
+      const removed = service.cleanupAbandonedSessions(5000);
+      expect(removed).toBe(1);
+      expect(service.getSession(session.id)).toBeUndefined();
+    });
+
+    it('should not remove abandoned sessions younger than maxAgeMs', () => {
+      const service = createService();
+      const session = service.createSession('trivia', 'host-1', 'chat_embed');
+      service.leaveSession(session.id, 'host-1');
+
+      const removed = service.cleanupAbandonedSessions(60000);
+      expect(removed).toBe(0);
+      expect(service.getSession(session.id)).toBeDefined();
+    });
+
+    it('should not remove active sessions', () => {
+      const service = createService();
+      const session = service.createSession('trivia', 'host-1', 'chat_embed');
+
+      // Force createdAt to be old
+      const s = service.getSession(session.id)!;
+      s.createdAt = new Date(Date.now() - 100000);
+
+      const removed = service.cleanupAbandonedSessions(5000);
+      expect(removed).toBe(0);
+      expect(service.getSession(session.id)).toBeDefined();
+    });
+
+    it('should return the count of removed sessions', () => {
+      const service = createService();
+      const s1 = service.createSession('trivia', 'h1', 'chat_embed');
+      const s2 = service.createSession('chess', 'h2', 'fullscreen');
+      service.leaveSession(s1.id, 'h1');
+      service.leaveSession(s2.id, 'h2');
+
+      // Make both old
+      service.getSession(s1.id)!.createdAt = new Date(Date.now() - 20000);
+      service.getSession(s2.id)!.createdAt = new Date(Date.now() - 20000);
+
+      const removed = service.cleanupAbandonedSessions(10000);
+      expect(removed).toBe(2);
+    });
+  });
 });

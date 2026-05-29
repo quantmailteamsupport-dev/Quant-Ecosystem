@@ -33,6 +33,13 @@ describe('UniversalLeaderboardService', () => {
       expect(leaderboard[2]!.playerId).toBe('player-3');
       expect(leaderboard[2]!.rank).toBe(3);
     });
+
+    it('should store the region on a score entry', () => {
+      const service = createService();
+      const entry = service.submitScore('trivia', 'p1', 100, 'chat_embed', undefined, 'us-east');
+
+      expect(entry.region).toBe('us-east');
+    });
   });
 
   describe('getLeaderboard', () => {
@@ -60,6 +67,39 @@ describe('UniversalLeaderboardService', () => {
       });
       expect(lb).toHaveLength(2);
       expect(lb.every((e) => e.appContext === 'chat_embed')).toBe(true);
+    });
+
+    it('should filter by regional scope matching region', () => {
+      const service = createService();
+      service.submitScore('trivia', 'p1', 100, 'chat_embed', undefined, 'us-east');
+      service.submitScore('trivia', 'p2', 200, 'chat_embed', undefined, 'eu-west');
+      service.submitScore('trivia', 'p3', 150, 'chat_embed', undefined, 'us-east');
+      service.submitScore('trivia', 'p4', 300, 'chat_embed', undefined, 'ap-south');
+
+      const lb = service.getLeaderboard('trivia', 'regional', { region: 'us-east' });
+      expect(lb).toHaveLength(2);
+      expect(lb.every((e) => e.region === 'us-east')).toBe(true);
+      expect(lb[0]!.playerId).toBe('p3');
+      expect(lb[1]!.playerId).toBe('p1');
+    });
+
+    it('should return empty for regional scope with no matching region', () => {
+      const service = createService();
+      service.submitScore('trivia', 'p1', 100, 'chat_embed', undefined, 'us-east');
+
+      const lb = service.getLeaderboard('trivia', 'regional', { region: 'ap-south' });
+      expect(lb).toHaveLength(0);
+    });
+
+    it('should return entries without region when region option is undefined', () => {
+      const service = createService();
+      service.submitScore('trivia', 'p1', 100, 'chat_embed', undefined, 'us-east');
+      service.submitScore('trivia', 'p2', 200, 'chat_embed');
+
+      // When region is undefined, filter e.region === undefined matches entries without a region
+      const lb = service.getLeaderboard('trivia', 'regional', { region: undefined });
+      expect(lb).toHaveLength(1);
+      expect(lb[0]!.playerId).toBe('p2');
     });
 
     it('should respect limit and offset', () => {

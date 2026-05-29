@@ -24,6 +24,7 @@ export class UniversalLeaderboardService {
     score: number,
     appContext: AppContext,
     displayName?: string,
+    region?: string,
   ): LeaderboardEntry {
     this.validateScore(gameId, playerId, score);
 
@@ -33,6 +34,7 @@ export class UniversalLeaderboardService {
       score,
       rank: 0,
       appContext,
+      region,
       submittedAt: new Date(),
     };
 
@@ -70,7 +72,7 @@ export class UniversalLeaderboardService {
         filtered = [...entries];
         break;
       case 'regional':
-        filtered = entries.filter(() => options?.region !== undefined);
+        filtered = entries.filter((e) => e.region === options?.region);
         break;
       default:
         filtered = [...entries];

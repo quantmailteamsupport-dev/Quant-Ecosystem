@@ -1,6 +1,8 @@
 import type {
   AgeGroup,
   CommunicationLimits,
+  GameContentRating,
+  GameRegistryEntry,
   GamingActivity,
   MinorSafetyServiceConfig,
 } from '../types.js';
@@ -12,22 +14,49 @@ interface ContentFlag {
   flaggedAt: Date;
 }
 
+/** Maps age groups to the maximum content rating they can access */
+const AGE_GROUP_MAX_RATING: Record<AgeGroup, GameContentRating> = {
+  under13: 'everyone',
+  teen: 'teen',
+  adult: 'mature',
+};
+
+const RATING_LEVELS: Record<GameContentRating, number> = {
+  everyone: 0,
+  teen: 1,
+  mature: 2,
+};
+
 export class MinorSafetyService {
   private config: MinorSafetyServiceConfig;
   private activityLog = new Map<string, GamingActivity[]>();
   private contentFlags: ContentFlag[] = [];
+  private gameRegistry = new Map<string, GameRegistryEntry>();
 
   constructor(config: MinorSafetyServiceConfig) {
     this.config = config;
   }
 
-  checkGameAccess(_playerId: string, _gameId: string, ageGroup: AgeGroup): boolean {
+  registerGame(entry: GameRegistryEntry): void {
+    this.gameRegistry.set(entry.gameId, entry);
+  }
+
+  checkGameAccess(_playerId: string, gameId: string, ageGroup: AgeGroup): boolean {
     if (!this.config.safetyConfigs[ageGroup]) {
       return true;
     }
 
-    // Access allowed to game itself, purchases blocked separately via validatePurchase
-    return true;
+    const game = this.gameRegistry.get(gameId);
+    if (!game) {
+      // Unknown game defaults to allowed (no rating info available)
+      return true;
+    }
+
+    const maxAllowed = AGE_GROUP_MAX_RATING[ageGroup];
+    const gameLevel = RATING_LEVELS[game.contentRating];
+    const allowedLevel = RATING_LEVELS[maxAllowed];
+
+    return gameLevel <= allowedLevel;
   }
 
   getCommunicationLimits(ageGroup: AgeGroup): CommunicationLimits {

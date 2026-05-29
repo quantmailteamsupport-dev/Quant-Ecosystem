@@ -4,9 +4,10 @@ import type {
   IdentityBridgeServiceConfig,
   IdentityMode,
   IdentityRevealConsent,
+  PublicAnonymousIdentity,
 } from '../types.js';
 
-interface AnonymousIdentity {
+interface InternalAnonymousIdentity {
   anonymousId: string;
   realUserId: string;
   displayName: string;
@@ -21,7 +22,7 @@ interface CrossAppLink {
 }
 
 export class IdentityBridgeService {
-  private anonymousIdentities = new Map<string, AnonymousIdentity>();
+  private anonymousIdentities = new Map<string, InternalAnonymousIdentity>();
   private consents = new Map<string, IdentityRevealConsent>();
   private crossAppLinks: CrossAppLink[] = [];
   private activityLog: GamingActivity[] = [];
@@ -31,13 +32,17 @@ export class IdentityBridgeService {
     this.config = config;
   }
 
-  createAnonymousIdentity(userId: string): AnonymousIdentity {
+  createAnonymousIdentity(userId: string): PublicAnonymousIdentity {
     const existing = this.anonymousIdentities.get(userId);
     if (existing) {
-      return existing;
+      return {
+        anonymousId: existing.anonymousId,
+        displayName: existing.displayName,
+        createdAt: existing.createdAt,
+      };
     }
 
-    const identity: AnonymousIdentity = {
+    const identity: InternalAnonymousIdentity = {
       anonymousId: `anon_${Math.random().toString(36).slice(2, 10)}`,
       realUserId: userId,
       displayName: `Player_${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
@@ -45,7 +50,11 @@ export class IdentityBridgeService {
     };
 
     this.anonymousIdentities.set(userId, identity);
-    return identity;
+    return {
+      anonymousId: identity.anonymousId,
+      displayName: identity.displayName,
+      createdAt: identity.createdAt,
+    };
   }
 
   revealIdentity(fromUserId: string, toUserId: string, consent: boolean): IdentityRevealConsent {
@@ -64,6 +73,15 @@ export class IdentityBridgeService {
 
     this.consents.set(consentKey, consentRecord);
     return consentRecord;
+  }
+
+  revokeConsent(fromUserId: string, toUserId: string): void {
+    const consentKey = `${fromUserId}:${toUserId}`;
+    const consent = this.consents.get(consentKey);
+    if (!consent) {
+      throw new Error('No consent record found to revoke');
+    }
+    consent.revoked = true;
   }
 
   getDisplayIdentity(

@@ -210,6 +210,24 @@ export class GameSessionService {
     this.eventLog.delete(sessionId);
   }
 
+  cleanupAbandonedSessions(maxAgeMs: number): number {
+    const now = Date.now();
+    let removed = 0;
+
+    for (const [id, session] of this.sessions) {
+      if (session.state === 'abandoned') {
+        const age = now - session.createdAt.getTime();
+        if (age > maxAgeMs) {
+          this.sessions.delete(id);
+          this.eventLog.delete(id);
+          removed++;
+        }
+      }
+    }
+
+    return removed;
+  }
+
   private getSessionOrThrow(sessionId: string): GameSession {
     const session = this.sessions.get(sessionId);
     if (!session) {

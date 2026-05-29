@@ -104,7 +104,7 @@ describe('CrossAppHostService', () => {
   });
 
   describe('getAvailableContexts', () => {
-    it('should return all available contexts', () => {
+    it('should return all contexts when no capabilities registered', () => {
       const service = createService();
       const contexts = service.getAvailableContexts('trivia');
 
@@ -114,6 +114,30 @@ describe('CrossAppHostService', () => {
       expect(contexts).toContain('meeting_icebreaker');
       expect(contexts).toContain('random_match');
       expect(contexts).toHaveLength(5);
+    });
+
+    it('should return only supported contexts when game capabilities are registered', () => {
+      const service = createService();
+      service.registerGameContexts('chess', ['fullscreen', 'meeting_icebreaker']);
+
+      const contexts = service.getAvailableContexts('chess');
+      expect(contexts).toHaveLength(2);
+      expect(contexts).toContain('fullscreen');
+      expect(contexts).toContain('meeting_icebreaker');
+      expect(contexts).not.toContain('chat_embed');
+    });
+
+    it('should return different contexts for different games', () => {
+      const service = createService();
+      service.registerGameContexts('chess', ['fullscreen', 'meeting_icebreaker']);
+      service.registerGameContexts('trivia', ['chat_embed', 'feed_embed', 'fullscreen']);
+
+      const chessContexts = service.getAvailableContexts('chess');
+      const triviaContexts = service.getAvailableContexts('trivia');
+
+      expect(chessContexts).toHaveLength(2);
+      expect(triviaContexts).toHaveLength(3);
+      expect(triviaContexts).toContain('chat_embed');
     });
   });
 });

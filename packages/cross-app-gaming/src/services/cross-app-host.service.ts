@@ -60,6 +60,7 @@ const DEFAULT_HOSTING_CONFIGS: Record<AppContext, HostingConfig> = {
 
 export class CrossAppHostService {
   private adapters = new Map<AppContext, ContextAdapter>();
+  private gameCapabilities = new Map<string, Set<AppContext>>();
 
   constructor(_config: CrossAppHostServiceConfig) {
     // Config reserved for future use
@@ -87,7 +88,19 @@ export class CrossAppHostService {
     this.adapters.set(appContext, adapter);
   }
 
-  getAvailableContexts(_gameId: string): AppContext[] {
+  registerGameContexts(gameId: string, supportedContexts: AppContext[]): void {
+    this.gameCapabilities.set(gameId, new Set(supportedContexts));
+  }
+
+  getAvailableContexts(gameId: string): AppContext[] {
+    const supported = this.gameCapabilities.get(gameId);
+    if (supported) {
+      return (Object.keys(DEFAULT_HOSTING_CONFIGS) as AppContext[]).filter((ctx) =>
+        supported.has(ctx),
+      );
+    }
+
+    // If no capabilities registered, return all contexts (backwards compatible)
     return Object.keys(DEFAULT_HOSTING_CONFIGS) as AppContext[];
   }
 }

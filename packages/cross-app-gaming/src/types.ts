@@ -72,6 +72,7 @@ export interface LeaderboardEntry {
   score: number;
   rank: number;
   appContext: AppContext;
+  region?: string;
   submittedAt: Date;
 }
 
@@ -180,4 +181,21 @@ export interface MinorSafetyServiceConfig {
 export interface ContextAdapter {
   appContext: AppContext;
   adapt(gameId: string): HostingConfig;
+}
+
+/** Content rating for age-based game access control */
+export type GameContentRating = 'everyone' | 'teen' | 'mature';
+
+/** Registry entry for a game's metadata used in access and context checks */
+export interface GameRegistryEntry {
+  gameId: string;
+  contentRating: GameContentRating;
+  supportedContexts: AppContext[];
+}
+
+/** Public anonymous identity returned to callers (no real user ID exposed) */
+export interface PublicAnonymousIdentity {
+  anonymousId: string;
+  displayName: string;
+  createdAt: Date;
 }

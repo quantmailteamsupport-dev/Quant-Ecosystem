@@ -9,22 +9,24 @@ describe('IdentityBridgeService', () => {
   }
 
   describe('createAnonymousIdentity', () => {
-    it('should create an anonymous identity hiding real user info', () => {
+    it('should create an anonymous identity without exposing real user ID', () => {
       const service = createService();
       const identity = service.createAnonymousIdentity('user-123');
 
       expect(identity.anonymousId).toBeDefined();
       expect(identity.anonymousId).not.toBe('user-123');
       expect(identity.displayName).not.toBe('user-123');
-      expect(identity.realUserId).toBe('user-123');
+      // The public identity must NOT contain realUserId
+      expect('realUserId' in identity).toBe(false);
     });
 
-    it('should return the same identity for the same user', () => {
+    it('should return the same anonymous ID for the same user', () => {
       const service = createService();
       const first = service.createAnonymousIdentity('user-123');
       const second = service.createAnonymousIdentity('user-123');
 
-      expect(first).toBe(second);
+      expect(first.anonymousId).toBe(second.anonymousId);
+      expect(first.displayName).toBe(second.displayName);
     });
   });
 
@@ -43,6 +45,44 @@ describe('IdentityBridgeService', () => {
 
       expect(() => service.revealIdentity('user-a', 'user-b', false)).toThrow(
         'Identity reveal requires explicit consent',
+      );
+    });
+  });
+
+  describe('revokeConsent', () => {
+    it('should revoke an existing consent record', () => {
+      const service = createService();
+      service.revealIdentity('user-a', 'user-b', true);
+      service.revokeConsent('user-a', 'user-b');
+
+      // After revocation, mutual consent is broken
+      service.revealIdentity('user-b', 'user-a', true);
+      expect(service.hasMutualConsent('user-a', 'user-b')).toBe(false);
+    });
+
+    it('should cause getDisplayIdentity to return anonymous after revocation', () => {
+      const service = createService();
+      service.createAnonymousIdentity('user-a');
+      service.revealIdentity('user-a', 'user-b', true);
+      service.revealIdentity('user-b', 'user-a', true);
+
+      // Before revocation: revealed
+      const before = service.getDisplayIdentity('user-a', 'user-b', 'random_match');
+      expect(before.identityMode).toBe('revealed');
+
+      // Revoke
+      service.revokeConsent('user-a', 'user-b');
+
+      // After revocation: anonymous again
+      const after = service.getDisplayIdentity('user-a', 'user-b', 'random_match');
+      expect(after.identityMode).toBe('anonymous');
+    });
+
+    it('should throw when no consent record exists', () => {
+      const service = createService();
+
+      expect(() => service.revokeConsent('user-a', 'user-b')).toThrow(
+        'No consent record found to revoke',
       );
     });
   });
