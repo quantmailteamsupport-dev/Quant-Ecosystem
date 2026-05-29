@@ -106,6 +106,18 @@ export class CrossAppDistributor {
       issues.push('generative_not_supported');
     }
 
+    // Check maxFaces constraint from lens parameters
+    const requiredFaces = lens.parameters['maxFaces']?.default ?? 1;
+    if (requiredFaces > caps.maxFaces) {
+      issues.push('max_faces_exceeded');
+    }
+
+    // Check maxResolution constraint from lens parameters
+    const requiredResolution = lens.parameters['maxResolution']?.default ?? 0;
+    if (requiredResolution > 0 && requiredResolution > caps.maxResolution) {
+      issues.push('max_resolution_exceeded');
+    }
+
     return issues;
   }
 

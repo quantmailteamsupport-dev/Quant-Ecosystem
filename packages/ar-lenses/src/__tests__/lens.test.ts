@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { LensSchema } from '../lens/lens-schema.js';
 import { LensRuntime } from '../lens/lens-runtime.js';
+import type { EthicsPolicyHook } from '../lens/lens-runtime.js';
 import { EffectPipeline } from '../lens/effect-pipeline.js';
 import type { LensDefinition, PipelineData, TrackingFrame } from '../types.js';
 
@@ -130,6 +131,7 @@ describe('LensRuntime', () => {
     const { metrics } = runtime.executeFrame(data);
     expect(metrics.withinBudget).toBe(true);
     expect(metrics.effectsExecuted).toBe(2);
+    expect(metrics.skippedEffects).toHaveLength(0);
   });
 
   it('does not execute when no lens loaded', () => {
@@ -160,6 +162,80 @@ describe('LensRuntime', () => {
     expect(runtime.getActiveLens()).not.toBeNull();
     runtime.unloadLens();
     expect(runtime.getActiveLens()).toBeNull();
+  });
+
+  it('skips effects when budget is exceeded mid-pipeline', () => {
+    // Use a very small budget to force skipping
+    const runtime = new LensRuntime({ frameBudgetMs: 0 });
+    const lens: LensDefinition = {
+      id: 'expensive',
+      name: 'Expensive Lens',
+      version: '1.0.0',
+      triggers: ['always'],
+      effects: [
+        { effectType: 'effect_a', parameters: {}, order: 0 },
+        { effectType: 'effect_b', parameters: {}, order: 1 },
+        { effectType: 'effect_c', parameters: {}, order: 2 },
+      ],
+      parameters: {},
+    };
+    runtime.loadLens(lens);
+    const data = createPipelineData();
+    const { metrics } = runtime.executeFrame(data);
+    // With 0ms budget, some or all effects should be skipped
+    expect(metrics.skippedEffects.length).toBeGreaterThan(0);
+    expect(metrics.effectsExecuted + metrics.skippedEffects.length).toBe(3);
+  });
+
+  it('reports skipped effect names in metrics', () => {
+    const runtime = new LensRuntime({ frameBudgetMs: 0 });
+    const lens: LensDefinition = {
+      id: 'named-effects',
+      name: 'Named',
+      version: '1.0.0',
+      triggers: ['always'],
+      effects: [
+        { effectType: 'alpha', parameters: {}, order: 0 },
+        { effectType: 'beta', parameters: {}, order: 1 },
+      ],
+      parameters: {},
+    };
+    runtime.loadLens(lens);
+    const { metrics } = runtime.executeFrame(createPipelineData());
+    // All skipped effect names should be valid effect type strings
+    for (const name of metrics.skippedEffects) {
+      expect(['alpha', 'beta']).toContain(name);
+    }
+  });
+
+  it('blocks execution when ethics policy rejects', () => {
+    const runtime = new LensRuntime();
+    const blockingPolicy: EthicsPolicyHook = {
+      check: () => ({ allowed: false, reason: 'body_filter_blocked' }),
+    };
+    runtime.setEthicsPolicy(blockingPolicy);
+    runtime.loadLens(validLens());
+    const { metrics } = runtime.executeFrame(createPipelineData());
+    expect(metrics.effectsExecuted).toBe(0);
+  });
+
+  it('allows execution when ethics policy permits', () => {
+    const runtime = new LensRuntime();
+    const allowPolicy: EthicsPolicyHook = {
+      check: () => ({ allowed: true }),
+    };
+    runtime.setEthicsPolicy(allowPolicy);
+    runtime.loadLens(validLens());
+    const { metrics } = runtime.executeFrame(createPipelineData());
+    expect(metrics.effectsExecuted).toBe(2);
+  });
+
+  it('can retrieve the ethics policy hook', () => {
+    const runtime = new LensRuntime();
+    expect(runtime.getEthicsPolicy()).toBeNull();
+    const hook: EthicsPolicyHook = { check: () => ({ allowed: true }) };
+    runtime.setEthicsPolicy(hook);
+    expect(runtime.getEthicsPolicy()).toBe(hook);
   });
 });
 
@@ -214,5 +290,28 @@ describe('EffectPipeline', () => {
     pipeline.removeStage('a');
     expect(pipeline.getStageCount()).toBe(1);
     expect(pipeline.getStageNames()).toEqual(['b']);
+  });
+
+  it('executeWithBudget skips stages when budget exceeded', () => {
+    const pipeline = new EffectPipeline();
+    pipeline.addStage({ name: 'stage_a', execute: (input) => input });
+    pipeline.addStage({ name: 'stage_b', execute: (input) => input });
+    pipeline.addStage({ name: 'stage_c', execute: (input) => input });
+
+    const data = createPipelineData();
+    // Use a startTime far enough in the past that budget is immediately exceeded
+    const startTime = performance.now() - 100;
+    const result = pipeline.executeWithBudget(data, 0.001, startTime);
+    expect(result.skippedStages.length).toBeGreaterThan(0);
+    expect(result.executedCount + result.skippedStages.length).toBe(3);
+  });
+
+  it('executeWithBudget short-circuits on tracking loss', () => {
+    const pipeline = new EffectPipeline();
+    pipeline.addStage({ name: 'x', execute: (input) => input });
+    const noTracking = createPipelineData(false);
+    const result = pipeline.executeWithBudget(noTracking, 16, performance.now());
+    expect(result.executedCount).toBe(0);
+    expect(result.skippedStages).toHaveLength(0);
   });
 });

@@ -148,6 +148,27 @@ describe('HandTrackerAR', () => {
     expect(gesture).toBe('open_palm');
   });
 
+  it('classifies thumbs_up gesture', () => {
+    const tracker = new HandTrackerAR(createMockAdapter());
+    // Wrist at y=1, thumb tip at y=-1 (above), all finger tips at y=1 (at or below wrist)
+    const landmarks = Array.from({ length: 21 }, (_, i) => ({
+      index: i,
+      position: { x: 0, y: 1, z: 0 },
+      confidence: 0.9,
+    }));
+    // wrist at y=1
+    landmarks[0] = { index: 0, position: { x: 0, y: 1, z: 0 }, confidence: 0.9 };
+    // thumb tip above wrist
+    landmarks[4] = { index: 4, position: { x: 0, y: -1, z: 0 }, confidence: 0.9 };
+    // index, middle, ring, pinky tips at or below wrist (curled)
+    landmarks[8] = { index: 8, position: { x: 0, y: 1, z: 0 }, confidence: 0.9 };
+    landmarks[12] = { index: 12, position: { x: 0, y: 1, z: 0 }, confidence: 0.9 };
+    landmarks[16] = { index: 16, position: { x: 0, y: 1, z: 0 }, confidence: 0.9 };
+    landmarks[20] = { index: 20, position: { x: 0, y: 1, z: 0 }, confidence: 0.9 };
+    const gesture = tracker.classifyGesture(landmarks);
+    expect(gesture).toBe('thumbs_up');
+  });
+
   it('returns unknown for insufficient landmarks', () => {
     const tracker = new HandTrackerAR(createMockAdapter());
     const gesture = tracker.classifyGesture([]);

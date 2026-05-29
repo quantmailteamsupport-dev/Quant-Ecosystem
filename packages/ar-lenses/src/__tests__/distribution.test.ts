@@ -85,4 +85,42 @@ describe('CrossAppDistributor', () => {
     dist.register(lens2, ['quant_chat']);
     expect(dist.getRegisteredLenses()).toHaveLength(2);
   });
+
+  it('detects maxFaces incompatibility', () => {
+    const dist = new CrossAppDistributor();
+    const lens: LensDefinition = {
+      id: 'multi_face_lens',
+      name: 'Multi Face',
+      version: '1.0.0',
+      triggers: ['always'],
+      effects: [{ effectType: 'color_grade', parameters: {}, order: 0 }],
+      parameters: {
+        maxFaces: { min: 1, max: 10, default: 5 },
+      },
+    };
+    const manifest = dist.register(lens, ['quant_neon', 'quant_meet']);
+    // quant_neon supports 5 faces, quant_meet only 1
+    expect(manifest.compatibility.get('quant_neon')).toBe(true);
+    expect(manifest.compatibility.get('quant_meet')).toBe(false);
+    expect(manifest.constraints.get('quant_meet')).toContain('max_faces_exceeded');
+  });
+
+  it('detects maxResolution incompatibility', () => {
+    const dist = new CrossAppDistributor();
+    const lens: LensDefinition = {
+      id: 'hd_lens',
+      name: 'HD Lens',
+      version: '1.0.0',
+      triggers: ['always'],
+      effects: [{ effectType: 'color_grade', parameters: {}, order: 0 }],
+      parameters: {
+        maxResolution: { min: 720, max: 4096, default: 1920 },
+      },
+    };
+    const manifest = dist.register(lens, ['quant_neon', 'quant_max']);
+    // quant_neon supports 1920, quant_max only 720
+    expect(manifest.compatibility.get('quant_neon')).toBe(true);
+    expect(manifest.compatibility.get('quant_max')).toBe(false);
+    expect(manifest.constraints.get('quant_max')).toContain('max_resolution_exceeded');
+  });
 });

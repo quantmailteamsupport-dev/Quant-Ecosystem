@@ -1,10 +1,15 @@
 import type { LensDefinition, LensRuntimeConfig, PipelineData, LensTrigger } from '../types.js';
 import { EffectPipeline } from './effect-pipeline.js';
 
-interface RuntimeMetrics {
+export interface RuntimeMetrics {
   frameTimeMs: number;
   withinBudget: boolean;
   effectsExecuted: number;
+  skippedEffects: string[];
+}
+
+export interface EthicsPolicyHook {
+  check(data: PipelineData, lens: LensDefinition): { allowed: boolean; reason?: string };
 }
 
 const DEFAULT_CONFIG: LensRuntimeConfig = {
@@ -17,10 +22,19 @@ export class LensRuntime {
   private config: LensRuntimeConfig;
   private pipeline: EffectPipeline;
   private activeLens: LensDefinition | null = null;
+  private ethicsPolicy: EthicsPolicyHook | null = null;
 
   constructor(config?: Partial<LensRuntimeConfig>) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.pipeline = new EffectPipeline();
+  }
+
+  setEthicsPolicy(hook: EthicsPolicyHook): void {
+    this.ethicsPolicy = hook;
+  }
+
+  getEthicsPolicy(): EthicsPolicyHook | null {
+    return this.ethicsPolicy;
   }
 
   loadLens(lens: LensDefinition): void {
@@ -32,7 +46,6 @@ export class LensRuntime {
       this.pipeline.addStage({
         name: effect.effectType,
         execute: (input: PipelineData) => {
-          // Apply effect parameters to pipeline data
           return {
             ...input,
             metadata: { ...input.metadata, [effect.effectType]: effect.parameters },
@@ -46,28 +59,45 @@ export class LensRuntime {
     if (!this.activeLens) {
       return {
         result: data,
-        metrics: { frameTimeMs: 0, withinBudget: true, effectsExecuted: 0 },
+        metrics: { frameTimeMs: 0, withinBudget: true, effectsExecuted: 0, skippedEffects: [] },
       };
+    }
+
+    // Ethics policy check before execution
+    if (this.ethicsPolicy) {
+      const ethicsResult = this.ethicsPolicy.check(data, this.activeLens);
+      if (!ethicsResult.allowed) {
+        return {
+          result: data,
+          metrics: {
+            frameTimeMs: 0,
+            withinBudget: true,
+            effectsExecuted: 0,
+            skippedEffects: [],
+          },
+        };
+      }
     }
 
     const triggered = this.checkTriggers(data);
     if (!triggered) {
       return {
         result: data,
-        metrics: { frameTimeMs: 0, withinBudget: true, effectsExecuted: 0 },
+        metrics: { frameTimeMs: 0, withinBudget: true, effectsExecuted: 0, skippedEffects: [] },
       };
     }
 
     const start = performance.now();
-    const result = this.pipeline.execute(data);
+    const budgetResult = this.pipeline.executeWithBudget(data, this.config.frameBudgetMs, start);
     const frameTimeMs = performance.now() - start;
 
     return {
-      result,
+      result: budgetResult.result,
       metrics: {
         frameTimeMs,
         withinBudget: frameTimeMs <= this.config.frameBudgetMs,
-        effectsExecuted: this.pipeline.getStageCount(),
+        effectsExecuted: budgetResult.executedCount,
+        skippedEffects: budgetResult.skippedStages,
       },
     };
   }

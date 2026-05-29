@@ -55,18 +55,23 @@ export { LightingEffects } from './overlay/effects.js';
 // Lens
 export { LensSchema } from './lens/lens-schema.js';
 export { LensRuntime } from './lens/lens-runtime.js';
+export type { RuntimeMetrics, EthicsPolicyHook } from './lens/lens-runtime.js';
 export { EffectPipeline } from './lens/effect-pipeline.js';
+export type { BudgetExecutionResult } from './lens/effect-pipeline.js';
 
 // Generative
 export { PromptToLens } from './generative/prompt-to-lens.js';
+export type { PromptToLensResult } from './generative/prompt-to-lens.js';
 export { StyleTransfer } from './generative/style-transfer.js';
 export { BackgroundReplacer } from './generative/background-replace.js';
 
 // Ethics
 export { BodyFilterGuard } from './ethics/body-filter-guard.js';
 export { AgeGate } from './ethics/age-gate.js';
-export { ConsentManager } from './ethics/consent-manager.js';
+export { ConsentManager, InMemoryConsentStorage } from './ethics/consent-manager.js';
+export type { ConsentStorage } from './ethics/consent-manager.js';
 export { DeepfakeMarker } from './ethics/deepfake-marker.js';
+export type { DeepfakeMarkerOptions } from './ethics/deepfake-marker.js';
 
 // Distribution
 export { CrossAppDistributor } from './distribution/cross-app.js';

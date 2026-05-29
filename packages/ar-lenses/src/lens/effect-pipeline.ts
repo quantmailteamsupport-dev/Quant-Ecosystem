@@ -1,5 +1,11 @@
 import type { EffectPipelineStage, PipelineData } from '../types.js';
 
+export interface BudgetExecutionResult {
+  result: PipelineData;
+  executedCount: number;
+  skippedStages: string[];
+}
+
 export class EffectPipeline {
   private stages: EffectPipelineStage[] = [];
   private lastExecutionTimeMs = 0;
@@ -32,6 +38,38 @@ export class EffectPipeline {
 
     this.lastExecutionTimeMs = performance.now() - start;
     return current;
+  }
+
+  executeWithBudget(
+    input: PipelineData,
+    budgetMs: number,
+    startTime: number,
+  ): BudgetExecutionResult {
+    let current = input;
+    let executedCount = 0;
+    const skippedStages: string[] = [];
+
+    const trackingLost =
+      input.tracking.faces.length === 0 &&
+      input.tracking.hands.length === 0 &&
+      input.tracking.bodies.length === 0;
+
+    if (trackingLost) {
+      return { result: current, executedCount: 0, skippedStages: [] };
+    }
+
+    for (const stage of this.stages) {
+      const elapsed = performance.now() - startTime;
+      if (elapsed >= budgetMs) {
+        skippedStages.push(stage.name);
+        continue;
+      }
+      current = stage.execute(current);
+      executedCount++;
+    }
+
+    this.lastExecutionTimeMs = performance.now() - startTime;
+    return { result: current, executedCount, skippedStages };
   }
 
   clear(): void {

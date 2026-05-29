@@ -30,14 +30,33 @@ const TRIGGER_KEYWORDS: Record<string, LensTrigger> = {
   face: 'face_detect',
 };
 
+export interface PromptToLensResult {
+  lens: LensDefinition;
+  confidence: number;
+}
+
 export class PromptToLens {
-  generate(request: GenerativeLensRequest): LensDefinition {
+  generate(request: GenerativeLensRequest): PromptToLensResult {
     const prompt = request.prompt.toLowerCase();
+    const words = prompt.split(/\s+/);
     const effects = this.extractEffects(prompt);
     const triggers = this.extractTriggers(prompt);
     const intensity = request.intensity ?? 0.7;
 
-    return {
+    const effectKeywordMatches = Object.keys(EFFECT_KEYWORDS).filter((kw) =>
+      prompt.includes(kw),
+    ).length;
+    const triggerKeywordMatches = Object.keys(TRIGGER_KEYWORDS).filter((kw) =>
+      prompt.includes(kw),
+    ).length;
+
+    const matchedKeywords = effectKeywordMatches + triggerKeywordMatches;
+    const confidence =
+      words.length > 0
+        ? Math.min(1, matchedKeywords / Math.max(1, Math.ceil(words.length * 0.5)))
+        : 0;
+
+    const lens: LensDefinition = {
       id: `generated_${Date.now()}`,
       name: this.generateName(request.prompt),
       version: '1.0.0',
@@ -51,6 +70,8 @@ export class PromptToLens {
         intensity: { min: 0, max: 1, default: intensity },
       },
     };
+
+    return { lens, confidence };
   }
 
   private extractEffects(prompt: string): string[] {

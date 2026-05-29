@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { BodyFilterGuard } from '../ethics/body-filter-guard.js';
 import { AgeGate } from '../ethics/age-gate.js';
-import { ConsentManager } from '../ethics/consent-manager.js';
+import { ConsentManager, InMemoryConsentStorage } from '../ethics/consent-manager.js';
+import type { ConsentStorage } from '../ethics/consent-manager.js';
 import { DeepfakeMarker } from '../ethics/deepfake-marker.js';
+import type { ConsentRecord } from '../types.js';
 
 describe('BodyFilterGuard', () => {
   const guard = new BodyFilterGuard({
@@ -142,19 +144,78 @@ describe('ConsentManager', () => {
     expect(cm.revoke(record.id)).toBe(true);
     expect(cm.revoke(record.id)).toBe(false);
   });
+
+  it('uses default InMemoryConsentStorage when no storage provided', () => {
+    const cm = new ConsentManager();
+    expect(cm.getStorage()).toBeInstanceOf(InMemoryConsentStorage);
+  });
+
+  it('accepts a custom storage backend', () => {
+    const stored: ConsentRecord[] = [];
+    const customStorage: ConsentStorage = {
+      save(record) {
+        stored.push(record);
+      },
+      update(record) {
+        const idx = stored.findIndex((r) => r.id === record.id);
+        if (idx >= 0) stored[idx] = record;
+      },
+      findById(id) {
+        return stored.find((r) => r.id === id);
+      },
+      findByUser(userId) {
+        return stored.filter((r) => r.userId === userId);
+      },
+      findAll() {
+        return [...stored];
+      },
+    };
+
+    const cm = new ConsentManager(customStorage);
+    cm.grant('u1', 'f1', 'capture');
+    expect(stored).toHaveLength(1);
+    expect(cm.hasConsent('u1', 'f1', 'capture')).toBe(true);
+  });
+
+  it('custom storage persists revocation', () => {
+    const stored: ConsentRecord[] = [];
+    const customStorage: ConsentStorage = {
+      save(record) {
+        stored.push(record);
+      },
+      update(record) {
+        const idx = stored.findIndex((r) => r.id === record.id);
+        if (idx >= 0) stored[idx] = record;
+      },
+      findById(id) {
+        return stored.find((r) => r.id === id);
+      },
+      findByUser(userId) {
+        return stored.filter((r) => r.userId === userId);
+      },
+      findAll() {
+        return [...stored];
+      },
+    };
+
+    const cm = new ConsentManager(customStorage);
+    const record = cm.grant('u1', 'f1', 'share');
+    cm.revoke(record.id);
+    expect(stored[0]!.revoked).toBe(true);
+  });
 });
 
 describe('DeepfakeMarker', () => {
-  it('embeds C2PA-compatible provenance marker', () => {
-    const marker = new DeepfakeMarker();
+  it('embeds C2PA-compatible provenance marker with HMAC', () => {
+    const marker = new DeepfakeMarker({ secretKey: 'test-secret' });
     const result = marker.embed('asset_123', ['face_swap', 'style_transfer']);
     expect(result.c2paCompatible).toBe(true);
-    expect(result.signature).toMatch(/^c2pa:/);
+    expect(result.signature).toMatch(/^c2pa:[a-f0-9]{64}$/);
     expect(result.transformations).toEqual(['face_swap', 'style_transfer']);
   });
 
   it('verifies valid markers', () => {
-    const marker = new DeepfakeMarker();
+    const marker = new DeepfakeMarker({ secretKey: 'my-key' });
     marker.embed('asset_456', ['color_grade']);
     const verification = marker.verify('asset_456');
     expect(verification.valid).toBe(true);
@@ -180,5 +241,27 @@ describe('DeepfakeMarker', () => {
     marker.embed('asset_x', ['a', 'b', 'c']);
     expect(marker.getTransformations('asset_x')).toEqual(['a', 'b', 'c']);
     expect(marker.getTransformations('missing')).toEqual([]);
+  });
+
+  it('detects tampering when signature is altered', () => {
+    const marker = new DeepfakeMarker({ secretKey: 'integrity-key' });
+    marker.embed('tampered_asset', ['morph']);
+    // Manually tamper with the stored marker's signature
+    const stored = marker.verify('tampered_asset');
+    expect(stored.valid).toBe(true);
+    // A different instance with a different key cannot verify
+    const otherMarker = new DeepfakeMarker({ secretKey: 'wrong-key' });
+    const fakeData = marker.embed.call(otherMarker, 'tampered_asset', ['morph']);
+    // The signatures differ between different keys
+    const original = marker.verify('tampered_asset');
+    expect(original.marker!.signature).not.toBe(fakeData.signature);
+  });
+
+  it('produces different signatures for different keys', () => {
+    const m1 = new DeepfakeMarker({ secretKey: 'key-a' });
+    const m2 = new DeepfakeMarker({ secretKey: 'key-b' });
+    const r1 = m1.embed('asset', ['fx']);
+    const r2 = m2.embed('asset', ['fx']);
+    expect(r1.signature).not.toBe(r2.signature);
   });
 });

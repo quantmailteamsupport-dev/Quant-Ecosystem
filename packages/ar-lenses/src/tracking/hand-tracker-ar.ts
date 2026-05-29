@@ -45,6 +45,11 @@ export class HandTrackerAR {
     const allCurled = [indexTip, middleTip, ringTip, pinkyTip].every(
       (tip) => tip.position.y >= wrist.position.y,
     );
+
+    // Check thumbs_up before fist: thumb raised while all fingers curled
+    const thumbUp = thumbTip.position.y < wrist.position.y;
+    if (allCurled && thumbUp) return 'thumbs_up';
+
     if (allCurled) return 'fist';
 
     const thumbIndexClose =
@@ -62,8 +67,6 @@ export class HandTrackerAR {
       indexTip.position.y < wrist.position.y && middleTip.position.y < wrist.position.y;
     const ringPinkyDown = [ringTip, pinkyTip].every((tip) => tip.position.y >= wrist.position.y);
     if (indexMiddleUp && ringPinkyDown) return 'peace';
-
-    if (thumbTip.position.y < wrist.position.y && allCurled) return 'thumbs_up';
 
     return 'unknown';
   }

@@ -35,44 +35,59 @@ describe('PromptToLens', () => {
   const ptl = new PromptToLens();
 
   it('maps sparkle prompt to particles effect', () => {
-    const lens = ptl.generate({ prompt: 'add sparkle effects when I smile' });
+    const { lens } = ptl.generate({ prompt: 'add sparkle effects when I smile' });
     expect(lens.effects.some((e) => e.effectType === 'particles')).toBe(true);
     expect(lens.triggers).toContain('smile');
   });
 
   it('maps background prompt to background_replace', () => {
-    const lens = ptl.generate({ prompt: 'replace my background with a beach' });
+    const { lens } = ptl.generate({ prompt: 'replace my background with a beach' });
     expect(lens.effects.some((e) => e.effectType === 'background_replace')).toBe(true);
   });
 
   it('maps style prompt to style_transfer', () => {
-    const lens = ptl.generate({ prompt: 'make me look like a painting' });
+    const { lens } = ptl.generate({ prompt: 'make me look like a painting' });
     expect(lens.effects.some((e) => e.effectType === 'style_transfer')).toBe(true);
   });
 
   it('extracts face_detect trigger', () => {
-    const lens = ptl.generate({ prompt: 'apply glow effect on face detection' });
+    const { lens } = ptl.generate({ prompt: 'apply glow effect on face detection' });
     expect(lens.triggers).toContain('face_detect');
   });
 
   it('uses always trigger when no keyword matches', () => {
-    const lens = ptl.generate({ prompt: 'do something cool' });
+    const { lens } = ptl.generate({ prompt: 'do something cool' });
     expect(lens.triggers).toContain('always');
   });
 
   it('generates a valid lens definition', () => {
-    const lens = ptl.generate({ prompt: 'sparkle confetti when I smile' });
+    const { lens } = ptl.generate({ prompt: 'sparkle confetti when I smile' });
     expect(ptl.validate(lens)).toBe(true);
   });
 
   it('respects intensity parameter', () => {
-    const lens = ptl.generate({ prompt: 'add glow', intensity: 0.3 });
+    const { lens } = ptl.generate({ prompt: 'add glow', intensity: 0.3 });
     expect(lens.parameters['intensity']!.default).toBe(0.3);
   });
 
   it('defaults to color_grade when no effects match', () => {
-    const lens = ptl.generate({ prompt: 'make me look good' });
+    const { lens } = ptl.generate({ prompt: 'make me look good' });
     expect(lens.effects.some((e) => e.effectType === 'color_grade')).toBe(true);
+  });
+
+  it('returns high confidence for well-matched prompts', () => {
+    const { confidence } = ptl.generate({ prompt: 'sparkle glow smile' });
+    expect(confidence).toBeGreaterThan(0.5);
+  });
+
+  it('returns low confidence for unrecognized prompts', () => {
+    const { confidence } = ptl.generate({ prompt: 'do something entirely unrecognized here now' });
+    expect(confidence).toBe(0);
+  });
+
+  it('returns zero confidence for empty-ish prompts with no matches', () => {
+    const { confidence } = ptl.generate({ prompt: 'xyz abc' });
+    expect(confidence).toBe(0);
   });
 });
 
