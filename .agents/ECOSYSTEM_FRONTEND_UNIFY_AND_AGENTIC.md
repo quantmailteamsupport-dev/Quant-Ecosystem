@@ -37,7 +37,11 @@
 1. **Wiring broken:** `api-client` baseUrl hardcoded (`localhost:3001`, `localhost:3010`, or `https://chat.quant.app/api`); token never set in `app-providers`; many screens fetch `/api/*` Next routes that don't exist (QuantSync 83, QuantAds 39, QuantChat 31). → most screens load no data.
 2. **Inconsistent routing:** 3 hybrid (ai/chat/mail — App + Pages, no `_app.tsx`), 6 Pages-only (sync/ads/neon/tube/max/edits), 4 App-only (calendar/docs/drive/meet). 9 apps have no shared shell.
 3. **Off-brand / unstyled:** QuantSync & QuantAds use 0 `@quant/shared-ui`; others use bespoke CSS class names that are defined in no stylesheet → render unstyled. Brand applied to library, not screens.
-4. **Real-time dead:** QuantChat's real `QuantChatWSClient` (330 LOC, reconnect logic) is wired into nothing → no live messages/typing/presence. No app uses live WS in the UI.
+4. **Real-time dead / orphaned infrastructure:** the hard real-time pieces are built in backends but NOT wired into any UI:
+   - QuantChat's `QuantChatWSClient` (330 LOC, reconnect logic) → wired into nothing (no live messages/typing/presence).
+   - **QuantMeet: LiveKit is in 8 backend files but 0 references in `src/`** → ParticipantGrid/VideoTile/ControlBar/PreJoinLobby are UI shells with **no real video**.
+   - **QuantDocs: Yjs is in 12 backend files but 0 references in `src/`** → DocEditor/PresenceBar/CommentsPanel have **no real live collaboration**.
+   The defining feature of each of these apps (live chat, video calls, collaborative editing) does not actually work despite the infra existing.
 5. **AI-agentic gap:** QuantAI backend has cross-app-orchestrator + tool + agent-marketplace services, and `packages/quant-tools` exists (85 tools), but the UI does not let QuantAI actually execute tools across apps. The control layer isn't connected.
 6. **Faked streaming:** `useAIChat` simulates streaming with `setInterval` instead of real SSE/token streaming.
 7. **Orphaned richness:** every app has rich components (EmailComposer, StoryViewer, Timeline/Canvas, SwipeStack, AuctionViewer, ARCamera) that are not fully wired into screens.
@@ -75,8 +79,10 @@ For each app, create `src/app/api/*` route handlers that proxy to the app's Fast
 
 ### PHASE 66.6 — Real-time everywhere (WS wiring)
 - Wire QuantChat's `QuantChatWSClient` into `useMessages`/typing/presence → live messages, typing indicators, read receipts, online status.
+- **QuantMeet: wire LiveKit client into the UI** (PreJoinLobby device preview, ParticipantGrid tracks, ControlBar mute/camera/screen-share) → real video calls.
+- **QuantDocs: wire Yjs into DocEditor** (Y.Doc + provider) → real collaborative editing, live cursors/presence (PresenceBar), comments.
 - Add live updates where relevant: QuantSync (live feed/comments/trending), QuantTube (live chat/viewer counts), QuantMax (matching/video signaling), QuantAI (streaming).
-- **Gate:** 2 clients see live message/typing in QuantChat; live counters update without refresh.
+- **Gate:** 2 clients see live message/typing in QuantChat; 2 users join a QuantMeet call with video flowing; 2 users co-edit a QuantDoc live; live counters update without refresh.
 
 ### PHASE 66.7 — Real AI streaming
 - Replace `useAIChat` `setInterval` simulation with real SSE/`ReadableStream` token streaming from the AI backend; show streaming state; cancel support.
@@ -102,7 +108,11 @@ This is the founder's "AI agentic" core. Connect the existing `packages/quant-to
 - **QuantTube:** wire VideoPlayer/MusicPlayer/Shorts/LiveChat to backend; studio/monetization flows.
 - **QuantMax:** wire SwipeStack/RandomMatcher/VideoChatRoom (matchmaking service); SafetyOverlay must be enforced (minor-safety P0).
 - **QuantEdits:** wire Timeline/Canvas/Keyframe/Export to project/asset/export services; real render/export.
-- **QuantCalendar/Docs/Drive/Meet:** deepen from 1-2 screens to full feature set (see master prompt Phase 65); these are clean but shallow.
+- **QuantCalendar/Docs/Drive/Meet:** cleanest frontends (App Router + shared-ui) with the STRONGEST backends (3.9K-5.7K LOC, 9-17 tests each) but only 1-2 screens AND their defining feature isn't live:
+  - **QuantMeet** — wire LiveKit (66.6); deepen to grid/speaker/spotlight, breakout, recording, live captions.
+  - **QuantDocs** — wire Yjs (66.6); deepen to suggestions, version history, AI sidebar, export.
+  - **QuantCalendar** — deepen views (month/week/day/agenda already as components), recurring/RRULE, drag-reschedule, smart scheduling.
+  - **QuantDrive** — already the best-wired (routes exist); deepen previews, sharing, search, AI organize.
 
 ---
 
