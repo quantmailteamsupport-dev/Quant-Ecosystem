@@ -39,6 +39,30 @@ describe('RepoStorageService', () => {
       const path = service.getRepoPath('user-1', 'repo.name');
       expect(path).toBe('/tmp/git-repos/user-1/repo.name.git');
     });
+
+    it('throws on path traversal in owner using ..', () => {
+      expect(() => service.getRepoPath('..', 'exploit')).toThrow('Invalid owner');
+    });
+
+    it('throws on path traversal in name using ..', () => {
+      expect(() => service.getRepoPath('alice', '..')).toThrow('Invalid repository name');
+    });
+
+    it('throws on forward slash in owner', () => {
+      expect(() => service.getRepoPath('foo/bar', 'repo')).toThrow('Invalid owner');
+    });
+
+    it('throws on backslash in name', () => {
+      expect(() => service.getRepoPath('alice', 'foo\\bar')).toThrow('Invalid repository name');
+    });
+
+    it('throws on null byte in owner', () => {
+      expect(() => service.getRepoPath('alice\x00', 'repo')).toThrow('Invalid owner');
+    });
+
+    it('throws on embedded .. in owner', () => {
+      expect(() => service.getRepoPath('a..b', 'repo')).toThrow('Invalid owner');
+    });
   });
 
   describe('initBareRepo', () => {
