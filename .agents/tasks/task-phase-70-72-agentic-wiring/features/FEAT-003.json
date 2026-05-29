@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "feat",
   "description": "Phase 72 integration test: Prove phone-free agentic living by wiring voice-first-os to quant-tools. Test that PhoneFreeController + IntentRouter + ToolExecutor can handle a voice-only session executing tools across 5+ apps without screen. Add workspace dependency from voice-first-os to quant-tools, create a thin integration bridge (AgenticSession class) that connects voice commands to tool execution, and write integration tests proving the gate.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Add '@quant/quant-tools': 'workspace:*' to packages/voice-first-os/package.json devDependencies",
     "Create file packages/voice-first-os/src/agentic-session.ts - a class AgenticSession that composes PhoneFreeController, IntentRouter (from quant-tools), and ToolExecutor (from quant-tools). Methods: startSession(), executeVoiceCommand(text: string) which routes intent, picks top match, executes tool, returns result. getSessionSummary() delegates to PhoneFreeController.",
@@ -24,5 +24,5 @@
     "source /root/.nvm/nvm.sh && nvm use 22 && cd /projects/sandbox/Quant-Ecosystem && pnpm --filter @quant/voice-first-os typecheck && pnpm --filter @quant/voice-first-os test"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Tool IDs use dashes and dots not camelCase: 'quantcalendar.create-event' (not .create), 'device-control.control' (not .volume), 'quant-studio.deploy' (not .render). IntentRouter requires keywords in voice text that match tool name words, tags, or description words to score above 0.1 threshold. Adjusted test commands to include routing keywords (e.g. 'deploy app studio infrastructure' routes to quant-studio.deploy). All 3 tests pass proving 5+ apps in a single voice-only session."
 }
