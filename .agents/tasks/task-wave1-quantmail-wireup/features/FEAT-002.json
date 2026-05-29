@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Build the unified App Router shell with real navigation, login/register pages, and create Next.js API route proxies for all backend endpoints (emails, threads, contacts, calendar, repos, CI, security, admin). This is the structural foundation that lets migrated screens work.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create apps/quantmail/src/app/login/page.tsx: a real App Router login page using @quant/shared-ui (Card, Button, Input, FormField). On submit, call useAuth().login(). Show loading/error states. Include 'Forgot password' and 'Register' links. Brand-styled with dark mode support. The AuthGuard should skip guarding this route.",
     "Create apps/quantmail/src/app/register/page.tsx: similar to login but calls apiClient.register(). After success, redirect to /login with success message.",
@@ -28,5 +28,5 @@
     "ls apps/quantmail/src/app/login/page.tsx exists"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "RegisterRequest type requires displayName and acceptTerms fields (not just email/password/username). Used displayName: username and acceptTerms: true as defaults. All drive API routes had localhost:3001 -- fixed to 3010 in this commit. Next.js 15 App Router dynamic route params are async (params: Promise<{id: string}>) and require await. The Sidebar component from shared-ui uses framer-motion with useReducedMotion."
 }
