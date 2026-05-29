@@ -2304,6 +2304,10 @@ importers:
         version: 2.1.9(@types/node@22.19.19)(jsdom@29.1.1)
 
   packages/user-owned-ai:
+    dependencies:
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
