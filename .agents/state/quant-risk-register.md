@@ -1,5 +1,8 @@
 # Quant Ecosystem Risk Register
 
+> Last reset: Phase 62.2. Previous CRITICAL items (typecheck errors, build failures,
+> Prisma conflicts, high audit vulnerabilities) were resolved in phases 18-61.
+
 ## CRITICAL
 
 _(none)_

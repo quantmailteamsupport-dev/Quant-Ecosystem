@@ -19,9 +19,9 @@ if [ ! -f "$arch_map" ]; then
   exit 1
 fi
 
-expected_apps=$(grep -oP '\*\*\d+ apps?\*\*' "$arch_map" | grep -oP '\d+' | head -1)
-expected_packages=$(grep -oP '\*\*\d+ packages?\*\*' "$arch_map" | grep -oP '\d+' | head -1)
-expected_services=$(grep -oP '\*\*\d+ services?\*\*' "$arch_map" | grep -oP '\d+' | head -1)
+expected_apps=$(grep -Eo '\*\*[0-9]+ apps?\*\*' "$arch_map" | grep -Eo '[0-9]+' | head -1)
+expected_packages=$(grep -Eo '\*\*[0-9]+ packages?\*\*' "$arch_map" | grep -Eo '[0-9]+' | head -1)
+expected_services=$(grep -Eo '\*\*[0-9]+ services?\*\*' "$arch_map" | grep -Eo '[0-9]+' | head -1)
 
 if [ -z "${expected_apps:-}" ]; then
   echo "ERROR: Could not extract expected apps count from $arch_map"
@@ -84,6 +84,8 @@ else
   echo "  Valid JSON: OK"
 fi
 
+# NOTE: This checks that the status file claims all gates pass.
+# Actual gate execution is handled by ci.yml (typecheck, build, test, lint, audit).
 # Check all gates are "pass"
 gate_failures=$(python3 -c "
 import json, sys
