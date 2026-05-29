@@ -17,7 +17,7 @@ export function getQuantsyncTools(): AITool[] {
         args: Record<string, unknown>,
         _context: AssistantContext,
       ): Promise<AIToolResult> => {
-        console.log('[quantsync] createPost:', args);
+        globalThis.console.log('[quantsync] createPost:', args);
         return {
           success: true,
           data: { postId: `post_${Date.now()}`, content: args['content'] },
@@ -41,7 +41,7 @@ export function getQuantsyncTools(): AITool[] {
         args: Record<string, unknown>,
         _context: AssistantContext,
       ): Promise<AIToolResult> => {
-        console.log('[quantsync] searchContent:', args);
+        globalThis.console.log('[quantsync] searchContent:', args);
         return {
           success: true,
           data: { results: [], totalCount: 0 },

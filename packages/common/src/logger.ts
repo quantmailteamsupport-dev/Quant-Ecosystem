@@ -13,15 +13,15 @@ function shouldLog(level: LogLevel): boolean {
 
 export const logger = {
   debug(...args: unknown[]): void {
-    if (shouldLog('debug')) console.debug('[QUANT]', ...args);
+    if (shouldLog('debug')) globalThis.console.debug('[QUANT]', ...args);
   },
   log(...args: unknown[]): void {
-    if (shouldLog('log')) console.log('[QUANT]', ...args);
+    if (shouldLog('log')) globalThis.console.log('[QUANT]', ...args);
   },
   warn(...args: unknown[]): void {
-    if (shouldLog('warn')) console.warn('[QUANT]', ...args);
+    if (shouldLog('warn')) globalThis.console.warn('[QUANT]', ...args);
   },
   error(...args: unknown[]): void {
-    if (shouldLog('error')) console.error('[QUANT]', ...args);
+    if (shouldLog('error')) globalThis.console.error('[QUANT]', ...args);
   },
 };

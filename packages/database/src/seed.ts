@@ -54,7 +54,7 @@ const DEMO_USERS = [
 ];
 
 async function seedDemoUsers() {
-  console.log('Creating demo users...');
+  globalThis.console.log('Creating demo users...');
   const demoUserRecords = [];
 
   for (const demoUser of DEMO_USERS) {
@@ -76,12 +76,12 @@ async function seedDemoUsers() {
     demoUserRecords.push(user);
   }
 
-  console.log(`Created ${demoUserRecords.length} demo users`);
+  globalThis.console.log(`Created ${demoUserRecords.length} demo users`);
   return demoUserRecords;
 }
 
 async function seedDemoData(demoUsers: Awaited<ReturnType<typeof seedDemoUsers>>) {
-  console.log('Creating demo data for demo users...');
+  globalThis.console.log('Creating demo data for demo users...');
 
   // Create 10 emails per demo user
   for (const user of demoUsers) {
@@ -101,7 +101,7 @@ async function seedDemoData(demoUsers: Awaited<ReturnType<typeof seedDemoUsers>>
       });
     }
   }
-  console.log('Created 60 demo emails (10 per user)');
+  globalThis.console.log('Created 60 demo emails (10 per user)');
 
   // Create 5 chat conversations among demo users
   for (let i = 0; i < 5; i++) {
@@ -133,7 +133,7 @@ async function seedDemoData(demoUsers: Awaited<ReturnType<typeof seedDemoUsers>>
       });
     }
   }
-  console.log('Created 5 demo conversations');
+  globalThis.console.log('Created 5 demo conversations');
 
   // Create 10 posts from demo users
   for (let i = 0; i < 10; i++) {
@@ -151,7 +151,7 @@ async function seedDemoData(demoUsers: Awaited<ReturnType<typeof seedDemoUsers>>
       },
     });
   }
-  console.log('Created 10 demo posts');
+  globalThis.console.log('Created 10 demo posts');
 
   // Create 10 notifications per demo user
   for (const user of demoUsers) {
@@ -168,11 +168,11 @@ async function seedDemoData(demoUsers: Awaited<ReturnType<typeof seedDemoUsers>>
       });
     }
   }
-  console.log('Created 60 demo notifications (10 per user)');
+  globalThis.console.log('Created 60 demo notifications (10 per user)');
 }
 
 async function main() {
-  console.log('Seeding database...');
+  globalThis.console.log('Seeding database...');
 
   // Step 1: Create deterministic demo users
   const demoUsers = await seedDemoUsers();
@@ -201,7 +201,7 @@ async function main() {
     });
     users.push(user);
   }
-  console.log(`Created ${users.length - demoUsers.length} random users`);
+  globalThis.console.log(`Created ${users.length - demoUsers.length} random users`);
 
   // Create 20 conversations with messages
   for (let i = 0; i < 20; i++) {
@@ -235,7 +235,7 @@ async function main() {
       });
     }
   }
-  console.log('Created 20 conversations with messages');
+  globalThis.console.log('Created 20 conversations with messages');
 
   // Create 100 emails
   for (let i = 0; i < 100; i++) {
@@ -254,7 +254,7 @@ async function main() {
       },
     });
   }
-  console.log('Created 100 emails');
+  globalThis.console.log('Created 100 emails');
 
   // Create 200 posts with comments
   for (let i = 0; i < 200; i++) {
@@ -284,7 +284,7 @@ async function main() {
       });
     }
   }
-  console.log('Created 200 posts with comments');
+  globalThis.console.log('Created 200 posts with comments');
 
   // Create 10 campaigns
   for (let i = 0; i < 10; i++) {
@@ -305,7 +305,7 @@ async function main() {
       },
     });
   }
-  console.log('Created 10 campaigns');
+  globalThis.console.log('Created 10 campaigns');
 
   // Create 50 videos
   for (let i = 0; i < 50; i++) {
@@ -330,7 +330,7 @@ async function main() {
       },
     });
   }
-  console.log('Created 50 videos');
+  globalThis.console.log('Created 50 videos');
 
   // Create 100 photos
   for (let i = 0; i < 100; i++) {
@@ -348,7 +348,7 @@ async function main() {
       },
     });
   }
-  console.log('Created 100 photos');
+  globalThis.console.log('Created 100 photos');
 
   // Create 30 stories
   for (let i = 0; i < 30; i++) {
@@ -363,7 +363,7 @@ async function main() {
       },
     });
   }
-  console.log('Created 30 stories');
+  globalThis.console.log('Created 30 stories');
 
   // Create 20 AI sessions with messages
   for (let i = 0; i < 20; i++) {
@@ -389,7 +389,7 @@ async function main() {
       });
     }
   }
-  console.log('Created 20 AI sessions with messages');
+  globalThis.console.log('Created 20 AI sessions with messages');
 
   // Create notifications
   for (let i = 0; i < 100; i++) {
@@ -405,14 +405,14 @@ async function main() {
       },
     });
   }
-  console.log('Created 100 notifications');
+  globalThis.console.log('Created 100 notifications');
 
-  console.log('Seeding complete!');
+  globalThis.console.log('Seeding complete!');
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    globalThis.console.error(e);
     process.exit(1);
   })
   .finally(async () => {

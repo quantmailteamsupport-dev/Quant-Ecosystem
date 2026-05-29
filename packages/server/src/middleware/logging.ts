@@ -3,7 +3,14 @@
 // Structured request/response logging with timing, correlation, and formatting
 // ============================================================================
 
-import type { Request, Response, NextFunction, Middleware, LoggingOptions, LogEntry } from '../types';
+import type {
+  Request,
+  Response,
+  NextFunction,
+  Middleware,
+  LoggingOptions,
+  LogEntry,
+} from '../types';
 
 // ----------------------------------------------------------------------------
 // Log Level Enum
@@ -87,7 +94,7 @@ export function loggingMiddleware(options?: LoggingOptions): Middleware {
         ...entry,
         timestamp: new Date().toISOString(),
       });
-      console.log(incomingMsg);
+      globalThis.console.log(incomingMsg);
     }
 
     // Intercept response to log completion with timing
@@ -114,13 +121,13 @@ export function loggingMiddleware(options?: LoggingOptions): Middleware {
         const msg = config.formatter(completionEntry);
         switch (level) {
           case 'error':
-            console.error(msg);
+            globalThis.console.error(msg);
             break;
           case 'warn':
-            console.warn(msg);
+            globalThis.console.warn(msg);
             break;
           default:
-            console.log(msg);
+            globalThis.console.log(msg);
         }
       }
     };
@@ -280,7 +287,7 @@ export function accessLog(): Middleware {
         `"${req.headers['user-agent'] || '-'}"`,
         `${duration}ms`,
       ].join(' ');
-      console.log(logLine);
+      globalThis.console.log(logLine);
       originalJson(data);
     };
 

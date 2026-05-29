@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@quant/common": "workspace:*",
     "@simplewebauthn/server": "^13.1.1",
     "argon2": "^0.43.0",
     "jose": "^6.0.11",

@@ -226,7 +226,7 @@ export class FixtureManager {
         await teardown();
       } catch (err) {
         // Log but don't throw during cleanup
-        console.error(`Error tearing down fixture "${name}":`, err);
+        globalThis.console.error(`Error tearing down fixture "${name}":`, err);
       }
     }
 

@@ -20,7 +20,7 @@ export function getQuantmaxTools(): AITool[] {
         args: Record<string, unknown>,
         _context: AssistantContext,
       ): Promise<AIToolResult> => {
-        console.log('[quantmax] findMatches:', args);
+        globalThis.console.log('[quantmax] findMatches:', args);
         return {
           success: true,
           data: { matches: [], totalCount: 0 },
@@ -38,7 +38,7 @@ export function getQuantmaxTools(): AITool[] {
         args: Record<string, unknown>,
         _context: AssistantContext,
       ): Promise<AIToolResult> => {
-        console.log('[quantmax] startVideoChat:', args);
+        globalThis.console.log('[quantmax] startVideoChat:', args);
         return {
           success: true,
           data: { sessionId: `vc_${Date.now()}`, userId: args['userId'] },

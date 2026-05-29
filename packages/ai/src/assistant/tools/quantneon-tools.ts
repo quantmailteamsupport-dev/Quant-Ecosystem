@@ -22,7 +22,7 @@ export function getQuantneonTools(): AITool[] {
         args: Record<string, unknown>,
         _context: AssistantContext,
       ): Promise<AIToolResult> => {
-        console.log('[quantneon] editPhoto:', args);
+        globalThis.console.log('[quantneon] editPhoto:', args);
         return {
           success: true,
           data: {
@@ -50,7 +50,7 @@ export function getQuantneonTools(): AITool[] {
         args: Record<string, unknown>,
         _context: AssistantContext,
       ): Promise<AIToolResult> => {
-        console.log('[quantneon] applyFilter:', args);
+        globalThis.console.log('[quantneon] applyFilter:', args);
         return {
           success: true,
           data: { photoId: args['photoId'], filter: args['filter'] },

@@ -18,7 +18,7 @@ export function getQuantmailTools(): AITool[] {
         args: Record<string, unknown>,
         _context: AssistantContext,
       ): Promise<AIToolResult> => {
-        console.log('[quantmail] composeEmail:', args);
+        globalThis.console.log('[quantmail] composeEmail:', args);
         return {
           success: true,
           data: { emailId: `email_${Date.now()}`, to: args['to'], subject: args['subject'] },
@@ -42,7 +42,7 @@ export function getQuantmailTools(): AITool[] {
         args: Record<string, unknown>,
         _context: AssistantContext,
       ): Promise<AIToolResult> => {
-        console.log('[quantmail] searchEmails:', args);
+        globalThis.console.log('[quantmail] searchEmails:', args);
         return {
           success: true,
           data: { results: [], totalCount: 0 },
@@ -64,7 +64,7 @@ export function getQuantmailTools(): AITool[] {
         args: Record<string, unknown>,
         _context: AssistantContext,
       ): Promise<AIToolResult> => {
-        console.log('[quantmail] summarizeThread:', args);
+        globalThis.console.log('[quantmail] summarizeThread:', args);
         return {
           success: true,
           data: { summary: 'Thread summary pending', keyPoints: [] },

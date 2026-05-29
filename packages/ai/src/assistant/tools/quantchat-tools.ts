@@ -17,7 +17,7 @@ export function getQuantchatTools(): AITool[] {
         args: Record<string, unknown>,
         _context: AssistantContext,
       ): Promise<AIToolResult> => {
-        console.log('[quantchat] sendMessage:', args);
+        globalThis.console.log('[quantchat] sendMessage:', args);
         return {
           success: true,
           data: { messageId: `msg_${Date.now()}`, recipient: args['recipient'], sent: true },
@@ -40,7 +40,7 @@ export function getQuantchatTools(): AITool[] {
         args: Record<string, unknown>,
         _context: AssistantContext,
       ): Promise<AIToolResult> => {
-        console.log('[quantchat] createGroupChat:', args);
+        globalThis.console.log('[quantchat] createGroupChat:', args);
         return {
           success: true,
           data: { groupId: `group_${Date.now()}`, name: args['name'] },
@@ -58,7 +58,7 @@ export function getQuantchatTools(): AITool[] {
         args: Record<string, unknown>,
         _context: AssistantContext,
       ): Promise<AIToolResult> => {
-        console.log('[quantchat] searchContacts:', args);
+        globalThis.console.log('[quantchat] searchContacts:', args);
         return {
           success: true,
           data: { results: [{ username: 'john_doe', displayName: 'John Doe' }] },

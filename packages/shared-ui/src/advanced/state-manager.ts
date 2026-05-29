@@ -73,12 +73,12 @@ export function loggerMiddleware<S>(): Middleware<S> {
       nextState,
       timestamp: Date.now(),
     };
-    if (typeof console !== 'undefined' && console.groupCollapsed) {
-      console.groupCollapsed(`Action: ${action.type}`);
-      console.log('Previous State:', logEntry.prevState);
-      console.log('Action:', action);
-      console.log('Next State:', logEntry.nextState);
-      console.groupEnd();
+    if (typeof console !== 'undefined' && globalThis.console.groupCollapsed) {
+      globalThis.console.groupCollapsed(`Action: ${action.type}`);
+      globalThis.console.log('Previous State:', logEntry.prevState);
+      globalThis.console.log('Action:', action);
+      globalThis.console.log('Next State:', logEntry.nextState);
+      globalThis.console.groupEnd();
     }
     return result;
   };
