@@ -14,8 +14,40 @@ export const RecordSpendSchema = z.object({
   source: z.enum(['byoc', 'credits', 'allowance', 'local']),
 });
 
+/**
+ * Per-token rates used to estimate "avoided cloud cost" when inference runs
+ * locally. Defaults use GPT-4o-mini pricing as a reasonable baseline for the
+ * cost a user would have paid if routed to a cloud provider.
+ */
+export interface LocalSavingsRateConfig {
+  /** Cost per input token that would have been charged by cloud (default: GPT-4o-mini $0.15/1M = 0.00000015) */
+  inputTokenRate: number;
+  /** Cost per output token that would have been charged by cloud (default: GPT-4o-mini $0.60/1M = 0.0000006) */
+  outputTokenRate: number;
+}
+
+export interface SpendDashboardConfig {
+  /** Per-token rates for computing local inference savings estimates */
+  localSavingsRates: LocalSavingsRateConfig;
+}
+
+/**
+ * Default rates based on GPT-4o-mini pricing (as of 2024):
+ * - Input: $0.15 per 1M tokens = $0.00000015 per token
+ * - Output: $0.60 per 1M tokens = $0.0000006 per token
+ */
+const DEFAULT_LOCAL_SAVINGS_RATES: LocalSavingsRateConfig = {
+  inputTokenRate: 0.00000015,
+  outputTokenRate: 0.0000006,
+};
+
 export class SpendDashboardService {
   private readonly records: Map<string, SpendRecord[]> = new Map();
+  private readonly localSavingsRates: LocalSavingsRateConfig;
+
+  constructor(config: Partial<SpendDashboardConfig> = {}) {
+    this.localSavingsRates = config.localSavingsRates ?? DEFAULT_LOCAL_SAVINGS_RATES;
+  }
 
   recordSpend(record: SpendRecord): void {
     RecordSpendSchema.parse(record);
@@ -51,7 +83,9 @@ export class SpendDashboardService {
       byDay.set(dayKey, (byDay.get(dayKey) ?? 0) + r.cost);
 
       if (r.source === 'local') {
-        savingsFromLocal += r.tokensInput * 0.001 + r.tokensOutput * 0.002;
+        savingsFromLocal +=
+          r.tokensInput * this.localSavingsRates.inputTokenRate +
+          r.tokensOutput * this.localSavingsRates.outputTokenRate;
       }
     }
 
@@ -124,7 +158,9 @@ export class SpendDashboardService {
 
     for (const r of userRecords) {
       if (r.source === 'local') {
-        savings += r.tokensInput * 0.001 + r.tokensOutput * 0.002;
+        savings +=
+          r.tokensInput * this.localSavingsRates.inputTokenRate +
+          r.tokensOutput * this.localSavingsRates.outputTokenRate;
       }
     }
 

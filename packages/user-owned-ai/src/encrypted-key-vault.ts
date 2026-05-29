@@ -15,19 +15,42 @@ export const StoreKeySchema = z.object({
   apiKey: z.string().min(1),
 });
 
+/**
+ * TEST-ONLY default salt. In production, `masterSecret` MUST be provided via
+ * environment variable or secret manager. Using this default means all vault
+ * instances share the same encryption key, which is unsuitable for any
+ * deployment handling real user credentials.
+ */
+const TEST_ONLY_DEFAULT_SALT = 'quant-vault-default-salt';
+
 const DEFAULT_CONFIG: KeyVaultConfig = {
   encryptionAlgorithm: 'aes-256-gcm',
-  keyDerivationSalt: 'quant-vault-default-salt',
+  keyDerivationSalt: TEST_ONLY_DEFAULT_SALT,
 };
 
+/**
+ * Encrypted key vault using AES-256-GCM with scrypt-derived master key.
+ *
+ * SECURITY NOTE: The `masterSecret` parameter controls the encryption master key.
+ * In production, this MUST come from an environment variable or secret manager
+ * (e.g., `process.env.VAULT_MASTER_SECRET`). The default value is only suitable
+ * for tests and local development. Sharing the same master secret across all
+ * users means compromise of the secret exposes all stored credentials.
+ */
 export class EncryptedKeyVault {
   private readonly config: KeyVaultConfig;
   private readonly entries: Map<string, EncryptedKeyEntry[]> = new Map();
   private readonly masterKey: Buffer;
 
-  constructor(config: Partial<KeyVaultConfig> = {}) {
+  /**
+   * @param masterSecret - Secret used to derive the AES-256 encryption key.
+   *   In production, pass a value from `process.env` or a secrets manager.
+   *   The default is TEST-ONLY and must not be used in deployed environments.
+   * @param config - Optional additional vault configuration.
+   */
+  constructor(masterSecret: string = TEST_ONLY_DEFAULT_SALT, config: Partial<KeyVaultConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
-    this.masterKey = scryptSync(this.config.keyDerivationSalt, 'quant-salt', 32);
+    this.masterKey = scryptSync(masterSecret, 'quant-salt', 32);
   }
 
   storeKey(userId: string, provider: string, apiKey: string): EncryptedKeyEntry {

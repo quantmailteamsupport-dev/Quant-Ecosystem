@@ -58,6 +58,16 @@ export class DailyAllowanceService {
     return { ...state };
   }
 
+  /**
+   * Deducts credits from a user's daily allowance.
+   *
+   * NOTE: This in-memory implementation relies on synchronous, single-threaded
+   * execution within a single Node.js event loop tick. The check-then-act
+   * pattern (verify remaining >= requested, then decrement) is NOT safe under
+   * concurrent access. Any database-backed or multi-process adaptation must
+   * use an atomic decrement (e.g., compare-and-swap or database-level locking)
+   * to prevent over-consumption.
+   */
   consumeAllowance(userId: string, credits: number): DailyAllowanceState {
     ConsumeAllowanceSchema.parse({ userId, credits });
 

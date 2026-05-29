@@ -29,5 +29,6 @@ export { LocalFirstRouter } from './local-first-router.js';
 export type { RoutingDecision, InferenceRoutingRequest } from './local-first-router.js';
 export { ModelRegistry } from './model-registry.js';
 export { SpendDashboardService, RecordSpendSchema } from './spend-dashboard.service.js';
+export type { LocalSavingsRateConfig, SpendDashboardConfig } from './spend-dashboard.service.js';
 export { CreatorEarningService, CreatorEarningEventSchema } from './creator-earning.service.js';
 export type { EarningsSummary, EarningShare } from './creator-earning.service.js';

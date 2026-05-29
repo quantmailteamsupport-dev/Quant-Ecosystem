@@ -98,7 +98,9 @@ describe('SpendDashboardService', () => {
   });
 
   it('calculates local savings correctly', () => {
-    const service = new SpendDashboardService();
+    const service = new SpendDashboardService({
+      localSavingsRates: { inputTokenRate: 0.001, outputTokenRate: 0.002 },
+    });
     service.recordSpend(
       makeRecord({ source: 'local', tokensInput: 1000, tokensOutput: 500, cost: 0 }),
     );
