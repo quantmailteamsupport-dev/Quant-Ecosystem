@@ -2,7 +2,7 @@
   "id": "FEAT-004",
   "type": "feat",
   "description": "Phase 81: Create @quant/teams package for workspace/teams edition - org accounts, SSO/SCIM, admin console, shared workspaces, team agents, compliance, per-seat pricing.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create packages/teams/ with package.json (name: @quant/teams, deps: zod, pino, @quant/common workspace:*), tsconfig.json extending ../../tsconfig.json",
     "Create src/types.ts with types: Organization (id, name, domain, plan, seatCount, maxSeats, ssoEnabled, scimEnabled, createdAt), OrgMember (id, orgId, userId, role: 'owner'|'admin'|'member'|'guest', joinedAt, seatType), SSOConfig (id, orgId, provider: 'saml'|'oidc', entityId, metadataUrl, certificate, mappings), SCIMConfig (id, orgId, endpoint, token, syncEnabled, lastSync), AdminPolicy (id, orgId, name, rules[], scope, enforcement), SharedWorkspace (id, orgId, name, members[], permissions, resources[], createdAt), TeamAgent (id, orgId, name, capabilities[], assignedTo[], policy), SeatLicense (orgId, tier: 'basic'|'standard'|'enterprise', pricePerSeat, totalSeats, usedSeats), ComplianceRule (id, orgId, type: 'retention'|'dlp'|'audit'|'geo-restriction', config, enabled), AuditEntry (id, orgId, actorId, action, resource, timestamp, metadata)",
@@ -32,5 +32,5 @@
     "source /root/.nvm/nvm.sh && nvm use 22 && cd /projects/sandbox/Quant-Ecosystem && pnpm test --filter=@quant/teams"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 47 tests pass across 5 test files. Typecheck clean. Prettier reformatted via lint-staged. Package exports all 8 service classes as required."
 }
