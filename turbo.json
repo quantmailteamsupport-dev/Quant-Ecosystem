@@ -1,5 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalPassThroughEnv": ["NODE_OPTIONS", "NEXT_TELEMETRY_DISABLED"],
   "tasks": {
     "lint": {},
     "typecheck": {
