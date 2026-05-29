@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import rateLimit from '@fastify/rate-limit';
 import { GitUploadPackService } from '../services/git-upload-pack.js';
 import { GitReceivePackService } from '../services/git-receive-pack.js';
 import { GitHooksService } from '../services/hooks.js';
@@ -29,6 +30,15 @@ export default async function gitHttpRoutes(fastify: FastifyInstance): Promise<v
   const hooksService = new GitHooksService();
   const receivePack = new GitReceivePackService(hooksService);
   const authService = new GitAuthService();
+
+  // Rate limiting: 100 requests per minute per IP (general)
+  await fastify.register(rateLimit, {
+    max: 100,
+    timeWindow: '1 minute',
+    errorResponseBuilder: () => ({
+      error: 'Rate limit exceeded. Try again later.',
+    }),
+  });
 
   const requireAuth = async (request: FastifyRequest, reply: FastifyReply, scope: string) => {
     const token = extractToken(request);
@@ -150,6 +160,14 @@ export default async function gitHttpRoutes(fastify: FastifyInstance): Promise<v
     Params: { owner: string; repo: string };
   }>(
     '/:owner/:repo/git-receive-pack',
+    {
+      config: {
+        rateLimit: {
+          max: 30,
+          timeWindow: '1 minute',
+        },
+      },
+    },
     async (
       request: FastifyRequest<{
         Params: { owner: string; repo: string };
