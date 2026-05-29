@@ -1,0 +1,7 @@
+{
+  "task_id": "task-phase-64-wave1-quantads",
+  "task_description": "Wave 1 - Convert QuantAds to Next.js App Router with @quant/shared-ui adoption, brand tokens, dark mode, and proper route pages for campaign management, targeting, and analytics. Phase 64.1 tests already pass (all 9 packages meet targets), auth typecheck is already green.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}
