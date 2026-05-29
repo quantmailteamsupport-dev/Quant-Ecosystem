@@ -19,8 +19,16 @@ export class AutomateVoiceBridge {
   async handleAutomationCommand(transcript: string): Promise<AutomateVoiceResult> {
     const lower = transcript.toLowerCase().trim();
 
+    if (lower.length > 500) {
+      return {
+        success: false,
+        action: 'unknown',
+        spokenResponse: 'Command is too long to process.',
+      };
+    }
+
     // Pattern: "every day at X do Y" or "every X do Y"
-    const scheduleMatch = lower.match(/every\s+(.+?)\s+(?:do|post|send|run|create|forward)\s+(.+)/);
+    const scheduleMatch = lower.match(/every\s+(\S+(?:\s+\S+)*)\s+(?:do|post|send|run|create|forward)\s+(.+)/);
     if (scheduleMatch) {
       const schedule = scheduleMatch[1]!;
       const action = scheduleMatch[2]!;
@@ -42,7 +50,7 @@ export class AutomateVoiceBridge {
     }
 
     // Pattern: "when X happens do Y" or "when I get X forward to Y"
-    const eventMatch = lower.match(/when\s+(.+?)\s+(?:do|forward|send|run|create)\s+(.+)/);
+    const eventMatch = lower.match(/when\s+(\S+(?:\s+\S+)*)\s+(?:do|forward|send|run|create)\s+(.+)/);
     if (eventMatch) {
       const trigger = eventMatch[1]!;
       const action = eventMatch[2]!;
