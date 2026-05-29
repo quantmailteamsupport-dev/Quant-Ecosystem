@@ -50,6 +50,7 @@ describe('ShotSequencer', () => {
       expect(result).toHaveLength(2);
       expect(result[0]!.sceneId).toBe('scene-1');
       expect(result[1]!.sceneId).toBe('scene-2');
+      expect(result[1]!.transition).toBe('dissolve');
     });
   });
 });

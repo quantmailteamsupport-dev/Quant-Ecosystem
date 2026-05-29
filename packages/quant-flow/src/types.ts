@@ -16,6 +16,8 @@ export interface Shot {
   cameraAngle: CameraAngle;
   framing: Framing;
   motion: MotionType;
+  // Transition leading into this shot (set when sequenced via addTransition).
+  transition?: TransitionStyle;
 }
 
 export interface Storyboard {

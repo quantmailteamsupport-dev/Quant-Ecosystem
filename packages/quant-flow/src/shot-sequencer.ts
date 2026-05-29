@@ -18,7 +18,9 @@ export class ShotSequencer {
     return newOrder.filter((idx) => idx >= 0 && idx < shots.length).map((idx) => shots[idx]!);
   }
 
-  addTransition(_shotA: Shot, shotB: Shot, _type: TransitionStyle): Shot[] {
-    return [{ ..._shotA }, { ...shotB }];
+  addTransition(shotA: Shot, shotB: Shot, type: TransitionStyle): Shot[] {
+    // Record the transition on the incoming shot so the choice is observable
+    // downstream (renderers read shotB.transition to drive the cut/dissolve/etc).
+    return [{ ...shotA }, { ...shotB, transition: type }];
   }
 }

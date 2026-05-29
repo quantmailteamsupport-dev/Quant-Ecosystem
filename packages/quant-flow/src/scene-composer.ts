@@ -3,7 +3,7 @@ import type { Scene, TransitionStyle } from './types.js';
 export class SceneComposer {
   composeFromText(text: string): Scene[] {
     const paragraphs = text
-      .split(/\n\n+/)
+      .split(/\r?\n\s*\r?\n+/)
       .map((p) => p.trim())
       .filter((p) => p.length > 0);
 

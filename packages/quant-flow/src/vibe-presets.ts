@@ -31,14 +31,18 @@ const PRESETS: Record<VibePresetName, VibePreset> = {
   },
 };
 
+function clonePreset(preset: VibePreset): VibePreset {
+  return { ...preset, transitions: [...preset.transitions] };
+}
+
 export function getPreset(name: VibePresetName): VibePreset {
   const preset = PRESETS[name];
   if (!preset) {
     throw new Error(`Unknown vibe preset: ${name}`);
   }
-  return preset;
+  return clonePreset(preset);
 }
 
 export function listPresets(): VibePreset[] {
-  return Object.values(PRESETS);
+  return Object.values(PRESETS).map(clonePreset);
 }

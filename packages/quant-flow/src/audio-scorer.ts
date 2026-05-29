@@ -35,6 +35,12 @@ export class AudioScorer {
   }
 
   addVoiceover(text: string, startAt: number, duration: number): AudioScore {
+    if (startAt < 0 || !Number.isFinite(startAt)) {
+      throw new RangeError('startAt must be a finite value >= 0');
+    }
+    if (duration <= 0 || !Number.isFinite(duration)) {
+      throw new RangeError('duration must be a finite value > 0');
+    }
     return {
       type: 'voiceover',
       prompt: text,
