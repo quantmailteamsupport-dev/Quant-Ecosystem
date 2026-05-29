@@ -66,7 +66,6 @@ async function main(): Promise<void> {
       {
         mode: 'health-only',
         reason: 'JWT_SECRET not configured or too short (minimum 32 characters)',
-        secretLength: jwtSecret.length,
       },
       'WebSocket server disabled - running in degraded health-only mode',
     );
