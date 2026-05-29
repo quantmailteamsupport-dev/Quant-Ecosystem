@@ -3,7 +3,8 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "outputs": []
+      "inputs": ["prisma/schema.prisma", "src/**"],
+      "outputs": ["../../node_modules/.prisma/client/**"]
     }
   }
 }
