@@ -21,7 +21,7 @@ export class BrandPartnershipService {
 
   createListing(creatorId: string, requirements: string): CreatorListing {
     const listing: CreatorListing = {
-      id: `listing-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: `listing-${crypto.randomUUID()}`,
       creatorId,
       requirements,
       minDealValue: 0,
@@ -48,7 +48,7 @@ export class BrandPartnershipService {
 
   proposeDeal(brandId: string, creatorId: string, terms: string): BrandPartnership {
     const partnership: BrandPartnership = {
-      id: `partnership-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: `partnership-${crypto.randomUUID()}`,
       creatorId,
       brandId,
       terms,

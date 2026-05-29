@@ -2,11 +2,47 @@
 // @quant/teams - Types
 // ============================================================================
 
+import { z } from 'zod';
+
 export type OrgPlan = 'free' | 'starter' | 'business' | 'enterprise';
 export type OrgMemberRole = 'owner' | 'admin' | 'member' | 'guest';
 export type SSOProvider = 'saml' | 'oidc';
 export type SeatTier = 'basic' | 'standard' | 'enterprise';
 export type ComplianceRuleType = 'retention' | 'dlp' | 'audit' | 'geo-restriction';
+
+// ---------- Zod Schemas ----------
+
+export const OrgPlanSchema = z.enum(['free', 'starter', 'business', 'enterprise']);
+export const OrgMemberRoleSchema = z.enum(['owner', 'admin', 'member', 'guest']);
+
+export const OrganizationSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  domain: z.string().min(1),
+  plan: OrgPlanSchema,
+  seatCount: z.number().nonnegative(),
+  maxSeats: z.number().positive(),
+  ssoEnabled: z.boolean(),
+  scimEnabled: z.boolean(),
+  createdAt: z.number(),
+});
+
+export const OrgMemberSchema = z.object({
+  id: z.string().min(1),
+  orgId: z.string().min(1),
+  userId: z.string().min(1),
+  role: OrgMemberRoleSchema,
+  joinedAt: z.number(),
+  seatType: z.enum(['basic', 'standard', 'enterprise']),
+});
+
+export const CreateOrgInputSchema = z.object({
+  name: z.string().min(1),
+  domain: z.string().min(1),
+  plan: OrgPlanSchema,
+});
+
+// ---------- Interfaces ----------
 
 export interface Organization {
   id: string;

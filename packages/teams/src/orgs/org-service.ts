@@ -1,10 +1,12 @@
 import type { Organization, OrgMember, OrgMemberRole, OrgPlan } from '../types.js';
+import { CreateOrgInputSchema } from '../types.js';
 
 export class OrgService {
   private orgs = new Map<string, Organization>();
   private members = new Map<string, OrgMember[]>();
 
   async create(name: string, domain: string, plan: OrgPlan): Promise<Organization> {
+    CreateOrgInputSchema.parse({ name, domain, plan });
     const org: Organization = {
       id: crypto.randomUUID(),
       name,

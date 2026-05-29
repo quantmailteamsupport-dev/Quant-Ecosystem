@@ -7,6 +7,27 @@ const RecordTipInputSchema = z.object({
   amount: z.number().min(0),
 });
 
+const RecordIAPInputSchema = z.object({
+  userId: z.string().min(1),
+  creatorId: z.string().min(1),
+  itemId: z.string().min(1),
+  price: z.number().positive(),
+});
+
+const RecordAdRevenueInputSchema = z.object({
+  creatorId: z.string().min(1),
+  adId: z.string().min(1),
+  impressions: z.number().nonnegative(),
+  cpm: z.number().nonnegative(),
+});
+
+const RecordRemixRoyaltyInputSchema = z.object({
+  originalCreator: z.string().min(1),
+  remixer: z.string().min(1),
+  contentId: z.string().min(1),
+  amount: z.number().positive(),
+});
+
 export class MonetizationEngine {
   private events: MonetizationEvent[] = [];
 
@@ -26,6 +47,7 @@ export class MonetizationEngine {
   }
 
   recordIAP(userId: string, creatorId: string, itemId: string, price: number): MonetizationEvent {
+    RecordIAPInputSchema.parse({ userId, creatorId, itemId, price });
     const platformFee = price * 0.3;
     const creatorAmount = price - platformFee;
     const event: MonetizationEvent = {
@@ -47,6 +69,7 @@ export class MonetizationEngine {
     impressions: number,
     cpm: number,
   ): MonetizationEvent {
+    RecordAdRevenueInputSchema.parse({ creatorId, adId, impressions, cpm });
     const totalRevenue = (impressions / 1000) * cpm;
     const creatorShare = totalRevenue * 0.55;
     const event: MonetizationEvent = {
@@ -68,6 +91,7 @@ export class MonetizationEngine {
     contentId: string,
     amount: number,
   ): MonetizationEvent {
+    RecordRemixRoyaltyInputSchema.parse({ originalCreator, remixer, contentId, amount });
     const event: MonetizationEvent = {
       id: `royalty-${crypto.randomUUID()}`,
       type: 'remix_royalty',
