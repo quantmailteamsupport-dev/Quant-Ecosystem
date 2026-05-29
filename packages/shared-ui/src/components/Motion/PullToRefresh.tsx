@@ -49,7 +49,35 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
   }, [onRefresh, threshold, refreshing, y]);
 
   if (!shouldAnimate) {
-    return <div className={`relative overflow-hidden ${className}`}>{children}</div>;
+    // Reduced-motion: keep the drag gesture so users can still trigger refresh,
+    // but use instant (duration: 0) transitions instead of spring physics.
+    const instantTransition = { duration: 0 };
+    return (
+      <div className={`relative overflow-hidden ${className}`}>
+        <motion.div
+          className="flex items-center justify-center py-2"
+          style={{ opacity: indicatorOpacity }}
+        >
+          <motion.div
+            className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full"
+            animate={refreshing ? { rotate: 360 } : undefined}
+            transition={
+              refreshing ? { repeat: Infinity, duration: 0.8, ease: 'linear' } : undefined
+            }
+          />
+        </motion.div>
+        <motion.div
+          drag="y"
+          dragConstraints={{ top: 0, bottom: threshold }}
+          dragElastic={0.4}
+          onDragEnd={handleDragEnd}
+          style={{ y }}
+          transition={instantTransition}
+        >
+          {children}
+        </motion.div>
+      </div>
+    );
   }
 
   return (

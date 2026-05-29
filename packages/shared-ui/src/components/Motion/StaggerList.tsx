@@ -74,15 +74,11 @@ export function StaggerList({
             (typeof child.type === 'string' && child.type === resolvedChildAs))
         ) {
           // Child is already the same element type as the wrapper would be.
-          // Clone its props onto the motion element to avoid nesting (e.g. li > li).
-          const childProps = child.props as Record<string, any>;
+          // Spread all of the child's props onto the motion element to avoid nesting (e.g. li > li).
+          const { children: childContent, ...restProps } = child.props as Record<string, any>;
           return (
-            <MotionChild
-              variants={itemVariants}
-              className={childProps.className}
-              style={childProps.style}
-            >
-              {childProps.children}
+            <MotionChild variants={itemVariants} {...restProps}>
+              {childContent}
             </MotionChild>
           );
         }

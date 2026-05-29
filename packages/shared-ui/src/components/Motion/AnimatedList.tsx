@@ -38,16 +38,6 @@ const itemVariants = {
   },
 };
 
-const reducedContainerVariants = {
-  hidden: { opacity: 1 },
-  visible: { opacity: 1 },
-};
-
-const reducedItemVariants = {
-  hidden: { opacity: 1, y: 0 },
-  visible: { opacity: 1, y: 0 },
-};
-
 export const AnimatedList: React.FC<AnimatedListProps> = ({
   children,
   staggerDelay = 0.05,
@@ -60,16 +50,11 @@ export const AnimatedList: React.FC<AnimatedListProps> = ({
 
   if (!shouldAnimate) {
     return (
-      <motion.div
-        variants={reducedContainerVariants}
-        initial="hidden"
-        animate="visible"
-        className={className}
-      >
+      <div className={className}>
         {React.Children.map(children, (child) => (
-          <motion.div variants={reducedItemVariants}>{child}</motion.div>
+          <div>{child}</div>
         ))}
-      </motion.div>
+      </div>
     );
   }
 
