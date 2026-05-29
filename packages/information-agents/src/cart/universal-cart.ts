@@ -27,7 +27,7 @@ export class UniversalCart {
   }
 
   getCart(userId: string): UniversalCartData {
-    const items = this.carts.get(userId) ?? [];
+    const items = [...(this.carts.get(userId) ?? [])];
     const sources = [...new Set(items.map((i) => i.source))];
     const totalEstimate = items.reduce((sum, i) => sum + i.price, 0);
     return {
@@ -50,8 +50,11 @@ export class UniversalCart {
 
     const redirectUrls = new Map<string, string>();
     for (const [source, sourceItems] of grouped) {
-      const ids = sourceItems.map((i) => i.id).join(',');
-      redirectUrls.set(source, `https://${source}/checkout?items=${ids}`);
+      const params = new URLSearchParams();
+      for (const item of sourceItems) {
+        params.append('items', item.id);
+      }
+      redirectUrls.set(source, `https://${source}/checkout?${params.toString()}`);
     }
     return { redirectUrls };
   }

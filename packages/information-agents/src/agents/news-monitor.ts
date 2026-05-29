@@ -21,10 +21,10 @@ export class NewsMonitorAgent {
 
   getConfig(): MonitorConfig {
     return {
-      topics: this.topics,
-      sources: this.sources,
+      topics: [...this.topics],
+      sources: [...this.sources],
       frequency: this.frequency,
-      filters: this.filters,
+      filters: { ...this.filters },
     };
   }
 

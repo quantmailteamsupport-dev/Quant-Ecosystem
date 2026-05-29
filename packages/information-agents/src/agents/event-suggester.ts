@@ -48,13 +48,14 @@ export class EventSuggesterAgent {
   }
 
   private findFreeSlots(calendar: CalendarEntry[]): number[] {
-    const occupiedDays = new Set(calendar.map((e) => e.date));
+    const toDayKey = (ts: number): number => Math.floor(ts / 86400000);
+    const occupiedDays = new Set(calendar.map((e) => toDayKey(e.date)));
     const slots: number[] = [];
-    const now = Date.now();
+    const today = toDayKey(Date.now());
     for (let i = 1; i <= 7; i++) {
-      const day = now + i * 86400000;
-      if (!occupiedDays.has(day)) {
-        slots.push(day);
+      const dayKey = today + i;
+      if (!occupiedDays.has(dayKey)) {
+        slots.push(dayKey * 86400000);
       }
     }
     return slots;

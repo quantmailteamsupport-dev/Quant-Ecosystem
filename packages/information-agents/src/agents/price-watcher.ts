@@ -10,6 +10,9 @@ export class PriceWatcherAgent {
   }
 
   addWatch(target: WatchTarget): void {
+    if (target.targetPrice == null || !Number.isFinite(target.targetPrice)) {
+      throw new Error(`Watch target "${target.id}" requires a finite targetPrice`);
+    }
     this.watches.set(target.id, target);
   }
 
