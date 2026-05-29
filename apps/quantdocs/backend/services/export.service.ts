@@ -23,10 +23,10 @@ export class ExportService {
     content = content.replace(/<br\s*\/?>/gi, '\n');
     content = content.replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n');
     content = content.replace(/<[^>]+>/g, '');
-    content = content.replace(/&amp;/g, '&');
     content = content.replace(/&lt;/g, '<');
     content = content.replace(/&gt;/g, '>');
     content = content.replace(/&quot;/g, '"');
+    content = content.replace(/&amp;/g, '&');
 
     lines.push(content.trim());
     return lines.join('\n');
