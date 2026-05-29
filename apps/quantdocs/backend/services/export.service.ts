@@ -165,14 +165,30 @@ ${this.escapeLatex(plainContent)}
   }
 
   private stripHtml(html: string): string {
-    return html
+    // First, convert structural tags to text equivalents
+    let text = html
       .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
-      .replace(/<[^>]+>/g, '')
+      .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n');
+
+    // Decode HTML entities before stripping tags so that encoded tags
+    // (e.g., &lt;script&gt;) are decoded and then removed by the strip loop
+    text = text
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
-      .replace(/&amp;/g, '&')
-      .trim();
+      .replace(/&amp;/g, '&');
+
+    // Repeatedly strip HTML tags until none remain to prevent
+    // incomplete multi-character sanitization (CWE-20, CWE-80, CWE-116)
+    let previous;
+    do {
+      previous = text;
+      text = text.replace(/<[^>]+>/g, '');
+    } while (text !== previous);
+
+    // Remove any remaining angle brackets to prevent HTML injection
+    text = text.replace(/</g, '').replace(/>/g, '');
+
+    return text.trim();
   }
 }
