@@ -44,7 +44,7 @@ export class ContentExtractor {
         }
 
         // Extract text from TJ arrays
-        const tjArrayRegex = /\[([^\]]*)\]\s*TJ/g;
+        const tjArrayRegex = /\[((?:[^\]\\]|\\.)*)\]\s*TJ/g;
         let tjArrayMatch: RegExpExecArray | null;
         while ((tjArrayMatch = tjArrayRegex.exec(segment)) !== null) {
           const arrayContent = tjArrayMatch[1];
