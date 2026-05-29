@@ -173,7 +173,7 @@ export class AIEngine {
             messages.push({ role: 'user', content: enrichedPrompt });
 
             const result = await generateText({
-              model: providerModel as any,
+              model: providerModel,
               messages,
               temperature: request.temperature ?? 0.7,
               maxTokens: request.maxTokens ?? model.maxOutputTokens,
@@ -279,7 +279,7 @@ export class AIEngine {
     try {
       result = await breaker.execute(async () => {
         return streamText({
-          model: providerModel as any,
+          model: providerModel,
           messages,
           temperature: request.temperature ?? 0.7,
           maxTokens: request.maxTokens ?? model.maxOutputTokens,

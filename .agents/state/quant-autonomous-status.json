@@ -1,7 +1,7 @@
 {
   "repo": "Quant-Ecosystem",
   "last_updated": "2026-05-29T16:00:00Z",
-  "current_phase": "phase-62.2-complete",
+  "current_phase": "phase-75-complete",
   "audit_reverification": "2026-05-29: Independent clean-checkout audit (see AUDIT.md). On a fresh clone the gates did NOT pass as previously claimed: typecheck/build/test/lint were all RED. Four localized root causes were fixed (ai SDK v4/v5 mismatch in engine.ts; @quant/database build emitting no dist; auth/database missing @quant/common workspace dep causing a TS6305 build-ordering race; no-console lint errors in 9 packages). After fixes, all gates pass cold: typecheck 118/118, build 94/94, test 122/122, lint 101/101, audit 0 high/critical.",
   "gates": {
     "install": "pass",
@@ -23,7 +23,7 @@
     "E2E tests are advisory only - no real browser/integration tests running",
     "No staging environment provisioned",
     "Helm/Terraform not validated against a real cluster",
-    "Moderate audit vulnerabilities remain (0 high/critical, 7 moderate) - BUG-5",
+    "Audit advisories remain (0 high/critical, 2 low + 1 moderate) - BUG-5",
     "Capacitor native builds require Xcode/Android Studio (not validated in CI)",
     "Some frontend pages still use mock data (tracked in .agents/state/mock-debt.csv)"
   ],
@@ -90,6 +90,10 @@
     "phase-59",
     "phase-60",
     "phase-61",
-    "phase-62"
+    "phase-62",
+    "phase-69",
+    "phase-73",
+    "phase-74",
+    "phase-75"
   ]
 }
