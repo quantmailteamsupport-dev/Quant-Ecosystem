@@ -88,10 +88,18 @@ export function verifySignature(
   }
 
   const params: Record<string, string> = {};
-  const regex = /(\w+)="([^"]+)"/g;
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(signatureHeader)) !== null) {
-    params[match[1]!] = match[2]!;
+  const parts = signatureHeader.split(',');
+  for (const part of parts) {
+    const eqIndex = part.indexOf('=');
+    if (eqIndex === -1) continue;
+    const key = part.slice(0, eqIndex).trim();
+    const value = part.slice(eqIndex + 1).trim();
+    // Strip surrounding quotes if present
+    if (value.startsWith('"') && value.endsWith('"')) {
+      params[key] = value.slice(1, -1);
+    } else {
+      params[key] = value;
+    }
   }
 
   const headerNames = (params['headers'] ?? '').split(' ');
