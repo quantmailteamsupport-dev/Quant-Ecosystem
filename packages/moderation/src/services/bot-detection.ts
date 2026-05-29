@@ -24,8 +24,7 @@ const DEFAULT_CONFIG: BotDetectionConfig = {
  * Classification: NAIVE
  * Reason: Heuristic scoring with fixed thresholds, no ML model
  * Production path: Train ML classifier on labeled bot/human dataset, integrate with feature pipeline
- */
-/**
+ *
  * BotDetectionService - Account bot scoring
  *
  * Evaluates accounts for bot-like behavior using signals including

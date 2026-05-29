@@ -50,12 +50,11 @@ all simulated code paths.
 | packages/ml-pipeline/src/core/time-series-forecaster.ts | NAIVE          | Moving average/exponential smoothing | Prophet, ARIMA, or neural forecasting      |
 | packages/ml-pipeline/src/core/training-pipeline.ts      | NAIVE          | Simulated training loop in JS        | PyTorch/TensorFlow training infrastructure |
 
-## ML Runtime (2 files)
+## ML Runtime (1 file)
 
-| File Path                               | Classification | Reason                                           | Production Path                              |
-| --------------------------------------- | -------------- | ------------------------------------------------ | -------------------------------------------- |
-| packages/ml-runtime/src/model-loader.ts | NAIVE          | ONNX loading interfaces, no real native bindings | Bind to onnxruntime-node native addon        |
-| packages/ml-runtime/src/index.ts        | NAIVE          | Barrel export for simulated backends             | Ensure all modules bind to real ONNX runtime |
+| File Path                               | Classification | Reason                                           | Production Path                       |
+| --------------------------------------- | -------------- | ------------------------------------------------ | ------------------------------------- |
+| packages/ml-runtime/src/model-loader.ts | NAIVE          | ONNX loading interfaces, no real native bindings | Bind to onnxruntime-node native addon |
 
 ## Search (1 file)
 
@@ -93,6 +92,6 @@ all simulated code paths.
 
 | Metric                | Count            |
 | --------------------- | ---------------- |
-| Total annotated files | 40               |
+| Total annotated files | 39               |
 | FAKE                  | 1 (csam-matcher) |
-| NAIVE                 | 39               |
+| NAIVE                 | 38               |
