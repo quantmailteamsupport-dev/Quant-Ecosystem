@@ -16,16 +16,6 @@ export interface AnimatedListProps {
   animated?: boolean;
 }
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.05,
-    },
-  },
-};
-
 const itemVariants = {
   hidden: { opacity: 0, y: 12 },
   visible: {
@@ -59,9 +49,9 @@ export const AnimatedList: React.FC<AnimatedListProps> = ({
   }
 
   const container = {
-    ...containerVariants,
+    hidden: { opacity: 0 },
     visible: {
-      ...containerVariants.visible,
+      opacity: 1,
       transition: {
         staggerChildren: staggerDelay,
       },
