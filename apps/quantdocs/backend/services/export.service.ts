@@ -154,14 +154,25 @@ ${this.escapeLatex(plainContent)}
   }
 
   private stripHtml(html: string): string {
-    return html
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
-      .replace(/<[^>]+>/g, '')
+    // First, decode HTML entities so any encoded tags become visible
+    let text = html
       .replace(/&amp;/g, '&')
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .trim();
+      .replace(/&quot;/g, '"');
+
+    // Convert specific tags to whitespace before stripping
+    text = text
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n');
+
+    // Repeatedly strip HTML tags until none remain (prevents incomplete sanitization)
+    let previous;
+    do {
+      previous = text;
+      text = text.replace(/<[^>]+>/g, '');
+    } while (text !== previous);
+
+    return text.trim();
   }
 }
