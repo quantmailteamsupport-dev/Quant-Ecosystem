@@ -22,7 +22,7 @@ export function getQuantadsTools(): AITool[] {
         args: Record<string, unknown>,
         _context: AssistantContext,
       ): Promise<AIToolResult> => {
-        console.log('[quantads] createCampaign:', args);
+        globalThis.console.log('[quantads] createCampaign:', args);
         return {
           success: true,
           data: { campaignId: `camp_${Date.now()}`, name: args['name'], budget: args['budget'] },
@@ -50,7 +50,7 @@ export function getQuantadsTools(): AITool[] {
         args: Record<string, unknown>,
         _context: AssistantContext,
       ): Promise<AIToolResult> => {
-        console.log('[quantads] getAnalytics:', args);
+        globalThis.console.log('[quantads] getAnalytics:', args);
         return {
           success: true,
           data: { impressions: 0, clicks: 0, conversions: 0, spend: 0 },

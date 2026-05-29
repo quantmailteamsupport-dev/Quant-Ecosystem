@@ -36,7 +36,7 @@ export function instrument(options?: InstrumentOptions) {
       if (!tracer) {
         if (!hasWarnedMissingTracer) {
           hasWarnedMissingTracer = true;
-          console.warn(
+          globalThis.console.warn(
             '[@quant/observability] @instrument() decorator invoked before configureInstrument() was called. ' +
               'Tracing is disabled. Call configureInstrument(tracer) during application startup.',
           );

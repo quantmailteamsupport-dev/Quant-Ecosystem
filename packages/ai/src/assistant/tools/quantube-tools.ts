@@ -17,7 +17,7 @@ export function getQuantubeTools(): AITool[] {
         args: Record<string, unknown>,
         _context: AssistantContext,
       ): Promise<AIToolResult> => {
-        console.log('[quantube] searchVideos:', args);
+        globalThis.console.log('[quantube] searchVideos:', args);
         return {
           success: true,
           data: { results: [], totalCount: 0 },
@@ -36,7 +36,7 @@ export function getQuantubeTools(): AITool[] {
         args: Record<string, unknown>,
         _context: AssistantContext,
       ): Promise<AIToolResult> => {
-        console.log('[quantube] createPlaylist:', args);
+        globalThis.console.log('[quantube] createPlaylist:', args);
         return {
           success: true,
           data: { playlistId: `playlist_${Date.now()}`, name: args['name'] },

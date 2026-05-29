@@ -334,7 +334,7 @@ export class WebSocketClient {
   private log(message: string): void {
     if (this.config.debug) {
       const timestamp = new Date().toISOString();
-      console.log(`[QuantWS ${this.config.app}] ${timestamp} - ${message}`);
+      globalThis.console.log(`[QuantWS ${this.config.app}] ${timestamp} - ${message}`);
     }
   }
 }

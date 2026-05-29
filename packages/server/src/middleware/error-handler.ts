@@ -3,7 +3,14 @@
 // Centralized error handling with AppError class and structured responses
 // ============================================================================
 
-import type { Request, Response, NextFunction, ErrorMiddleware, Middleware, ErrorResponse } from '../types';
+import type {
+  Request,
+  Response,
+  NextFunction,
+  ErrorMiddleware,
+  Middleware,
+  ErrorResponse,
+} from '../types';
 
 // ----------------------------------------------------------------------------
 // AppError Class
@@ -40,12 +47,7 @@ export class AppError extends Error {
   /** Timestamp when the error was created */
   public readonly timestamp: number;
 
-  constructor(
-    message: string,
-    statusCode: number,
-    code: string,
-    details?: unknown
-  ) {
+  constructor(message: string, statusCode: number, code: string, details?: unknown) {
     super(message);
     this.statusCode = statusCode;
     this.code = code;
@@ -165,7 +167,10 @@ export function serviceUnavailable(message: string = 'Service temporarily unavai
  * router.use(errorHandler({ includeStack: process.env.NODE_ENV !== 'production' }));
  * ```
  */
-export function errorHandler(options?: { includeStack?: boolean; version?: string }): ErrorMiddleware {
+export function errorHandler(options?: {
+  includeStack?: boolean;
+  version?: string;
+}): ErrorMiddleware {
   const includeStack = options?.includeStack || false;
   const version = options?.version || '1.0.0';
 
@@ -202,7 +207,7 @@ export function errorHandler(options?: { includeStack?: boolean; version?: strin
     }
 
     // Handle non-operational (unexpected) errors
-    console.error(`[ERROR] Unhandled error in ${req.method} ${req.path}:`, {
+    globalThis.console.error(`[ERROR] Unhandled error in ${req.method} ${req.path}:`, {
       error: error.message,
       stack: error.stack,
       requestId,

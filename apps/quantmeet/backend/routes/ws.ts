@@ -11,7 +11,7 @@ function getJwtSecret(): string {
     return secret;
   }
   if (!secret) {
-    console.warn(
+    globalThis.console.warn(
       '[SECURITY] JWT_SECRET not set - using dev-only fallback. NEVER use in production.',
     );
     return 'dev-only-insecure-jwt-secret-not-for-production-use-000';

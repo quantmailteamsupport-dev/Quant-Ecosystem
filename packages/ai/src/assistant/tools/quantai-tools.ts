@@ -26,7 +26,7 @@ export function getQuantaiTools(): AITool[] {
         args: Record<string, unknown>,
         _context: AssistantContext,
       ): Promise<AIToolResult> => {
-        console.log('[quantai] generateImage:', args);
+        globalThis.console.log('[quantai] generateImage:', args);
         return {
           success: true,
           data: {
@@ -53,7 +53,7 @@ export function getQuantaiTools(): AITool[] {
         args: Record<string, unknown>,
         _context: AssistantContext,
       ): Promise<AIToolResult> => {
-        console.log('[quantai] translateText:', args);
+        globalThis.console.log('[quantai] translateText:', args);
         return {
           success: true,
           data: {
@@ -81,7 +81,7 @@ export function getQuantaiTools(): AITool[] {
         args: Record<string, unknown>,
         _context: AssistantContext,
       ): Promise<AIToolResult> => {
-        console.log('[quantai] analyzeCode:', args);
+        globalThis.console.log('[quantai] analyzeCode:', args);
         return {
           success: true,
           data: { analysis: 'Code analysis pending', suggestions: [] },

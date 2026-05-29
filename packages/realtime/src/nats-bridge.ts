@@ -21,13 +21,13 @@ export interface NatsLogger {
 /** Default console-based logger */
 const defaultLogger: NatsLogger = {
   error(msg: string, ...args: unknown[]) {
-    console.error(`[NatsBridge] ${msg}`, ...args);
+    globalThis.console.error(`[NatsBridge] ${msg}`, ...args);
   },
   warn(msg: string, ...args: unknown[]) {
-    console.warn(`[NatsBridge] ${msg}`, ...args);
+    globalThis.console.warn(`[NatsBridge] ${msg}`, ...args);
   },
   info(msg: string, ...args: unknown[]) {
-    console.info(`[NatsBridge] ${msg}`, ...args);
+    globalThis.console.info(`[NatsBridge] ${msg}`, ...args);
   },
 };
 
