@@ -2,7 +2,7 @@
   "id": "FEAT-005",
   "type": "feat",
   "description": "Phase 82: Deepen @quant/federation package with ActivityPub adapter (publish/follow/boost), AT Protocol adapter (posts/follows/feeds), CalDAV/CardDAV sync service, IMAP/SMTP bridge interface, and public API/self-host configuration.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create src/at-protocol/ directory in packages/federation/",
     "Create src/at-protocol/at-adapter.ts with ATProtocolAdapter class: createPost(did, content), deletePost(did, uri), follow(did, targetDid), unfollow(did, targetDid), getTimeline(did, limit), getFeed(feedUri, cursor), resolveHandle(handle). AT Protocol (Bluesky) integration.",
@@ -34,5 +34,5 @@
     "source /root/.nvm/nvm.sh && nvm use 22 && cd /projects/sandbox/Quant-Ecosystem && pnpm test --filter=@quant/federation"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 160 tests pass (60 new + 100 existing). Typecheck clean. Fixed TS6133 unused-variable errors by removing unused private config fields in bridge classes and prefixing unused params with underscore. Prettier reformatted staged files via lint-staged hook."
 }
