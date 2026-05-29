@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Create the @quant/quant-studio package with .qapp format definition, Quant SDK core, sandbox runtime, build pipeline, and publish/remix system. This is the complete Phase 74 implementation in a single coherent package.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create packages/quant-studio/package.json following the pattern from packages/quant-codex/package.json. Name: @quant/quant-studio, type: module, scripts: typecheck/test/build/lint. Add zod as a dependency for schema validation.",
     "Create packages/quant-studio/tsconfig.json following the pattern from packages/quant-codex/tsconfig.json (target ES2022, module ESNext, moduleResolution bundler, composite true, outDir dist, rootDir src).",
