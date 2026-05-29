@@ -1,0 +1,44 @@
+'use client';
+
+import { Sidebar } from '@quant/shared-ui';
+import type { SidebarItem } from '@quant/shared-ui';
+import { useRouter, usePathname } from 'next/navigation';
+
+const navItems = [
+  { id: 'inbox', label: 'Inbox', icon: <span>&#128229;</span>, path: '/' },
+  { id: 'compose', label: 'Compose', icon: <span>&#9997;</span>, path: '/compose' },
+  { id: 'calendar', label: 'Calendar', icon: <span>&#128197;</span>, path: '/calendar' },
+  { id: 'contacts', label: 'Contacts', icon: <span>&#128101;</span>, path: '/contacts' },
+  { id: 'drive', label: 'Drive', icon: <span>&#128193;</span>, path: '/drive' },
+  { id: 'repos', label: 'Repos', icon: <span>&#128187;</span>, path: '/repos' },
+  { id: 'pipelines', label: 'Pipelines', icon: <span>&#9881;</span>, path: '/pipelines' },
+  { id: 'security', label: 'Security', icon: <span>&#128274;</span>, path: '/security' },
+  { id: 'settings', label: 'Settings', icon: <span>&#9881;&#65039;</span>, path: '/settings' },
+];
+
+export function AppSidebar() {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const sidebarItems: SidebarItem[] = navItems.map((item) => ({
+    id: item.id,
+    label: item.label,
+    icon: item.icon,
+    active: item.path === '/' ? pathname === '/' : (pathname ?? '').startsWith(item.path),
+    onClick: () => router.push(item.path),
+  }));
+
+  return (
+    <Sidebar
+      items={sidebarItems}
+      header={
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
+            Q
+          </div>
+          <h2 className="text-lg font-semibold">QuantMail</h2>
+        </div>
+      }
+    />
+  );
+}

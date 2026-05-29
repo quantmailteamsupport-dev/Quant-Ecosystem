@@ -1,31 +1,15 @@
 'use client';
 
-import { AppShell, Sidebar, SearchInput, Card, Badge } from '@quant/shared-ui';
-import { LoadingState, ErrorState, EmptyState, Skeleton } from '@quant/shared-ui';
-import type { SidebarItem } from '@quant/shared-ui';
+import { AppShell, SearchInput, Card, Badge } from '@quant/shared-ui';
+import { ErrorState, EmptyState, Skeleton } from '@quant/shared-ui';
 import { useInbox } from '../hooks/useInbox';
-
-const sidebarItems: SidebarItem[] = [
-  { id: 'inbox', label: 'Inbox', icon: <span>&#128229;</span>, active: true },
-  { id: 'sent', label: 'Sent', icon: <span>&#128228;</span> },
-  { id: 'drafts', label: 'Drafts', icon: <span>&#128221;</span> },
-  { id: 'starred', label: 'Starred', icon: <span>&#11088;</span> },
-  { id: 'archive', label: 'Archive', icon: <span>&#128451;</span> },
-  { id: 'trash', label: 'Trash', icon: <span>&#128465;</span> },
-];
+import { AppSidebar } from '../components/AppSidebar';
 
 export default function InboxPage() {
   const { data, isLoading, error, refetch } = useInbox();
 
   return (
-    <AppShell
-      sidebar={
-        <Sidebar
-          items={sidebarItems}
-          header={<h2 className="text-lg font-semibold">QuantMail</h2>}
-        />
-      }
-    >
+    <AppShell sidebar={<AppSidebar />}>
       <div className="flex flex-col h-full">
         <div className="p-4 border-b border-[var(--quant-border)]">
           <SearchInput placeholder="Search emails..." onChange={() => {}} />
