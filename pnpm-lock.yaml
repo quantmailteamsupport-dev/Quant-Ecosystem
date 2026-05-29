@@ -2312,6 +2312,9 @@ importers:
 
   packages/voice-first-os:
     devDependencies:
+      '@quant/quant-tools':
+        specifier: workspace:*
+        version: link:../quant-tools
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.19
