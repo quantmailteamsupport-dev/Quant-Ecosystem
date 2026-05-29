@@ -126,6 +126,13 @@ Code-level ~45-50% to Meta+Google. Production-real ~12-15%. **Breadth raced ahea
   - Make `@quant/database` Prisma generate a real turbo task with declared outputs.
 - **Hard gate:** `pnpm build` and `pnpm typecheck` pass **3 cold runs in a row** (fresh `turbo` cache, `rm -rf node_modules/.cache .turbo`) with **zero** "no output files" warnings. THEN update status JSON.
 
+#### BUG-1b — `test-and-coverage` CI job (root `vitest run --coverage`) — root-caused + partially fixed May 29 🟠
+
+- **Symptom:** the `test-and-coverage` Quality-Gates job and the `ci (22)` job were red on PRs even for docs-only changes; locally `pnpm test` (turbo, per-package) passes **121/121** but `pnpm vitest run --coverage` (root, the exact CI command) failed.
+- **Root cause (verified):** the root `vitest.config.ts` had no `include`/`exclude` and no per-file environment, so (a) it globbed **`e2e/**/*.spec.ts` Playwright specs** → **36 failed suites** (they need the Playwright runner, not vitest); (b) it ran everything in the **node** environment, so DOM-dependent unit tests (e.g. `packages/shared-ui` `sanitize.ts` / DOMPurify) silently no-op'd → **5 real failures**. `turbo test` passed because each package uses its own scoped config with `environment: 'jsdom'`.
+- **Fixed (this branch):** root `vitest.config.ts` now sets `include` (packages/apps/services `*.{test,spec}.{ts,tsx}`), `exclude` (`e2e/**`, node_modules, dist, build), and `environmentMatchGlobs` (jsdom for shared-ui + `*.tsx`); coverage `exclude` now drops non-product code. Result: **712 test files / 7724 tests pass** under the exact CI command.
+- **RESIDUAL (real debt, NOT faked):** the job still exits non-zero because real product line coverage is **~30%** vs the config's **50%** global threshold. This is genuine **BUG-2** test debt, not a config artifact. To make the check green, **write tests** (BUG-2 / Phase 64.1) — do NOT lower the threshold to pass. Note the dedicated `coverage-gate` job separately enforces 80% on auth/payments/security.
+
 ### BUG-2 — Phase 64 packages deepened in LOC but NOT in tests 🟠
 
 - **Symptom:** agent-swarm, voice-first-os, data-warehouse, wellbeing, spatial-ui, robotics-bridge, launch-beta, launch-public, dev-platform each have **exactly 1 test file**. Phase 64's gate required **≥15 (some ≥30) meaningful tests on core paths**. The gate was marked passed without being met.
