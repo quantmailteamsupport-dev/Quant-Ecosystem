@@ -199,8 +199,10 @@ export class SQLInjectionGuard {
     }
 
     if (orderBy) {
-      const safeOrderBy = this.escapeIdentifier(orderBy.replace(/\s+(ASC|DESC)$/i, ''));
-      const direction = orderBy.match(/\s+(ASC|DESC)$/i)?.[1] || 'ASC';
+      const trimmed = orderBy.trim();
+      const dirMatch = trimmed.match(/\s(ASC|DESC)$/i);
+      const safeOrderBy = this.escapeIdentifier(dirMatch ? trimmed.slice(0, dirMatch.index) : trimmed);
+      const direction = dirMatch?.[1]?.toUpperCase() || 'ASC';
       sql += ` ORDER BY ${safeOrderBy} ${direction}`;
     }
 
