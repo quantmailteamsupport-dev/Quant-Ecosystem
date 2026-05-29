@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "fix",
   "description": "Fix api-client baseUrl and wire auth: set default to localhost:3010, add NEXT_PUBLIC_API_URL env support, create auth context with login/logout/guard functionality, wire AppProviders to initialize apiClient with stored tokens on mount, add auth guard redirect to /login for unauthenticated users.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "In apps/quantmail/src/services/api-client.ts: change the default baseUrl from 'http://localhost:3001' to process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3010'.",
     "Create apps/quantmail/src/providers/auth-provider.tsx: a React context that wraps the app. On mount, read tokens from localStorage (key: 'quant_auth'), call apiClient.setTokens(). Provide login(email, password) that calls apiClient.login(), stores result in localStorage and state, and redirects to /. Provide logout() that calls apiClient.logout(), clears localStorage, redirects to /login. Provide user state (from apiClient.getUserInfo on mount if token exists). Export useAuth() hook.",
@@ -25,5 +25,5 @@
     "grep -rn \"localStorage.getItem('token')\" apps/quantmail/src/ returns 0 results (outside auth-provider)"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "LoadingState from @quant/shared-ui uses 'text' prop (not 'message'). usePathname() can return string|null in Next.js 15 types. The localStorage.getItem('token') pattern existed in hooks/useDrive.ts, hooks/useEmail.ts, hooks/useGit.ts -- all updated to use quant_auth_tokens key. The pages/ directory still has localStorage.getItem('token') patterns but those are slated for removal in FEAT-003. The api route files (src/app/api/drive/*) still reference localhost:3001 via QUANTMAIL_BACKEND_URL env var -- those are server-side routes not client-facing and use a separate env var."
 }
