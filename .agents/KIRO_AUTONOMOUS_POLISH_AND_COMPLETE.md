@@ -125,6 +125,12 @@ Code-level ~45-50% to Meta+Google. Production-real ~12-15%. **Breadth raced ahea
   - Enforce `dependsOn: ["^build"]` for `typecheck` on composite-reference packages, OR drop `composite` where unused.
   - Make `@quant/database` Prisma generate a real turbo task with declared outputs.
 - **Hard gate:** `pnpm build` and `pnpm typecheck` pass **3 cold runs in a row** (fresh `turbo` cache, `rm -rf node_modules/.cache .turbo`) with **zero** "no output files" warnings. THEN update status JSON.
+- **Progress (this branch, May 29):**
+  - ✅ `turbo.json` `build.outputs` now `["dist/**", ".next/**", "!.next/cache/**"]` (Next apps emit `.next`, not `dist`).
+  - ✅ Per-package `turbo.json` with `outputs: []` for builds that intentionally emit nothing (`packages/database` prisma-generate, `packages/governance`, `apps/marketing`, `apps/quant-mobile`, `apps/status`).
+  - ✅ Verified locally: **3 cold `pnpm build` runs = 94/94, ZERO "no output files" warnings**; cold `pnpm typecheck` = 117/117. The "no output files" warning class is now closed.
+  - ✅ `ci.yml` build step → `pnpm turbo build --concurrency=3` + `NODE_OPTIONS=--max-old-space-size=6144` to stop the parallel-Next OOM (the actual `ci (22)` flake). **Cannot repro the OOM locally** (local builds are deterministic), so this mitigation must be **confirmed on the GitHub runner** before flipping the status JSON.
+  - ⏳ Remaining for full BLOCK 0 close: confirm `ci (22)` is green over a few runs on real runners; composite project-reference race (TS6305) was not observed in cold typecheck (117/117) but keep `typecheck dependsOn ^build` in place.
 
 #### BUG-1b — `test-and-coverage` CI job (root `vitest run --coverage`) — root-caused + partially fixed May 29 🟠
 
