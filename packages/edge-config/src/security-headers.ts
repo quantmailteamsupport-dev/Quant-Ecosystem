@@ -1,20 +1,45 @@
 import type { SecurityHeader, SecurityHeadersConfig } from './types.js';
 
-export function getSecurityHeaders(): SecurityHeadersConfig {
+export type PermissionsPolicyFeature = 'camera' | 'microphone' | 'geolocation';
+
+export interface SecurityHeadersOptions {
+  permissionsPolicy?: Partial<Record<PermissionsPolicyFeature, string>>;
+  cspOverrides?: Partial<Record<string, string>>;
+}
+
+export function getSecurityHeaders(options: SecurityHeadersOptions = {}): SecurityHeadersConfig {
+  const cspDefaults: Record<string, string> = {
+    'default-src': "'self'",
+    'script-src': "'self'",
+    'style-src': "'self' 'unsafe-inline'",
+    'img-src': "'self' data: https:",
+    'connect-src': "'self' https:",
+    'font-src': "'self' data:",
+    'frame-ancestors': "'none'",
+    'base-uri': "'self'",
+    'form-action': "'self'",
+  };
+
+  const mergedCsp = { ...cspDefaults, ...options.cspOverrides };
+  const cspValue = Object.entries(mergedCsp)
+    .map(([directive, sources]) => `${directive} ${sources}`)
+    .join('; ');
+
+  const permDefaults: Record<PermissionsPolicyFeature, string> = {
+    camera: '()',
+    microphone: '()',
+    geolocation: '()',
+  };
+
+  const mergedPerm = { ...permDefaults, ...options.permissionsPolicy };
+  const permValue = Object.entries(mergedPerm)
+    .map(([feature, value]) => `${feature}=${value}`)
+    .join(', ');
+
   const headers: SecurityHeader[] = [
     {
       key: 'Content-Security-Policy',
-      value: [
-        "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-        "style-src 'self' 'unsafe-inline'",
-        "img-src 'self' data: https:",
-        "connect-src 'self' https:",
-        "font-src 'self' data:",
-        "frame-ancestors 'none'",
-        "base-uri 'self'",
-        "form-action 'self'",
-      ].join('; '),
+      value: cspValue,
     },
     {
       key: 'Strict-Transport-Security',
@@ -34,7 +59,7 @@ export function getSecurityHeaders(): SecurityHeadersConfig {
     },
     {
       key: 'Permissions-Policy',
-      value: 'camera=(), microphone=(), geolocation=()',
+      value: permValue,
     },
   ];
 
@@ -44,7 +69,7 @@ export function getSecurityHeaders(): SecurityHeadersConfig {
 export function getCSPHeader(overrides: Partial<Record<string, string>> = {}): SecurityHeader {
   const defaults: Record<string, string> = {
     'default-src': "'self'",
-    'script-src': "'self' 'unsafe-inline' 'unsafe-eval'",
+    'script-src': "'self'",
     'style-src': "'self' 'unsafe-inline'",
     'img-src': "'self' data: https:",
     'connect-src': "'self' https:",

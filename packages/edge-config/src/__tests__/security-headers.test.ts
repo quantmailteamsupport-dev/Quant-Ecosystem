@@ -14,13 +14,17 @@ describe('getSecurityHeaders', () => {
     expect(keys).toContain('Permissions-Policy');
   });
 
-  it('should have proper CSP directives', () => {
+  it('should have proper CSP directives without unsafe-inline or unsafe-eval in script-src', () => {
     const { headers } = getSecurityHeaders();
     const csp = headers.find((h) => h.key === 'Content-Security-Policy');
     expect(csp).toBeDefined();
     if (csp) {
       expect(csp.value).toContain("default-src 'self'");
-      expect(csp.value).toContain('script-src');
+      expect(csp.value).toContain("script-src 'self'");
+      // script-src should not contain unsafe-inline or unsafe-eval
+      const scriptSrc = csp.value.split(';').find((d) => d.trim().startsWith('script-src'));
+      expect(scriptSrc).not.toContain('unsafe-inline');
+      expect(scriptSrc).not.toContain('unsafe-eval');
       expect(csp.value).toContain('style-src');
       expect(csp.value).toContain('img-src');
       expect(csp.value).toContain('connect-src');
@@ -65,7 +69,7 @@ describe('getSecurityHeaders', () => {
     }
   });
 
-  it('should restrict sensitive permissions', () => {
+  it('should restrict sensitive permissions by default', () => {
     const { headers } = getSecurityHeaders();
     const pp = headers.find((h) => h.key === 'Permissions-Policy');
     expect(pp).toBeDefined();
@@ -73,6 +77,35 @@ describe('getSecurityHeaders', () => {
       expect(pp.value).toContain('camera=()');
       expect(pp.value).toContain('microphone=()');
       expect(pp.value).toContain('geolocation=()');
+    }
+  });
+
+  it('should allow overriding permissions policy per feature', () => {
+    const { headers } = getSecurityHeaders({
+      permissionsPolicy: {
+        camera: '(self)',
+        microphone: '(self)',
+      },
+    });
+    const pp = headers.find((h) => h.key === 'Permissions-Policy');
+    expect(pp).toBeDefined();
+    if (pp) {
+      expect(pp.value).toContain('camera=(self)');
+      expect(pp.value).toContain('microphone=(self)');
+      expect(pp.value).toContain('geolocation=()');
+    }
+  });
+
+  it('should allow overriding CSP directives', () => {
+    const { headers } = getSecurityHeaders({
+      cspOverrides: {
+        'script-src': "'self' 'unsafe-inline'",
+      },
+    });
+    const csp = headers.find((h) => h.key === 'Content-Security-Policy');
+    expect(csp).toBeDefined();
+    if (csp) {
+      expect(csp.value).toContain("script-src 'self' 'unsafe-inline'");
     }
   });
 
@@ -94,6 +127,7 @@ describe('getCSPHeader', () => {
     const csp = getCSPHeader();
     expect(csp.key).toBe('Content-Security-Policy');
     expect(csp.value).toContain("default-src 'self'");
+    expect(csp.value).not.toContain('unsafe-eval');
   });
 
   it('should allow overriding specific directives', () => {

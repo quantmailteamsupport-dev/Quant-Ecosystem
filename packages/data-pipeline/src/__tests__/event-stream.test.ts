@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EventStream } from '../event-stream.js';
+import { DeadLetterQueue } from '../dead-letter.js';
 import type { StreamEvent, ProcessorConfig } from '../types.js';
 
 function createMockRedis() {
@@ -22,13 +23,24 @@ function createEvent(overrides: Partial<StreamEvent> = {}): StreamEvent {
   };
 }
 
+const silentLogger = {
+  info: vi.fn(),
+  error: vi.fn(),
+  warn: vi.fn(),
+  debug: vi.fn(),
+  fatal: vi.fn(),
+  trace: vi.fn(),
+  child: vi.fn().mockReturnThis(),
+  level: 'silent',
+} as any;
+
 describe('EventStream', () => {
   let redis: ReturnType<typeof createMockRedis>;
   let stream: EventStream;
 
   beforeEach(() => {
     redis = createMockRedis();
-    stream = new EventStream({ redis, maxLen: 5000 });
+    stream = new EventStream({ redis, maxLen: 5000, logger: silentLogger });
   });
 
   describe('publish', () => {
@@ -175,6 +187,120 @@ describe('EventStream', () => {
       await stream.subscribe(config, handler);
 
       expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('should retry handler on failure up to maxRetries', async () => {
+      const config: ProcessorConfig = {
+        name: 'test-processor',
+        stream: 'events:test',
+        group: 'test-group',
+        consumer: 'consumer-1',
+        batchSize: 10,
+        blockTimeMs: 1000,
+        maxRetries: 3,
+      };
+
+      const event = createEvent();
+      const fields = [
+        'id',
+        event.id,
+        'type',
+        event.type,
+        'source',
+        event.source,
+        'timestamp',
+        String(event.timestamp),
+        'data',
+        JSON.stringify(event.data),
+      ];
+
+      let callCount = 0;
+      redis.xreadgroup.mockImplementation(async () => {
+        callCount++;
+        if (callCount === 1) {
+          return [['events:test', [['1-0', fields]]]];
+        }
+        stream.stop();
+        return null;
+      });
+
+      // Fail first 2 times, succeed on 3rd
+      const handler = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('fail 1'))
+        .mockRejectedValueOnce(new Error('fail 2'))
+        .mockResolvedValueOnce(undefined);
+
+      // Mock setTimeout to avoid actual delays
+      vi.useFakeTimers();
+      const subscribePromise = stream.subscribe(config, handler);
+      await vi.runAllTimersAsync();
+      await subscribePromise;
+      vi.useRealTimers();
+
+      expect(handler).toHaveBeenCalledTimes(3);
+      expect(redis.xack).toHaveBeenCalledWith('events:test', 'test-group', '1-0');
+    });
+
+    it('should route to DLQ after all retries exhausted', async () => {
+      const dlq = new DeadLetterQueue();
+      const dlqStream = new EventStream({
+        redis,
+        maxLen: 5000,
+        deadLetterQueue: dlq,
+        logger: silentLogger,
+      });
+
+      const config: ProcessorConfig = {
+        name: 'test-processor',
+        stream: 'events:test',
+        group: 'test-group',
+        consumer: 'consumer-1',
+        batchSize: 10,
+        blockTimeMs: 1000,
+        maxRetries: 2,
+      };
+
+      const event = createEvent();
+      const fields = [
+        'id',
+        event.id,
+        'type',
+        event.type,
+        'source',
+        event.source,
+        'timestamp',
+        String(event.timestamp),
+        'data',
+        JSON.stringify(event.data),
+      ];
+
+      let callCount = 0;
+      redis.xreadgroup.mockImplementation(async () => {
+        callCount++;
+        if (callCount === 1) {
+          return [['events:test', [['1-0', fields]]]];
+        }
+        dlqStream.stop();
+        return null;
+      });
+
+      const handler = vi.fn().mockRejectedValue(new Error('permanent failure'));
+
+      vi.useFakeTimers();
+      const subscribePromise = dlqStream.subscribe(config, handler);
+      await vi.runAllTimersAsync();
+      await subscribePromise;
+      vi.useRealTimers();
+
+      expect(handler).toHaveBeenCalledTimes(2);
+      expect(dlq.size()).toBe(1);
+      const entries = dlq.getAll();
+      expect(entries[0]?.event.id).toBe(event.id);
+      expect(entries[0]?.error).toBe('permanent failure');
+      expect(entries[0]?.attempts).toBe(2);
+      // Events are acknowledged after DLQ routing
+      expect(redis.xack).toHaveBeenCalledWith('events:test', 'test-group', '1-0');
     });
   });
 });

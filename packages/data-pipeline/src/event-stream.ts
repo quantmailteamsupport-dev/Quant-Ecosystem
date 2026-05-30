@@ -1,19 +1,27 @@
 import type Redis from 'ioredis';
+import pino from 'pino';
 import type { StreamEvent, ProcessorConfig, ProcessorHandler } from './types.js';
+import type { DeadLetterQueue } from './dead-letter.js';
 
 export interface EventStreamOptions {
   redis: Redis;
   maxLen?: number;
+  deadLetterQueue?: DeadLetterQueue;
+  logger?: pino.Logger;
 }
 
 export class EventStream {
   private readonly redis: Redis;
   private readonly maxLen: number;
+  private readonly dlq: DeadLetterQueue | undefined;
+  private readonly logger: pino.Logger;
   private running = false;
 
   constructor(options: EventStreamOptions) {
     this.redis = options.redis;
     this.maxLen = options.maxLen ?? 10000;
+    this.dlq = options.deadLetterQueue;
+    this.logger = options.logger ?? pino({ level: 'info' });
   }
 
   async publish(stream: string, event: StreamEvent): Promise<string> {
@@ -90,11 +98,63 @@ export class EventStream {
         }
 
         if (events.length > 0) {
-          await handler(events);
-          await this.acknowledge(config.stream, config.group, entryIds);
+          await this.processWithRetry(config, events, entryIds, handler);
         }
       }
     }
+  }
+
+  private async processWithRetry(
+    config: ProcessorConfig,
+    events: StreamEvent[],
+    entryIds: string[],
+    handler: ProcessorHandler,
+  ): Promise<void> {
+    let lastError: Error | undefined;
+
+    for (let attempt = 1; attempt <= config.maxRetries; attempt++) {
+      try {
+        await handler(events);
+        await this.acknowledge(config.stream, config.group, entryIds);
+        return;
+      } catch (err: unknown) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        this.logger.error(
+          { err: lastError, attempt, maxRetries: config.maxRetries, stream: config.stream },
+          'Handler failed, retrying',
+        );
+
+        if (attempt < config.maxRetries) {
+          const backoffMs = Math.min(1000 * 2 ** (attempt - 1), 30000);
+          await this.sleep(backoffMs);
+        }
+      }
+    }
+
+    // All retries exhausted - send to DLQ if available
+    this.logger.error(
+      { stream: config.stream, group: config.group, eventCount: events.length },
+      'All retries exhausted, routing to dead letter queue',
+    );
+
+    if (this.dlq) {
+      for (const event of events) {
+        this.dlq.enqueue({
+          stream: config.stream,
+          group: config.group,
+          event,
+          error: lastError?.message ?? 'Unknown error',
+          attempts: config.maxRetries,
+        });
+      }
+    }
+
+    // Acknowledge so events don't block the PEL indefinitely
+    await this.acknowledge(config.stream, config.group, entryIds);
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   async acknowledge(stream: string, group: string, ids: string[]): Promise<number> {

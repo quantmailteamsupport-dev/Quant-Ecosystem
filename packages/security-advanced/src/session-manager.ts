@@ -110,10 +110,19 @@ export class SecureSessionManager {
   }
 
   generateFingerprint(ip: string, userAgent: string, acceptLanguage: string): SessionFingerprint {
-    const hash = crypto
-      .createHash('sha256')
-      .update(`${ip}|${userAgent}|${acceptLanguage}`)
-      .digest('hex');
+    const fields =
+      this.config.fingerprintFields.length > 0
+        ? this.config.fingerprintFields
+        : ['userAgent', 'acceptLanguage'];
+
+    const fieldValues: Record<string, string> = {
+      ip,
+      userAgent,
+      acceptLanguage,
+    };
+
+    const parts = fields.map((field) => fieldValues[field] ?? '');
+    const hash = crypto.createHash('sha256').update(parts.join('|')).digest('hex');
 
     return {
       ip,

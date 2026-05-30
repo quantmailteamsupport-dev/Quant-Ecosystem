@@ -4,7 +4,7 @@ import type { SessionConfig } from '../types.js';
 
 const config: SessionConfig = {
   maxConcurrent: 3,
-  fingerprintFields: ['ip', 'userAgent', 'acceptLanguage'],
+  fingerprintFields: ['userAgent', 'acceptLanguage'],
   ttlMs: 3600000, // 1 hour
 };
 
@@ -96,5 +96,41 @@ describe('SecureSessionManager', () => {
     const fp2 = manager.generateFingerprint('1.2.3.5', 'UA2', 'fr');
 
     expect(fp1.hash).not.toBe(fp2.hash);
+  });
+
+  it('should not include IP in fingerprint by default (mobile-friendly)', () => {
+    const manager = new SecureSessionManager(config);
+    // Same UA and language, different IP - should produce same hash
+    const fp1 = manager.generateFingerprint('10.0.0.1', 'Chrome/120', 'en-US');
+    const fp2 = manager.generateFingerprint('192.168.1.1', 'Chrome/120', 'en-US');
+
+    expect(fp1.hash).toBe(fp2.hash);
+  });
+
+  it('should include IP in fingerprint when configured', () => {
+    const ipConfig: SessionConfig = {
+      ...config,
+      fingerprintFields: ['ip', 'userAgent', 'acceptLanguage'],
+    };
+    const manager = new SecureSessionManager(ipConfig);
+
+    const fp1 = manager.generateFingerprint('10.0.0.1', 'Chrome/120', 'en-US');
+    const fp2 = manager.generateFingerprint('192.168.1.1', 'Chrome/120', 'en-US');
+
+    expect(fp1.hash).not.toBe(fp2.hash);
+  });
+
+  it('should use default fields when fingerprintFields is empty', () => {
+    const emptyConfig: SessionConfig = {
+      ...config,
+      fingerprintFields: [],
+    };
+    const manager = new SecureSessionManager(emptyConfig);
+
+    // Default is ['userAgent', 'acceptLanguage'], so IP should not matter
+    const fp1 = manager.generateFingerprint('10.0.0.1', 'Chrome/120', 'en-US');
+    const fp2 = manager.generateFingerprint('192.168.1.1', 'Chrome/120', 'en-US');
+
+    expect(fp1.hash).toBe(fp2.hash);
   });
 });

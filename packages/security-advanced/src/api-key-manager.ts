@@ -4,6 +4,7 @@ import type { APIKeyConfig, APIKeyRecord, APIKeyScope } from './types.js';
 export class APIKeyManager {
   private readonly config: APIKeyConfig;
   private readonly keys: Map<string, APIKeyRecord> = new Map();
+  private readonly hashIndex: Map<string, string> = new Map(); // hashedKey -> keyId
 
   constructor(config: APIKeyConfig) {
     this.config = config;
@@ -27,34 +28,42 @@ export class APIKeyManager {
     };
 
     this.keys.set(id, record);
+    this.hashIndex.set(hashedKey, id);
     return { key, record };
   }
 
   validate(key: string): APIKeyRecord | null {
     const hashedKey = this.hashKey(key);
 
-    for (const [, record] of this.keys) {
-      if (record.revoked) {
-        continue;
-      }
-
-      const recordBuffer = Buffer.from(record.hashedKey, 'hex');
-      const inputBuffer = Buffer.from(hashedKey, 'hex');
-
-      if (recordBuffer.length !== inputBuffer.length) {
-        continue;
-      }
-
-      if (crypto.timingSafeEqual(recordBuffer, inputBuffer)) {
-        if (record.expiresAt && record.expiresAt.getTime() < Date.now()) {
-          return null;
-        }
-        record.lastUsedAt = new Date();
-        return record;
-      }
+    // O(1) lookup by hash index
+    const keyId = this.hashIndex.get(hashedKey);
+    if (!keyId) {
+      return null;
     }
 
-    return null;
+    const record = this.keys.get(keyId);
+    if (!record || record.revoked) {
+      return null;
+    }
+
+    // Constant-time comparison after lookup to prevent timing attacks
+    const recordBuffer = Buffer.from(record.hashedKey, 'hex');
+    const inputBuffer = Buffer.from(hashedKey, 'hex');
+
+    if (recordBuffer.length !== inputBuffer.length) {
+      return null;
+    }
+
+    if (!crypto.timingSafeEqual(recordBuffer, inputBuffer)) {
+      return null;
+    }
+
+    if (record.expiresAt && record.expiresAt.getTime() < Date.now()) {
+      return null;
+    }
+
+    record.lastUsedAt = new Date();
+    return record;
   }
 
   rotate(keyId: string): { key: string; record: APIKeyRecord } | null {
@@ -63,8 +72,9 @@ export class APIKeyManager {
       return null;
     }
 
-    // Revoke old key
+    // Revoke old key and remove from hash index
     existingRecord.revoked = true;
+    this.hashIndex.delete(existingRecord.hashedKey);
 
     // Generate new key with same scopes
     return this.generate(
@@ -79,6 +89,7 @@ export class APIKeyManager {
       return false;
     }
     record.revoked = true;
+    this.hashIndex.delete(record.hashedKey);
     return true;
   }
 

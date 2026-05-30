@@ -10,7 +10,12 @@ export {
   getFontOptimizationConfig,
   getBundleAnalyzerConfig,
 } from './static-optimization.js';
-export { getSecurityHeaders, getCSPHeader } from './security-headers.js';
+export {
+  getSecurityHeaders,
+  getCSPHeader,
+  type SecurityHeadersOptions,
+  type PermissionsPolicyFeature,
+} from './security-headers.js';
 export type {
   CachePolicy,
   GeoRouteRule,
