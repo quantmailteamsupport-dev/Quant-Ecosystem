@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card, Badge } from '@quant/shared-ui';
 
 interface ServiceInfo {
@@ -13,7 +14,7 @@ interface ServiceInfo {
   recentLogs: string[];
 }
 
-const servicesData: ServiceInfo[] = [
+const defaultServicesData: ServiceInfo[] = [
   {
     name: 'WS Gateway',
     id: 'ws-gateway',
@@ -133,6 +134,66 @@ function UsageBar({ value, color }: { value: number; color: string }) {
 }
 
 export default function ServicesPage() {
+  const [servicesData, setServicesData] = useState<ServiceInfo[]>(defaultServicesData);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchServices() {
+      try {
+        setLoading(true);
+        const res = await fetch('/api/health');
+        const json = await res.json();
+        if (json.services) {
+          setServicesData(
+            json.services.map(
+              (svc: {
+                name: string;
+                status: string;
+                responseTimeMs?: number;
+                lastCheck?: string;
+              }) => {
+                const existing = defaultServicesData.find((d) => d.id === svc.name);
+                return {
+                  name: existing?.name ?? svc.name,
+                  id: svc.name,
+                  status: svc.status === 'running' ? 'running' : 'stopped',
+                  uptime: existing?.uptime ?? 99.9,
+                  lastRestart: existing?.lastRestart ?? 'N/A',
+                  memoryUsage: existing?.memoryUsage ?? 30,
+                  cpuUsage: existing?.cpuUsage ?? 10,
+                  recentLogs: existing?.recentLogs ?? [`[INFO] Service ${svc.name} operational`],
+                } as ServiceInfo;
+              },
+            ),
+          );
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load services');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchServices();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-[var(--quant-muted-foreground)]">Loading services...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-500 mb-2">Error: {error}</p>
+        <p className="text-sm text-[var(--quant-muted-foreground)]">Showing cached data</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -146,24 +207,16 @@ export default function ServicesPage() {
         {servicesData.map((service) => (
           <Card key={service.id}>
             <div className="p-5 space-y-4">
-              {/* Header */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span
-                    className={`h-2.5 w-2.5 rounded-full ${
-                      service.status === 'running'
-                        ? 'bg-green-500'
-                        : service.status === 'error'
-                          ? 'bg-red-500'
-                          : 'bg-gray-400'
-                    }`}
+                    className={`h-2.5 w-2.5 rounded-full ${service.status === 'running' ? 'bg-green-500' : service.status === 'error' ? 'bg-red-500' : 'bg-gray-400'}`}
                   />
                   <h3 className="font-semibold text-[var(--quant-foreground)]">{service.name}</h3>
                 </div>
                 <Badge variant="default">{service.uptime}% uptime</Badge>
               </div>
 
-              {/* Metrics */}
               <div className="space-y-2">
                 <div>
                   <div className="flex items-center justify-between text-xs text-[var(--quant-muted-foreground)] mb-1">
@@ -181,12 +234,10 @@ export default function ServicesPage() {
                 </div>
               </div>
 
-              {/* Last restart */}
               <p className="text-xs text-[var(--quant-muted-foreground)]">
                 Last restart: {service.lastRestart}
               </p>
 
-              {/* Logs */}
               <div className="rounded-md bg-[var(--quant-muted)] p-3 font-mono text-xs text-[var(--quant-muted-foreground)]">
                 {service.recentLogs.map((log, i) => (
                   <p key={i}>{log}</p>

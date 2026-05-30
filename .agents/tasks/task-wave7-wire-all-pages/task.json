@@ -1,0 +1,7 @@
+{
+  "task_id": "task-wave7-wire-all-pages",
+  "task_description": "Wire ALL unwired frontend pages across the Quant Ecosystem to their backend APIs. Replace hardcoded mock data arrays with real fetch() calls that include loading, error, and fallback states. Covers admin panel (8 pages + 4 observability components), QuantAI (2 pages), and QuantChat (2 pages).",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null
+}

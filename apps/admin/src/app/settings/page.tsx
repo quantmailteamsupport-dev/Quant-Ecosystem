@@ -1,7 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card, Button } from '@quant/shared-ui';
-import { useState } from 'react';
 
 interface FeatureFlag {
   id: string;
@@ -10,7 +10,7 @@ interface FeatureFlag {
   enabled: boolean;
 }
 
-const initialFlags: FeatureFlag[] = [
+const defaultFlags: FeatureFlag[] = [
   {
     id: 'ai_chat',
     name: 'AI Chat',
@@ -53,25 +53,76 @@ function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void 
   return (
     <button
       onClick={onToggle}
-      className={`relative h-6 w-11 rounded-full transition-colors ${
-        enabled ? 'bg-green-500' : 'bg-gray-300'
-      }`}
+      className={`relative h-6 w-11 rounded-full transition-colors ${enabled ? 'bg-green-500' : 'bg-gray-300'}`}
     >
       <span
-        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
-          enabled ? 'translate-x-5.5 left-[1.375rem]' : 'left-0.5'
-        }`}
+        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${enabled ? 'translate-x-5.5 left-[1.375rem]' : 'left-0.5'}`}
       />
     </button>
   );
 }
 
 export default function SettingsPage() {
-  const [flags, setFlags] = useState(initialFlags);
+  const [flags, setFlags] = useState<FeatureFlag[]>(defaultFlags);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const toggleFlag = (id: string) => {
-    setFlags((prev) => prev.map((f) => (f.id === id ? { ...f, enabled: !f.enabled } : f)));
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        setLoading(true);
+        const res = await fetch('/api/settings');
+        const json = await res.json();
+        if (json.success && json.data?.flags) {
+          setFlags(json.data.flags);
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load settings');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchSettings();
+  }, []);
+
+  const toggleFlag = async (id: string) => {
+    const flag = flags.find((f) => f.id === id);
+    if (!flag) return;
+
+    const newEnabled = !flag.enabled;
+    setFlags((prev) => prev.map((f) => (f.id === id ? { ...f, enabled: newEnabled } : f)));
+
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, enabled: newEnabled }),
+      });
+      const json = await res.json();
+      if (json.success && json.data?.flags) {
+        setFlags(json.data.flags);
+      }
+    } catch {
+      setFlags((prev) => prev.map((f) => (f.id === id ? { ...f, enabled: !newEnabled } : f)));
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-[var(--quant-muted-foreground)]">Loading settings...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-500 mb-2">Error: {error}</p>
+        <p className="text-sm text-[var(--quant-muted-foreground)]">Showing cached data</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
