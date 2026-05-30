@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Enhance the Admin Panel with real backend integration. Replace the hardcoded mock data in /api/health and /api/stats with real patterns that attempt to ping actual app health endpoints and query Prisma for real user counts. Add new API routes: /api/users (query Prisma User model), /api/apps/[id]/restart (restart endpoint), /api/services/[id]/logs (service logs). Also wire the cross-app notification dispatch and search integration into the admin panel so it can broadcast notifications and search across all apps.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Rewrite apps/admin/src/app/api/health/route.ts: Instead of hardcoded array, attempt to fetch health endpoints from known app ports (use Promise.allSettled with timeout). Map known apps to their ports from a config (quantmail:3000, quantchat:3001, quantdrive:3002, etc.). If fetch fails, mark as 'down'. Include real timestamp.",
     "Rewrite apps/admin/src/app/api/stats/route.ts: Import PrismaClient from @prisma/client (or use a shared Prisma instance pattern). Query actual counts: SELECT COUNT(*) from users table. For active users, count where lastLoginAt > 24h ago. Return real numbers where possible, gracefully fallback to 0 if DB unavailable.",

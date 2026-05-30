@@ -64,6 +64,9 @@ importers:
 
   apps/admin:
     dependencies:
+      '@prisma/client':
+        specifier: ^6.19.3
+        version: 6.19.3(prisma@6.19.3(magicast@0.3.5)(typescript@5.9.3))(typescript@5.9.3)
       '@quant/auth':
         specifier: workspace:*
         version: link:../../packages/auth
@@ -73,6 +76,12 @@ importers:
       '@quant/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@quant/notifications':
+        specifier: workspace:*
+        version: link:../../packages/notifications
+      '@quant/search':
+        specifier: workspace:*
+        version: link:../../packages/search
       '@quant/server-core':
         specifier: workspace:*
         version: link:../../packages/server-core
