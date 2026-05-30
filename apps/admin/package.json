@@ -14,7 +14,9 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
+    "@quant/audit": "workspace:*",
     "@quant/auth": "workspace:*",
+    "@quant/organizations": "workspace:*",
     "@quant/common": "workspace:*",
     "@quant/database": "workspace:*",
     "@quant/feature-flags": "workspace:*",

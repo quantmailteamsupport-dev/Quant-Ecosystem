@@ -67,6 +67,9 @@ importers:
       '@prisma/client':
         specifier: ^6.19.3
         version: 6.19.3(prisma@6.19.3(magicast@0.3.5)(typescript@5.9.3))(typescript@5.9.3)
+      '@quant/audit':
+        specifier: workspace:*
+        version: link:../../packages/audit
       '@quant/auth':
         specifier: workspace:*
         version: link:../../packages/auth
@@ -82,6 +85,9 @@ importers:
       '@quant/notifications':
         specifier: workspace:*
         version: link:../../packages/notifications
+      '@quant/organizations':
+        specifier: workspace:*
+        version: link:../../packages/organizations
       '@quant/search':
         specifier: workspace:*
         version: link:../../packages/search
@@ -1308,6 +1314,28 @@ importers:
         specifier: ^2
         version: 2.1.9(@types/node@22.19.19)(jiti@2.6.1)(jsdom@29.1.1)(lightningcss@1.32.0)(tsx@4.22.3)(yaml@2.9.0)
 
+  packages/audit:
+    dependencies:
+      '@quant/common':
+        specifier: workspace:*
+        version: link:../common
+      '@quant/database':
+        specifier: workspace:*
+        version: link:../database
+      zod:
+        specifier: ^3.24.2
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.19
+      typescript:
+        specifier: ~5.5.0
+        version: 5.5.4
+      vitest:
+        specifier: ^2
+        version: 2.1.9(@types/node@22.19.19)(jiti@2.6.1)(jsdom@29.1.1)(lightningcss@1.32.0)(tsx@4.22.3)(yaml@2.9.0)
+
   packages/auth:
     dependencies:
       '@quant/common':
@@ -2006,6 +2034,34 @@ importers:
         specifier: ^2
         version: 2.1.9(@types/node@22.19.19)(jiti@2.6.1)(jsdom@29.1.1)(lightningcss@1.32.0)(tsx@4.22.3)(yaml@2.9.0)
 
+  packages/organizations:
+    dependencies:
+      '@quant/common':
+        specifier: workspace:*
+        version: link:../common
+      '@quant/database':
+        specifier: workspace:*
+        version: link:../database
+      fastify:
+        specifier: ^5.2.1
+        version: 5.8.5
+      fastify-plugin:
+        specifier: ^5.0.1
+        version: 5.1.0
+      zod:
+        specifier: ^3.24.2
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.19
+      typescript:
+        specifier: ~5.5.0
+        version: 5.5.4
+      vitest:
+        specifier: ^2
+        version: 2.1.9(@types/node@22.19.19)(jiti@2.6.1)(jsdom@29.1.1)(lightningcss@1.32.0)(tsx@4.22.3)(yaml@2.9.0)
+
   packages/payments:
     dependencies:
       '@quant/common':
@@ -2403,6 +2459,9 @@ importers:
       '@fastify/rate-limit':
         specifier: ^10.2.1
         version: 10.3.0
+      '@quant/audit':
+        specifier: workspace:*
+        version: link:../audit
       '@quant/auth':
         specifier: workspace:*
         version: link:../auth
@@ -2418,6 +2477,9 @@ importers:
       '@quant/observability':
         specifier: workspace:*
         version: link:../observability
+      '@quant/organizations':
+        specifier: workspace:*
+        version: link:../organizations
       fastify:
         specifier: ^5.2.1
         version: 5.8.5
