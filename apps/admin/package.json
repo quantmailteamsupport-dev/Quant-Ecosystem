@@ -17,6 +17,7 @@
     "@quant/auth": "workspace:*",
     "@quant/common": "workspace:*",
     "@quant/database": "workspace:*",
+    "@quant/feature-flags": "workspace:*",
     "@quant/notifications": "workspace:*",
     "@quant/search": "workspace:*",
     "@quant/server-core": "workspace:*",

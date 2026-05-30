@@ -11,3 +11,4 @@ export { default as requestLoggerPlugin } from './plugins/request-logger';
 export { default as gracefulShutdownPlugin } from './plugins/graceful-shutdown';
 export type { AppConfig, AuthenticatedRequest } from './types';
 export { default as observabilityPlugin } from './plugins/observability';
+export { default as featureFlagsPlugin } from './plugins/feature-flags';

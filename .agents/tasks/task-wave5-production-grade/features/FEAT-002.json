@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Feature Flags System - Create packages/feature-flags/ with FeatureFlagService (boolean flags, percentage rollout, user-segment targeting), Prisma-backed store, server-core plugin, admin panel page with CRUD API routes, and Prisma schema additions.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "Create packages/feature-flags/package.json with @quant/feature-flags name, dependencies on @quant/database, @quant/common, zod. Include build/typecheck/test/lint scripts.",
     "Create packages/feature-flags/tsconfig.json extending root tsconfig pattern",

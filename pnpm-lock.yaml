@@ -76,6 +76,9 @@ importers:
       '@quant/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@quant/feature-flags':
+        specifier: workspace:*
+        version: link:../../packages/feature-flags
       '@quant/notifications':
         specifier: workspace:*
         version: link:../../packages/notifications
@@ -1632,6 +1635,28 @@ importers:
         specifier: ^2
         version: 2.1.9(@types/node@22.19.19)(jiti@2.6.1)(jsdom@29.1.1)(lightningcss@1.32.0)(tsx@4.22.3)(yaml@2.9.0)
 
+  packages/feature-flags:
+    dependencies:
+      '@quant/common':
+        specifier: workspace:*
+        version: link:../common
+      '@quant/database':
+        specifier: workspace:*
+        version: link:../database
+      zod:
+        specifier: ^3.24.2
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.19
+      typescript:
+        specifier: ~5.5.0
+        version: 5.5.4
+      vitest:
+        specifier: ^2
+        version: 2.1.9(@types/node@22.19.19)(jiti@2.6.1)(jsdom@29.1.1)(lightningcss@1.32.0)(tsx@4.22.3)(yaml@2.9.0)
+
   packages/federation:
     dependencies:
       '@quant/common':
@@ -2384,6 +2409,9 @@ importers:
       '@quant/database':
         specifier: workspace:*
         version: link:../database
+      '@quant/feature-flags':
+        specifier: workspace:*
+        version: link:../feature-flags
       '@quant/observability':
         specifier: workspace:*
         version: link:../observability
