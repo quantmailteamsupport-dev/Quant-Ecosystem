@@ -5,6 +5,7 @@ import type { AppConfig } from './types';
 import errorHandler from './plugins/error-handler';
 import healthPlugin from './plugins/health';
 import authPlugin from './plugins/auth';
+import prismaPlugin from './plugins/prisma';
 import metricsPlugin from './plugins/metrics';
 import requestIdPlugin from './plugins/request-id';
 
@@ -79,11 +80,25 @@ export async function createApp(config: AppConfig) {
   // Register metrics collection
   await fastify.register(metricsPlugin);
 
+  // Register Prisma client
+  await fastify.register(prismaPlugin);
+
   // Register auth plugin
   await fastify.register(authPlugin, {
     jwtSecret: config.jwtSecret,
     jwtIssuer: config.jwtIssuer,
     jwtAudience: config.jwtAudience,
+  });
+
+  // Enforce auth on all routes except health/metrics
+  fastify.addHook('onRequest', async (request, reply) => {
+    const path = request.url.split('?')[0] ?? '';
+    const publicPaths = ['/health', '/healthz', '/ready', '/readyz', '/live', '/livez', '/metrics'];
+    if (publicPaths.some((p) => path === p || path.startsWith(p + '/'))) {
+      return;
+    }
+    await fastify.requireAuth()(request, reply);
+    if (reply.sent) return;
   });
 
   // Register health endpoints
