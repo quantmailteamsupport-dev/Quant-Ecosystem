@@ -31,12 +31,6 @@ export interface TravelResult {
   suggestions: string[];
 }
 
-/**
- * @simulated This implementation is a simulation/prototype.
- * Classification: NAIVE
- * Reason: Rule-based travel planning
- * Production path: Integrate LLM + travel APIs
- */
 export class TravelPilot extends IntelligentAgent {
   private lastResult: TravelResult | null = null;
 
