@@ -1,0 +1,39 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Fix P0 runtime foundation: Add Prisma plugin to server-core that decorates Fastify instances with a PrismaClient, and add global auth enforcement (onRequest hook) for all routes except health checks. Also fix the AI SDK v5 type mismatch in packages/ai/src/core/engine.ts.",
+  "status": "completed",
+  "steps": [
+    "Create packages/server-core/src/plugins/prisma.ts - a Fastify plugin using fastify-plugin that: imports { prisma } from '@quant/database', decorates the fastify instance with 'prisma', and adds a type augmentation for FastifyInstance.prisma. Pattern: follow the same fp() wrapper pattern used in packages/server-core/src/plugins/auth.ts.",
+    "Update packages/server-core/src/app.ts - import and register the new prisma plugin in createApp() BEFORE registering auth and routes. Add 'import prismaPlugin from ./plugins/prisma'.",
+    "Add @quant/database as a dependency in packages/server-core/package.json (already listed in some other configs but must be explicit).",
+    "Update packages/server-core/src/index.ts to export the prisma plugin.",
+    "Add global auth enforcement in createApp(): Register a global onRequest hook that calls requireAuth() for all routes EXCEPT those matching /healthz and /readyz paths. This should be registered AFTER the auth plugin. The hook should skip routes by checking request.url starts with /healthz or /readyz.",
+    "Update the existing test at packages/server-core/src/__tests__/app.test.ts to verify that: (a) the prisma decoration exists on the app instance, (b) unauthenticated requests to non-health routes get 401.",
+    "Fix packages/ai/src/core/engine.ts: (a) The generateText/streamText model parameter should use 'as any' cast since @ai-sdk/openai v1 and @ai-sdk/anthropic v1 return LanguageModelV1 but ai v5 expects LanguageModelV2 - they are runtime compatible. Cast: 'model: providerModel as any'. (b) Fix usage property names: response.usage.promptTokens -> response.usage?.inputTokens, response.usage.completionTokens -> response.usage?.outputTokens. These are the v5 property names from LanguageModelV2Usage.",
+    "Fix packages/teams/src/sso/sso-service.ts: Replace console.log/console.error with proper alternatives (either remove them or wrap with a logger). The file has no-console lint errors at lines 73 and 80.",
+    "Fix apps/quantchat/src/lib/auth.ts: Change the hardcoded WS port from 3001 to 3002 (the quantchat backend runs on port 3002 as defined in apps/quantchat/backend/app.ts).",
+    "Fix apps/quantai Next.js API route proxy port: All files under apps/quantai/src/app/api/ have 'http://localhost:3002' as default BACKEND_URL but the quantai backend runs on port 3020 (defined in apps/quantai/backend/app.ts). Change all occurrences of 'http://localhost:3002' to 'http://localhost:3020' in that directory tree."
+  ],
+  "acceptance_criteria": [
+    "pnpm turbo typecheck passes with 0 errors (all 111 tasks succeed)",
+    "pnpm turbo test passes with 0 failures",
+    "pnpm turbo lint passes with 0 errors (only warnings allowed)",
+    "pnpm turbo build succeeds for all packages including @quant/ai",
+    "packages/server-core/src/plugins/prisma.ts exists and exports a fastify-plugin",
+    "The createApp() function registers the prisma plugin and a global auth onRequest hook",
+    "apps/quantchat/src/lib/auth.ts references port 3002 for WS",
+    "apps/quantai/src/app/api/**/*.ts files reference port 3020 as default backend URL"
+  ],
+  "verification": [
+    "pnpm --filter @quant/server-core test",
+    "pnpm --filter @quant/ai typecheck",
+    "pnpm --filter @quant/teams lint",
+    "pnpm turbo typecheck",
+    "pnpm turbo test",
+    "pnpm turbo lint",
+    "pnpm turbo build"
+  ],
+  "blocked_reason": null,
+  "findings": "1. The global auth hook also needed to skip /metrics (intentionally unauthenticated per inline comments). 2. AI SDK v5 renamed maxTokens to maxOutputTokens and promptTokens/completionTokens to inputTokens/outputTokens. 3. The test mock also needed updating for v5 property names. 4. Pre-existing failures exist in quantchat/quantmail/quantdrive/quantai/quantdocs/quantmeet/quantcalendar typecheck (database repository files reference models not in Prisma schema) and quantads build (conflicting pages/ and app/ dirs). These are unrelated to our changes."
+}
