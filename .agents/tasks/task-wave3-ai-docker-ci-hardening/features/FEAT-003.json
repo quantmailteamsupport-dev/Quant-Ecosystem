@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "feat",
   "description": "Production Middleware Hardening - Add structured request logging, enhanced CORS, graceful shutdown hooks, and standardized health/readiness probes to server-core, plus create database migration and seed script",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "1. Create `packages/server-core/src/plugins/request-logger.ts` - Fastify plugin that logs structured JSON for every request: {requestId, method, url, statusCode, responseTime, userAgent, ip, userId (if auth'd)}. Uses pino's built-in request serializers. Register in app.ts.",
     "2. Create `packages/server-core/src/plugins/graceful-shutdown.ts` - Fastify plugin that handles SIGTERM/SIGINT: sets a 'draining' flag, stops accepting new connections, waits for in-flight requests (with 30s timeout), closes Prisma connection, closes Redis if available, then exits. Replace the basic process.on handlers in app.ts with this plugin.",
