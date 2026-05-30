@@ -1,0 +1,7 @@
+{
+  "task_id": "task-admin-panel",
+  "task_description": "Build a comprehensive Admin Panel (apps/admin) for the Quant-Ecosystem monorepo as a Next.js 15 app with dashboard, apps management, users, services monitor, AI/ML dashboard, security center, database overview, and settings pages. Then fix all remaining wiring/build issues across the monorepo.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null
+}
