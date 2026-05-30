@@ -1,19 +1,26 @@
 import fp from 'fastify-plugin';
 import type { FastifyInstance } from 'fastify';
-import { prisma } from '@quant/database';
-import type { PrismaClient } from '@quant/database';
+
+// Use a minimal interface so server-core doesn't require specific PrismaClient types
+interface PrismaLike {
+  $disconnect(): Promise<void>;
+}
 
 declare module 'fastify' {
   interface FastifyInstance {
-    prisma: PrismaClient;
+    prisma: PrismaLike;
   }
 }
 
-async function prismaPlugin(fastify: FastifyInstance) {
-  fastify.decorate('prisma', prisma);
+export interface PrismaPluginOptions {
+  client: PrismaLike;
+}
+
+async function prismaPlugin(fastify: FastifyInstance, opts: PrismaPluginOptions) {
+  fastify.decorate('prisma', opts.client);
 
   fastify.addHook('onClose', async () => {
-    await prisma.$disconnect();
+    await opts.client.$disconnect();
   });
 }
 

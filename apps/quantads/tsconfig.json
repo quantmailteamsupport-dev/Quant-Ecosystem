@@ -13,7 +13,11 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "plugins": [{ "name": "next" }],
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
     "paths": {
       "@/*": ["./src/app/*"],
       "@quant/shared-ui": ["../../packages/shared-ui/src/index.ts"],
@@ -27,22 +31,40 @@
     }
   },
   "include": [
+    "backend/**/*.ts",
     "next-env.d.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
-    "backend/**/*.ts",
     ".next/types/**/*.ts"
   ],
   "exclude": ["node_modules"],
   "references": [
-    { "path": "../../packages/auth" },
-    { "path": "../../packages/ai" },
-    { "path": "../../packages/common" },
-    { "path": "../../packages/database" },
-    { "path": "../../packages/realtime" },
-    { "path": "../../packages/server-core" },
-    { "path": "../../packages/shared-ui" },
-    { "path": "../../packages/privacy-ads" },
-    { "path": "../../packages/brand" }
+    {
+      "path": "../../packages/auth"
+    },
+    {
+      "path": "../../packages/ai"
+    },
+    {
+      "path": "../../packages/common"
+    },
+    {
+      "path": "../../packages/database"
+    },
+    {
+      "path": "../../packages/realtime"
+    },
+    {
+      "path": "../../packages/server-core"
+    },
+    {
+      "path": "../../packages/shared-ui"
+    },
+    {
+      "path": "../../packages/privacy-ads"
+    },
+    {
+      "path": "../../packages/brand"
+    }
   ]
 }

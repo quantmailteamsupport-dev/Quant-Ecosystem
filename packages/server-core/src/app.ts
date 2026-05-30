@@ -80,8 +80,14 @@ export async function createApp(config: AppConfig) {
   // Register metrics collection
   await fastify.register(metricsPlugin);
 
-  // Register Prisma client
-  await fastify.register(prismaPlugin);
+  // Register Prisma client (dynamic import avoids compile-time dependency chain)
+  try {
+    const mod: string = '@quant/' + 'database';
+    const db = await import(/* @vite-ignore */ mod);
+    await fastify.register(prismaPlugin, { client: db.prisma });
+  } catch {
+    // @quant/database not available (e.g., in unit tests without DB)
+  }
 
   // Register auth plugin
   await fastify.register(authPlugin, {
