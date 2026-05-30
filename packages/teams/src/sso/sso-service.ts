@@ -70,6 +70,7 @@ export class SSOService {
 
     if (!config.allowInsecureAssertion) {
       // Fail closed until real signature verification exists.
+      // eslint-disable-next-line no-console
       console.warn(
         'SSO_VERIFICATION_NOT_IMPLEMENTED: rejecting assertion. Real SAML/OIDC ' +
           'signature verification is required before assertions can be accepted.',
@@ -77,6 +78,7 @@ export class SSOService {
       return { valid: false };
     }
 
+    // eslint-disable-next-line no-console
     console.warn(
       'INSECURE_SSO_STUB: accepting assertion without signature verification ' +
         '(allowInsecureAssertion=true). Do NOT enable this in production.',
