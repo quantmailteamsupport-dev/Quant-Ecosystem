@@ -1,7 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card, Badge, Button } from '@quant/shared-ui';
-import { useState } from 'react';
 
 interface EcosystemApp {
   id: string;
@@ -13,7 +13,7 @@ interface EcosystemApp {
   status: 'running' | 'stopped' | 'error';
 }
 
-const appsData: EcosystemApp[] = [
+const defaultAppsData: EcosystemApp[] = [
   {
     id: 'quantmail',
     name: 'QuantMail',
@@ -162,13 +162,61 @@ const appsData: EcosystemApp[] = [
 
 export default function AppsPage() {
   const [search, setSearch] = useState('');
+  const [appsData, setAppsData] = useState<EcosystemApp[]>(defaultAppsData);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        const res = await fetch('/api/health');
+        const json = await res.json();
+        if (json.apps) {
+          setAppsData(
+            json.apps.map((app: { name: string; status: string; port: number }) => ({
+              id: app.name.toLowerCase().replace(/\s+/g, ''),
+              name: app.name,
+              enabled: app.status === 'healthy',
+              version: '1.0.0',
+              port: app.port,
+              lastDeploy: defaultAppsData.find((d) => d.name === app.name)?.lastDeploy ?? 'N/A',
+              status:
+                app.status === 'healthy' ? 'running' : app.status === 'down' ? 'stopped' : 'error',
+            })),
+          );
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load apps');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   const filteredApps = appsData.filter((app) =>
     app.name.toLowerCase().includes(search.toLowerCase()),
   );
 
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-[var(--quant-muted-foreground)]">Loading apps...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 px-4 py-3 flex items-center gap-2">
+          <span className="text-yellow-500 text-sm font-medium">&#9888;</span>
+          <p className="text-sm text-yellow-600">
+            Could not refresh data: {error}. Showing cached data below.
+          </p>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[var(--quant-foreground)]">Apps Management</h1>

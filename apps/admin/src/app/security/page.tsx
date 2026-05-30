@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card, Badge } from '@quant/shared-ui';
 
 interface AuthEvent {
@@ -17,7 +18,7 @@ interface Alert {
   timestamp: string;
 }
 
-const authEvents: AuthEvent[] = [
+const defaultAuthEvents: AuthEvent[] = [
   {
     id: '1',
     type: 'login_success',
@@ -96,9 +97,68 @@ const severityColors: Record<Alert['severity'], string> = {
   low: 'bg-blue-100 text-blue-700',
 };
 
+function mapAuditToAuthEvent(entry: {
+  id: string;
+  userId: string;
+  action: string;
+  ip: string;
+  timestamp: string;
+}): AuthEvent {
+  let type: AuthEvent['type'] = 'login_success';
+  if (entry.action === 'LOGIN_FAILED') type = 'login_failed';
+  else if (entry.action === 'LOGIN') type = 'login_success';
+  else if (entry.action === 'LOGOUT') type = 'token_refresh';
+  else if (entry.action === 'SETTINGS_CHANGE') type = 'password_reset';
+  return {
+    id: entry.id,
+    type,
+    user: entry.userId,
+    ip: entry.ip,
+    timestamp: new Date(entry.timestamp).toLocaleString(),
+  };
+}
+
 export default function SecurityPage() {
+  const [authEvents, setAuthEvents] = useState<AuthEvent[]>(defaultAuthEvents);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchAudit() {
+      try {
+        setLoading(true);
+        const res = await fetch('/api/audit?limit=20');
+        const json = await res.json();
+        if (json.success && json.data) {
+          setAuthEvents(json.data.map(mapAuditToAuthEvent));
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load security events');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchAudit();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-[var(--quant-muted-foreground)]">Loading security data...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
+      {error && (
+        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 px-4 py-3 flex items-center gap-2">
+          <span className="text-yellow-500 text-sm font-medium">&#9888;</span>
+          <p className="text-sm text-yellow-600">
+            Could not refresh data: {error}. Showing cached data below.
+          </p>
+        </div>
+      )}
       <div>
         <h1 className="text-2xl font-bold text-[var(--quant-foreground)]">Security Center</h1>
         <p className="text-sm text-[var(--quant-muted-foreground)] mt-1">

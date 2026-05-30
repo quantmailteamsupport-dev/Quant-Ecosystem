@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card, Badge } from '@quant/shared-ui';
 
 interface TableInfo {
@@ -14,7 +15,15 @@ interface SlowQuery {
   calls: number;
 }
 
-const tables: TableInfo[] = [
+interface PoolInfo {
+  size: number;
+  maxSize: number;
+  active: number;
+  idle: number;
+  waitQueue: number;
+}
+
+const defaultTables: TableInfo[] = [
   { name: 'users', rowCount: '24,891', size: '128 MB' },
   { name: 'messages', rowCount: '1,245,670', size: '2.1 GB' },
   { name: 'files', rowCount: '456,230', size: '890 MB' },
@@ -25,15 +34,61 @@ const tables: TableInfo[] = [
   { name: 'workspaces', rowCount: '3,456', size: '28 MB' },
 ];
 
-const slowQueries: SlowQuery[] = [
+const defaultSlowQueries: SlowQuery[] = [
   { query: 'SELECT * FROM messages WHERE ...', avgDuration: '245ms', calls: 1200 },
   { query: 'JOIN users ON ... WHERE role IN ...', avgDuration: '189ms', calls: 890 },
   { query: 'SELECT COUNT(*) FROM audit_logs ...', avgDuration: '156ms', calls: 450 },
 ];
 
+const defaultPool: PoolInfo = { size: 20, maxSize: 50, active: 14, idle: 6, waitQueue: 0 };
+
 export default function DatabasePage() {
+  const [tables, setTables] = useState<TableInfo[]>(defaultTables);
+  const [slowQueries, setSlowQueries] = useState<SlowQuery[]>(defaultSlowQueries);
+  const [pool, setPool] = useState<PoolInfo>(defaultPool);
+  const [totalSize, setTotalSize] = useState('5.4 GB');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchDBStats() {
+      try {
+        setLoading(true);
+        const res = await fetch('/api/database/stats');
+        const json = await res.json();
+        if (json.success && json.data) {
+          if (json.data.tables) setTables(json.data.tables);
+          if (json.data.slowQueries) setSlowQueries(json.data.slowQueries);
+          if (json.data.pool) setPool(json.data.pool);
+          if (json.data.totalSize) setTotalSize(json.data.totalSize);
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load database stats');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchDBStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-[var(--quant-muted-foreground)]">Loading database stats...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
+      {error && (
+        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 px-4 py-3 flex items-center gap-2">
+          <span className="text-yellow-500 text-sm font-medium">&#9888;</span>
+          <p className="text-sm text-yellow-600">
+            Could not refresh data: {error}. Showing cached data below.
+          </p>
+        </div>
+      )}
       <div>
         <h1 className="text-2xl font-bold text-[var(--quant-foreground)]">Database</h1>
         <p className="text-sm text-[var(--quant-muted-foreground)] mt-1">
@@ -46,25 +101,27 @@ export default function DatabasePage() {
         <Card>
           <div className="p-5">
             <p className="text-sm text-[var(--quant-muted-foreground)]">Pool Size</p>
-            <p className="mt-2 text-2xl font-bold text-[var(--quant-foreground)]">20/50</p>
+            <p className="mt-2 text-2xl font-bold text-[var(--quant-foreground)]">
+              {pool.size}/{pool.maxSize}
+            </p>
           </div>
         </Card>
         <Card>
           <div className="p-5">
             <p className="text-sm text-[var(--quant-muted-foreground)]">Active Connections</p>
-            <p className="mt-2 text-2xl font-bold text-[var(--quant-foreground)]">14</p>
+            <p className="mt-2 text-2xl font-bold text-[var(--quant-foreground)]">{pool.active}</p>
           </div>
         </Card>
         <Card>
           <div className="p-5">
             <p className="text-sm text-[var(--quant-muted-foreground)]">Idle Connections</p>
-            <p className="mt-2 text-2xl font-bold text-[var(--quant-foreground)]">6</p>
+            <p className="mt-2 text-2xl font-bold text-[var(--quant-foreground)]">{pool.idle}</p>
           </div>
         </Card>
         <Card>
           <div className="p-5">
             <p className="text-sm text-[var(--quant-muted-foreground)]">Total DB Size</p>
-            <p className="mt-2 text-2xl font-bold text-[var(--quant-foreground)]">5.4 GB</p>
+            <p className="mt-2 text-2xl font-bold text-[var(--quant-foreground)]">{totalSize}</p>
           </div>
         </Card>
       </div>

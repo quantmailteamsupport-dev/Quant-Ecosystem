@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ErrorEntry {
   timestamp: string;
@@ -10,7 +10,17 @@ interface ErrorEntry {
   traceId: string;
 }
 
-const mockErrors: ErrorEntry[] = [
+interface HealthData {
+  apps?: Array<{ name: string; status: string; responseTimeMs: number; lastCheck: string }>;
+  services?: Array<{ name: string; status: string; responseTimeMs: number; lastCheck: string }>;
+}
+
+interface Props {
+  healthData?: HealthData | null;
+  loading?: boolean;
+}
+
+const FALLBACK_ERRORS: ErrorEntry[] = [
   {
     timestamp: '2024-01-15 10:23:45',
     service: 'quantai',
@@ -69,13 +79,69 @@ const mockErrors: ErrorEntry[] = [
   },
 ];
 
-export function ErrorTracker() {
+function deriveErrors(json: HealthData): ErrorEntry[] {
+  const items: ErrorEntry[] = [];
+  const now = new Date();
+  if (json.apps) {
+    json.apps.forEach((app) => {
+      if (app.status === 'down') {
+        items.push({
+          timestamp: new Date(app.lastCheck || now).toLocaleString(),
+          service: app.name.toLowerCase(),
+          message: `Service ${app.name} is unreachable (health check failed)`,
+          statusCode: 503,
+          traceId: Math.random().toString(36).slice(2, 14),
+        });
+      }
+    });
+  }
+  if (json.services) {
+    json.services.forEach((svc) => {
+      if (svc.status === 'stopped') {
+        items.push({
+          timestamp: new Date(svc.lastCheck || now).toLocaleString(),
+          service: svc.name,
+          message: `Service ${svc.name} is stopped (connection refused)`,
+          statusCode: 502,
+          traceId: Math.random().toString(36).slice(2, 14),
+        });
+      }
+    });
+  }
+  return items;
+}
+
+export function ErrorTracker({ healthData, loading: externalLoading }: Props) {
+  const [errors, setErrors] = useState<ErrorEntry[]>(FALLBACK_ERRORS);
+  const [loading, setLoading] = useState(externalLoading ?? true);
   const [sortAsc, setSortAsc] = useState(false);
 
-  const sorted = [...mockErrors].sort((a, b) => {
+  useEffect(() => {
+    if (externalLoading !== undefined) {
+      setLoading(externalLoading);
+    }
+  }, [externalLoading]);
+
+  useEffect(() => {
+    if (healthData) {
+      const items = deriveErrors(healthData);
+      if (items.length > 0) setErrors(items);
+      setLoading(false);
+    } else if (healthData === null && externalLoading === false) {
+      setLoading(false);
+    }
+  }, [healthData, externalLoading]);
+
+  const sorted = [...errors].sort((a, b) => {
     const cmp = a.timestamp.localeCompare(b.timestamp);
     return sortAsc ? cmp : -cmp;
   });
+
+  if (loading) {
+    return (
+      <div className="rounded-lg border border-[var(--quant-border)] bg-[var(--quant-card)] p-8 animate-pulse h-48" />
+    );
+  }
 
   return (
     <div className="rounded-lg border border-[var(--quant-border)] bg-[var(--quant-card)] overflow-hidden">

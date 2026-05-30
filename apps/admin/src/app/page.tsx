@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card, Badge } from '@quant/shared-ui';
 
 interface SystemStat {
@@ -16,14 +17,14 @@ interface AppHealth {
   version: string;
 }
 
-const systemStats: SystemStat[] = [
+const defaultStats: SystemStat[] = [
   { label: 'Total Users', value: '24,891', change: '+12%', trend: 'up' },
   { label: 'Active Apps', value: '16/16', change: '100%', trend: 'neutral' },
   { label: 'Requests/min', value: '8,432', change: '+5%', trend: 'up' },
   { label: 'Error Rate', value: '0.12%', change: '-0.03%', trend: 'down' },
 ];
 
-const appHealthData: AppHealth[] = [
+const defaultAppHealth: AppHealth[] = [
   { name: 'QuantMail', status: 'healthy', port: 3000, version: '1.0.0' },
   { name: 'QuantChat', status: 'healthy', port: 3001, version: '1.0.0' },
   { name: 'QuantDrive', status: 'healthy', port: 3002, version: '1.0.0' },
@@ -52,8 +53,93 @@ function StatusDot({ status }: { status: AppHealth['status'] }) {
 }
 
 export default function DashboardPage() {
+  const [systemStats, setSystemStats] = useState<SystemStat[]>(defaultStats);
+  const [appHealthData, setAppHealthData] = useState<AppHealth[]>(defaultAppHealth);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        const [statsRes, healthRes] = await Promise.all([
+          fetch('/api/stats'),
+          fetch('/api/health'),
+        ]);
+
+        const statsJson = await statsRes.json();
+        const healthJson = await healthRes.json();
+
+        if (statsJson.users) {
+          const totalApps = healthJson.apps?.length ?? defaultAppHealth.length;
+          const healthyApps =
+            healthJson.apps?.filter((a: { status: string }) => a.status === 'healthy').length ??
+            totalApps;
+          setSystemStats([
+            {
+              label: 'Total Users',
+              value: statsJson.users.total.toLocaleString(),
+              change: `+${statsJson.users.newToday}`,
+              trend: 'up',
+            },
+            {
+              label: 'Active Apps',
+              value: `${healthyApps}/${totalApps}`,
+              change: `${Math.round((healthyApps / totalApps) * 100)}%`,
+              trend: healthyApps === totalApps ? 'neutral' : 'down',
+            },
+            {
+              label: 'Active Users',
+              value: statsJson.users.active.toLocaleString(),
+              change: 'today',
+              trend: 'up',
+            },
+            {
+              label: 'Online Now',
+              value: statsJson.users.online.toLocaleString(),
+              change: 'live',
+              trend: 'neutral',
+            },
+          ]);
+        }
+
+        if (healthJson.apps) {
+          setAppHealthData(
+            healthJson.apps.map((app: { name: string; status: string; port: number }) => ({
+              name: app.name,
+              status: app.status,
+              port: app.port,
+              version: '1.0.0',
+            })),
+          );
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-[var(--quant-muted-foreground)]">Loading dashboard...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
+      {error && (
+        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 px-4 py-3 flex items-center gap-2">
+          <span className="text-yellow-500 text-sm font-medium">&#9888;</span>
+          <p className="text-sm text-yellow-600">
+            Could not refresh data: {error}. Showing cached data below.
+          </p>
+        </div>
+      )}
       <div>
         <h1 className="text-2xl font-bold text-[var(--quant-foreground)]">Dashboard</h1>
         <p className="text-sm text-[var(--quant-muted-foreground)] mt-1">
