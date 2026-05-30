@@ -98,6 +98,7 @@ export async function createApp(config: AppConfig) {
       return;
     }
     await fastify.requireAuth()(request, reply);
+    if (reply.sent) return;
   });
 
   // Register health endpoints
