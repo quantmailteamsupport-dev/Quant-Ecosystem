@@ -1,211 +1,209 @@
 # Quant Ecosystem
 
-A 16-app interconnected platform built as a TypeScript monorepo. Each app integrates deeply with shared packages for authentication, AI, real-time communication, and UI components.
+[![Build Status](https://img.shields.io/github/actions/workflow/status/your-org/Quant-Ecosystem/ci.yml?branch=main&label=CI)](https://github.com/your-org/Quant-Ecosystem/actions)
+[![Coverage](https://img.shields.io/codecov/c/github/your-org/Quant-Ecosystem?label=coverage)](https://codecov.io/gh/your-org/Quant-Ecosystem)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
+[![Node](https://img.shields.io/badge/Node.js-22-green.svg)](https://nodejs.org/)
+[![pnpm](https://img.shields.io/badge/pnpm-10-orange.svg)](https://pnpm.io/)
 
-## Architecture Overview
+A production-grade, interconnected platform of **17 applications**, **90+ shared packages**, and **8 infrastructure services** built as a TypeScript monorepo. Covers email, messaging, social, video streaming, AI, file storage, calendar, video conferencing, and more - all unified by a single authentication layer and shared infrastructure.
 
-```
-quant-ecosystem/
-├── apps/                    # 16 Application frontends + backends
-│   ├── marketing/          # Marketing and landing site
-│   ├── quantai/            # Central AI assistant hub
-│   ├── quantads/           # Advertising platform
-│   ├── quantcalendar/      # Calendar and scheduling
-│   ├── quantchat/          # Instant messaging (Snapchat-like)
-│   ├── quantdocs/          # Collaborative documents
-│   ├── quantdrive/         # Cloud file storage
-│   ├── quantedits/         # Video/photo editor (CapCut)
-│   ├── quantmail/          # Email + Central OAuth provider (Gmail+GitHub)
-│   ├── quantmax/           # Short video + dating + random chat (TikTok/Tinder/Omegle)
-│   ├── quantmeet/          # Video conferencing
-│   ├── quant-mobile/       # Cross-platform mobile app (Capacitor)
-│   ├── quantneon/          # Photo/video sharing (Instagram)
-│   ├── quantsync/          # Social feed (Twitter/Reddit)
-│   ├── quantube/           # Video & music streaming (YouTube+Spotify)
-│   └── status/             # Service status and uptime monitor
-├── packages/               # Shared libraries (78)
-│   ├── common/             # Types, constants, utilities, validators
-│   ├── database/           # Database schemas and models for all apps
-│   ├── auth/               # Authentication (QuantMail as OAuth provider)
-│   ├── ai/                 # Central AI engine with domain services
-│   ├── shared-ui/          # Reusable React UI components
-│   └── realtime/           # WebSocket infrastructure
-├── services/               # Infrastructure services (8)
-└── scripts/                # Build and dev scripts
+## Quick Start
+
+```bash
+git clone https://github.com/your-org/Quant-Ecosystem.git && cd Quant-Ecosystem
+pnpm install
+pnpm dev:all
 ```
 
-## Current Status
+> Requires Node.js 22+, pnpm 10, and Docker for infrastructure services. See [docs/development.md](docs/development.md) for detailed setup.
 
-- **16 apps total:** Full-stack applications with frontend and/or backend components
-- **78 packages:** Shared libraries covering AI, infrastructure, UI, platform features, and more
-- **8 services:** All with full package.json (cdc-relay, ci-runner, git-server, matchmaking, moderation-worker, search-indexer, smtp-inbound, ws-gateway)
-- **Frontend pages:** Some still use mock data (tracked in `.agents/state/mock-debt.csv`)
-- **All CI gates pass:** typecheck, test, build, lint, audit
+## Architecture
+
+```mermaid
+graph TD
+    subgraph Apps["17 Applications (Next.js 15)"]
+        direction LR
+        QM[QuantMail - Email + OAuth2]
+        QC[QuantChat - Messaging]
+        QS[QuantSync - Social Feed]
+        QT[QuantTube - Video/Music]
+        QA[QuantAI - AI Hub]
+        QD[QuantDrive - Storage]
+        Admin[Admin Panel]
+        More[+10 more apps]
+    end
+
+    subgraph Packages["90+ Shared Packages"]
+        direction LR
+        SC[server-core]
+        Auth[auth]
+        DB[database]
+        AI[ai]
+        RT[realtime]
+        Sec[security]
+        Obs[observability]
+        FF[feature-flags]
+    end
+
+    subgraph Services["8 Infrastructure Services"]
+        direction LR
+        WS[ws-gateway]
+        SI[search-indexer]
+        CDC[cdc-relay]
+        SMTP[smtp-inbound]
+    end
+
+    subgraph Data["Data Layer"]
+        PG[(PostgreSQL + pgvector)]
+        Redis[(Redis)]
+        Kafka[Kafka]
+        Meili[Meilisearch]
+        Qdrant[Qdrant]
+    end
+
+    Apps --> Packages
+    Packages --> Services
+    Services --> Data
+```
 
 ## Apps
 
-| App               | Description        | Key Features                                                            |
-| ----------------- | ------------------ | ----------------------------------------------------------------------- |
-| **Marketing**     | Marketing site     | Landing pages, product showcases, pricing                               |
-| **QuantAI**       | AI Hub             | Conversational AI, device control, multi-model support                  |
-| **QuantAds**      | Ad platform        | Campaign management, targeting, analytics, creative tools               |
-| **QuantCalendar** | Calendar           | Scheduling, events, reminders                                           |
-| **QuantChat**     | Instant messaging  | Disappearing messages, stories, video calls, group chats, smart replies |
-| **QuantDocs**     | Documents          | Collaborative editing, templates                                        |
-| **QuantDrive**    | Cloud storage      | File storage, sharing, sync                                             |
-| **QuantEdits**    | Editor             | Timeline-based video/photo editing, effects, exports                    |
-| **QuantMail**     | Email platform     | Full email client, central OAuth2 provider for ecosystem SSO            |
-| **QuantMax**      | Multi-mode         | Short videos (TikTok), random video chat (Omegle), dating (Tinder)      |
-| **QuantMeet**     | Video conferencing | Meetings, screen sharing, breakout rooms                                |
-| **QuantMobile**   | Mobile app         | Cross-platform mobile app via Capacitor (iOS + Android)                 |
-| **QuantNeon**     | Photos             | Photo/video sharing, filters, stories, close friends                    |
-| **QuantSync**     | Social network     | Posts, threads, communities, polls, trending topics                     |
-| **QuantTube**     | Streaming          | Video/music upload, live streaming, channels, playlists                 |
-| **Status**        | Status page        | Service status, uptime monitoring, incident reporting                   |
+| App               | Description                     | Key Features                                                    |
+| ----------------- | ------------------------------- | --------------------------------------------------------------- |
+| **QuantMail**     | Email + Central OAuth2 Provider | Full email client, SSO for all ecosystem apps, Git repos, CI/CD |
+| **QuantChat**     | Instant Messaging               | Disappearing messages, stories, video calls, smart replies      |
+| **QuantSync**     | Social Network                  | Posts, threads, communities, polls, trending topics             |
+| **QuantTube**     | Video & Music Streaming         | Upload, live streaming, channels, playlists                     |
+| **QuantAI**       | AI Assistant Hub                | Multi-model routing, device control, conversational AI          |
+| **QuantDrive**    | Cloud Storage                   | File upload, sharing, versioning, folder management             |
+| **QuantDocs**     | Collaborative Documents         | Real-time editing, templates                                    |
+| **QuantCalendar** | Calendar & Scheduling           | Events, reminders, meeting scheduling                           |
+| **QuantMeet**     | Video Conferencing              | WebRTC, screen sharing, breakout rooms                          |
+| **QuantMax**      | Multi-Mode                      | Short videos (TikTok), random chat (Omegle), dating (Tinder)    |
+| **QuantEdits**    | Video/Photo Editor              | Timeline editing, effects, exports                              |
+| **QuantNeon**     | Photo/Video Sharing             | Filters, stories, close friends                                 |
+| **QuantAds**      | Advertising Platform            | Campaign management, targeting, analytics                       |
+| **Admin**         | Platform Admin                  | User/service management, audit, compliance, feature flags       |
+| **Status**        | Status Page                     | Uptime monitoring, incident reporting                           |
+| **Marketing**     | Landing Site                    | Product showcases, pricing                                      |
+| **Quant-Mobile**  | Mobile App                      | Cross-platform via Capacitor (iOS + Android)                    |
 
-## Shared Packages
+## Key Packages
 
-### @quant/common
+| Package                    | Purpose                                                                                               |
+| -------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `@quant/server-core`       | Fastify 5 app factory with auth, prisma, health, metrics, observability, feature-flags, audit plugins |
+| `@quant/auth`              | QuantMail OAuth2 + JWT + session management + PKCE                                                    |
+| `@quant/database`          | Prisma schemas and base CRUD model for all domains                                                    |
+| `@quant/ai`                | Multi-model AI engine (OpenAI, Anthropic, Meta, Stability)                                            |
+| `@quant/realtime`          | WebSocket server/client with presence, channels, delivery guarantees                                  |
+| `@quant/security`          | Rate limiting, DDoS, CSRF, XSS, SQL injection, WAF, encryption                                        |
+| `@quant/security-advanced` | Double-submit CSRF, IP reputation, session management, field encryption                               |
+| `@quant/observability`     | Distributed tracing (OTel), structured logging, metrics, SLO tracking, chaos engineering              |
+| `@quant/feature-flags`     | Feature flag service with percentage rollouts and targeting rules                                     |
+| `@quant/organizations`     | Multi-tenancy with roles and permissions                                                              |
+| `@quant/queue`             | BullMQ job processing with dead letter handling                                                       |
+| `@quant/data-pipeline`     | Redis Streams event streaming with analytics/notification/indexing processors                         |
+| `@quant/edge-config`       | CDN cache policies, edge middleware, security headers for Next.js                                     |
+| `@quant/shared-ui`         | React component library (Button, Modal, ChatBubble, VideoPlayer, etc.)                                |
 
-Shared utilities used across all apps:
+## Services
 
-- **Types**: User, Session, ApiResponse, PaginatedResult, Notification, etc.
-- **Constants**: App configs, API endpoints, WebSocket events, rate limits, error codes
-- **Utils**: generateId, debounce, throttle, deepClone, retry, paginate, formatDate, etc.
-- **Validators**: Email, phone, URL, username, password, file upload validation
-
-### @quant/database
-
-Complete database schema definitions and model classes:
-
-- **Schemas**: Users, messages, emails, posts, ads, media, profiles, AI sessions, notifications
-- **Models**: Base CRUD model with filtering, pagination, hooks; specialized models per domain
-- **Migrations**: SQL migration definitions for PostgreSQL
-
-### @quant/auth
-
-Authentication and authorization with QuantMail as the central identity provider:
-
-- **QuantMail OAuth2 Provider**: Authorization code flow with PKCE, all ecosystem apps registered
-- **Phone Auth Provider**: SMS verification for QuantChat with rate limiting
-- **Token Service**: JWT generation, validation, refresh token rotation, theft detection
-- **Session Service**: Multi-device sessions, cross-app SSO, concurrent limits
-- **Auth Middleware**: Express-compatible middleware for route protection
-
-### @quant/ai
-
-Central AI engine with specialized services per domain:
-
-- **Engine**: Request routing, caching, rate limiting, cost tracking, streaming
-- **Context Manager**: Conversation history, long-term memory, context optimization
-- **Model Router**: Intelligent model selection based on capabilities, cost, latency
-- **Chat AI**: Smart replies, moderation, translation, spam detection (QuantChat)
-- **Mail AI**: Summarization, composition, categorization, phishing detection (QuantMail)
-- **Content AI**: Moderation, hashtags, quality scoring, trend detection (QuantSync/Neon)
-- **Recommendation AI**: Feed, videos, music, matches, people suggestions
-- **Device Control AI**: Natural language commands, scene creation, safety validation (QuantAI)
-
-### @quant/shared-ui
-
-Reusable React components with TypeScript props interfaces:
-
-- **Base**: Button, Input, Modal, Avatar, Card, Badge, Toast, Loader
-- **Media**: VideoPlayer, AudioPlayer, ImageViewer
-- **Chat**: ChatBubble, ChatInput, ChatList, TypingIndicator
-- **Feed**: FeedCard, StoryRing
-- **Navigation**: BottomNav, TopBar, SearchBar
-- **AI**: AISuggestion, AIChat
-- **Hooks**: useAuth, useRealtime, useTheme
-- **Themes**: Light, Dark, Neon
-
-### @quant/realtime
-
-WebSocket infrastructure for real-time features:
-
-- **WebSocket Server**: Connection management, message routing, authentication
-- **WebSocket Client**: Auto-reconnection, message queuing, typed events
-- **Channel Manager**: Rooms/channels, members, history, broadcasting
-- **Presence Manager**: Online status tracking, cross-app awareness, heartbeat
-- **Events**: Typed event system with full event registry
-
-## Authentication Flow
-
-QuantMail serves as the central OAuth2 provider for the ecosystem:
-
-```
-1. User opens QuantChat (or any app)
-2. App redirects to QuantMail OAuth2 /authorize endpoint
-3. User authenticates with email/password (or phone for QuantChat)
-4. QuantMail issues authorization code
-5. App exchanges code for access + refresh tokens
-6. Access token used for API calls across ecosystem
-7. Refresh token rotation prevents token theft
-```
-
-All first-party apps use the same auth flow with pre-registered client IDs and PKCE support.
-
-## AI Integration
-
-The AI engine routes requests to the optimal model based on task requirements:
-
-```
-Request --> Model Router --> GPT-4 (complex reasoning)
-                        --> GPT-3.5 (fast, simple tasks)
-                        --> Claude 3 (long context)
-                        --> Llama 3 (cost-effective)
-                        --> Stable Diffusion (images)
-                        --> Whisper (audio transcription)
-```
-
-Each app has a specialized AI service that understands its domain context.
-
-## Real-time Architecture
-
-WebSocket connections power live features across the ecosystem:
-
-- **QuantChat**: Message delivery, typing indicators, read receipts
-- **QuantSync**: Live post interactions, comments, trending updates
-- **QuantTube**: Live stream chat, viewer counts, donations
-- **QuantMax**: Video call signaling (WebRTC), random matching
-- **QuantAI**: Streaming AI responses, device status updates
-- **All Apps**: Online presence, notifications, cross-app events
+| Service             | Purpose                                                          |
+| ------------------- | ---------------------------------------------------------------- |
+| `ws-gateway`        | WebSocket connection management with JWT auth, presence tracking |
+| `search-indexer`    | Kafka CDC event consumer, indexes to Meilisearch + Qdrant        |
+| `cdc-relay`         | Change Data Capture from PostgreSQL WAL                          |
+| `smtp-inbound`      | Inbound email processing for QuantMail                           |
+| `ci-runner`         | CI/CD pipeline execution for QuantMail repos                     |
+| `git-server`        | Git hosting backend                                              |
+| `matchmaking`       | Real-time user matching (QuantMax)                               |
+| `moderation-worker` | AI-powered content moderation pipeline                           |
 
 ## Tech Stack
 
 - **Language**: TypeScript (strict mode)
 - **Runtime**: Node.js 22+
-- **Monorepo**: pnpm workspaces + turborepo
-- **Frontend**: React with JSX
-- **Styling**: Tailwind CSS utility classes
-- **Database**: PostgreSQL (schemas defined in @quant/database)
-- **Real-time**: Custom WebSocket implementation
-- **AI**: Multi-model routing (OpenAI, Anthropic, Meta, Stability)
+- **Monorepo**: pnpm 10 workspaces + Turborepo 2
+- **Frontend**: Next.js 15, React 19, Tailwind CSS
+- **Backend**: Fastify 5 (via server-core), Next.js API routes
+- **Database**: PostgreSQL with pgvector extension (Prisma ORM)
+- **Cache/Queues**: Redis 7, BullMQ, Redis Streams
+- **Messaging**: Kafka (CDC events)
+- **Search**: Meilisearch (full-text) + Qdrant (vector/semantic)
+- **Real-time**: Custom WebSocket server, WebRTC (QuantMeet/QuantMax)
+- **AI**: Multi-model routing (OpenAI, Anthropic, Meta, Stability AI)
+- **Observability**: OpenTelemetry, Prometheus, Grafana, Jaeger
+- **Deployment**: Docker Compose, Kubernetes (Helm), ArgoCD, Terraform
 
-## Getting Started
+## Development Commands
 
 ```bash
 # Install dependencies
-pnpm install --frozen-lockfile
+pnpm install
+
+# Start infrastructure (PostgreSQL, Redis, Meilisearch, etc.)
+docker compose up -d
+
+# Run all apps in development mode
+pnpm dev:all
 
 # Type check all packages
-pnpm typecheck
+pnpm turbo typecheck
 
 # Run tests
-pnpm test
+pnpm turbo test
 
-# Build all packages and apps
-pnpm build
+# Build everything
+pnpm turbo build
 
 # Lint
-pnpm lint
+pnpm turbo lint
 ```
 
-## Project Structure Conventions
+## Documentation
 
-- Each app: `apps/<name>/src/` with pages, components, services, types
-- Each app backend: `apps/<name>/backend/` with routes, services, tests
-- Each package: `packages/<name>/src/index.ts` as barrel export
-- All files use proper TypeScript type annotations
-- Components use `.tsx` extension with props interfaces
-- Services are class-based with dependency injection pattern
-- Models extend BaseModel for consistent CRUD operations
+| Document                                       | Description                                         |
+| ---------------------------------------------- | --------------------------------------------------- |
+| [Architecture](docs/architecture.md)           | System architecture with Mermaid diagrams           |
+| [Deployment](docs/deployment.md)               | Local, Docker, and Kubernetes deployment guides     |
+| [API Reference](docs/api-reference.md)         | All backend API endpoints                           |
+| [Development](docs/development.md)             | Developer setup, conventions, contribution guide    |
+| [Security](docs/security.md)                   | Security architecture, auth flow, incident response |
+| [Runbook](docs/runbook.md)                     | Operational procedures, monitoring, troubleshooting |
+| [SLOs](docs/slos.md)                           | Service Level Objectives                            |
+| [Threat Model](docs/threat-model.md)           | Security threat model                               |
+| [Federation](docs/federation.md)               | Federation protocol                                 |
+| [Disaster Recovery](docs/disaster-recovery.md) | DR procedures                                       |
+
+## Project Structure
+
+```
+Quant-Ecosystem/
+├── apps/                    # 17 frontend applications (Next.js 15)
+├── packages/               # 90+ shared libraries
+├── services/               # 8 infrastructure services
+├── infra/                  # Kubernetes (Helm), Terraform, ArgoCD, monitoring
+├── docs/                   # Documentation
+├── e2e/                    # Playwright end-to-end tests
+├── k6/                     # Load testing scripts
+├── scripts/                # Build and dev tooling
+├── docker-compose.yml      # Full development stack
+├── turbo.json              # Turborepo pipeline configuration
+├── package.json            # Root workspace configuration
+└── tsconfig.json           # Root TypeScript configuration
+```
+
+## Authentication
+
+QuantMail serves as the central OAuth2 provider with PKCE support. All ecosystem apps authenticate through it, enabling seamless SSO:
+
+```
+User -> Any App -> QuantMail OAuth2 -> JWT issued -> SSO across all apps
+```
+
+## License
+
+MIT
