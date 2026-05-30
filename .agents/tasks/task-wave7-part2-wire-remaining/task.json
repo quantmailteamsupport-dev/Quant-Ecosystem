@@ -1,0 +1,7 @@
+{
+  "task_id": "task-wave7-part2-wire-remaining",
+  "task_description": "Wire remaining QuantTube pages (channel, upload) to real API calls and clean up @simulated annotations from all 12 agent-runtime pilot files. Most of the ecosystem is already properly wired (QuantMail, QuantDrive, QuantDocs, QuantMeet, QuantChat all use hooks/apiClient). The remaining gaps are QuantTube channel page (hardcoded mock data), QuantTube upload page (fake timer-based upload), and misleading @simulated comments on pilots that already use the AI engine.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null
+}
